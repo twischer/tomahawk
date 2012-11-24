@@ -79,18 +79,26 @@ ContextMenu::setQueries( const QList<Tomahawk::query_ptr>& queries )
     m_queries.clear();
     m_queries << queries;
 
-    if ( m_supportedActions & ActionPlay && itemCount() == 1 )
-        m_sigmap->setMapping( addAction( tr( "&Play" ) ), ActionPlay );
+    const bool m_usePartyMode = true;
+    if (!m_usePartyMode)
+    {
+        if ( m_supportedActions & ActionPlay && itemCount() == 1 )
+            m_sigmap->setMapping( addAction( tr( "&Play" ) ), ActionPlay );
+    }
 
     if ( m_supportedActions & ActionQueue )
         m_sigmap->setMapping( addAction( tr( "Add to &Queue" ) ), ActionQueue );
 
-    if ( m_supportedActions & ActionStopAfter && itemCount() == 1 )
+
+    if (!m_usePartyMode)
     {
-        if ( AudioEngine::instance()->stopAfterTrack() == queries.first() )
-            m_sigmap->setMapping( addAction( tr( "Continue Playback after this &Track" ) ), ActionStopAfter );
-        else
-            m_sigmap->setMapping( addAction( tr( "Stop Playback after this &Track" ) ), ActionStopAfter );
+        if ( m_supportedActions & ActionStopAfter && itemCount() == 1 )
+        {
+            if ( AudioEngine::instance()->stopAfterTrack() == queries.first() )
+                m_sigmap->setMapping( addAction( tr( "Continue Playback after this &Track" ) ), ActionStopAfter );
+            else
+                m_sigmap->setMapping( addAction( tr( "Stop Playback after this &Track" ) ), ActionStopAfter );
+        }
     }
 
     addSeparator();
@@ -110,15 +118,18 @@ ContextMenu::setQueries( const QList<Tomahawk::query_ptr>& queries )
     if ( m_supportedActions & ActionPage && itemCount() == 1 )
         m_sigmap->setMapping( addAction( tr( "&Show Track Page" ) ), ActionPage );
 
-    addSeparator();
+    if (!m_usePartyMode)
+    {
+        addSeparator();
 
-    if ( m_supportedActions & ActionEditMetadata && itemCount() == 1 )
-        m_sigmap->setMapping( addAction( tr( "Properties..." ) ), ActionEditMetadata );
+        if ( m_supportedActions & ActionEditMetadata && itemCount() == 1 )
+            m_sigmap->setMapping( addAction( tr( "Properties..." ) ), ActionEditMetadata );
 
-    addSeparator();
+        addSeparator();
 
-    if ( m_supportedActions & ActionDelete )
-        m_sigmap->setMapping( addAction( queries.count() > 1 ? tr( "&Delete Items" ) : tr( "&Delete Item" ) ), ActionDelete );
+        if ( m_supportedActions & ActionDelete )
+            m_sigmap->setMapping( addAction( queries.count() > 1 ? tr( "&Delete Items" ) : tr( "&Delete Item" ) ), ActionDelete );
+    }
 
     foreach ( QAction* action, actions() )
     {

@@ -130,6 +130,7 @@ private:
     void startAutoPlay( const QModelIndex& index );
     bool tryToPlayItem( const QModelIndex& index );
     void updateHoverIndex( const QPoint& pos );
+    void setCustomContextMenuQueries( const QModelIndex& idx );
 
     QString m_guid;
     PlayableModel* m_model;

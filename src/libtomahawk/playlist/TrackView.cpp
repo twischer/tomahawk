@@ -274,7 +274,15 @@ TrackView::onItemActivated( const QModelIndex& index )
     if ( !index.isValid() )
         return;
 
-    tryToPlayItem( index );
+    const bool m_usePartyMode = true;
+    if (m_usePartyMode)
+    {
+        setCustomContextMenuQueries( index );
+        m_contextMenu->addToQueue();
+    }
+    else
+        tryToPlayItem( index );
+
     emit itemActivated( index );
 }
 
@@ -569,6 +577,16 @@ TrackView::onCustomContextMenu( const QPoint& pos )
 
     QModelIndex idx = indexAt( pos );
     idx = idx.sibling( idx.row(), 0 );
+
+    setCustomContextMenuQueries( idx );
+
+    m_contextMenu->exec( viewport()->mapToGlobal( pos ) );
+}
+
+
+void
+TrackView::setCustomContextMenuQueries( const QModelIndex& idx )
+{
     setContextMenuIndex( idx );
 
     if ( !idx.isValid() )
@@ -594,7 +612,6 @@ TrackView::onCustomContextMenu( const QPoint& pos )
     }
 
     m_contextMenu->setQueries( queries );
-    m_contextMenu->exec( viewport()->mapToGlobal( pos ) );
 }
 
 

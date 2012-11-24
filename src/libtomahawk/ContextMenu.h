@@ -67,6 +67,8 @@ public:
 
     unsigned int itemCount() const;
 
+    void addToQueue();
+
 signals:
     void triggered( int action );
 
@@ -74,7 +76,6 @@ private slots:
     void onTriggered( int action );
     void copyLink();
     void openPage();
-    void addToQueue();
 
     void onSocialActionsLoaded();
 
