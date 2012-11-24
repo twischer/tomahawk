@@ -1332,6 +1332,20 @@ TomahawkSettings::setPrivateListeningMode( TomahawkSettings::PrivateListeningMod
 }
 
 
+const bool
+TomahawkSettings::partyModeEnabled() const
+{
+    return value( "partymode", false ).toBool();
+}
+
+
+void
+TomahawkSettings::setPartyModeEnabled( const bool enable )
+{
+    setValue( "partymode", enable );
+}
+
+
 void
 TomahawkSettings::updateIndex()
 {

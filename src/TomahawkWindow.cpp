@@ -537,6 +537,8 @@ TomahawkWindow::setupSignals()
     connect( ac->getAction( "quit" ), SIGNAL( triggered() ), qApp, SLOT( quit() ) );
     connect( ac->getAction( "showOfflineSources" ), SIGNAL( triggered() ), SLOT( showOfflineSources() ) );
 
+    connect( ac, SIGNAL( partyModeChanged() ), SLOT( onPartyModeChanged() ) );
+
 #if defined( Q_OS_MAC )
     connect( ac->getAction( "minimize" ), SIGNAL( triggered() ), SLOT( minimize() ) );
     connect( ac->getAction( "zoom" ), SIGNAL( triggered() ), SLOT( maximize() ) );
@@ -1329,6 +1331,18 @@ TomahawkWindow::toggleMenuBar() //SLOT
     balanceToolbar();
     saveSettings();
 #endif
+}
+
+
+void
+TomahawkWindow::onPartyModeChanged()
+{
+    const bool isPartyMode = TomahawkSettings::instance()->partyModeEnabled();
+
+    if ( isPartyMode )
+        showFullScreen();
+    else
+        showMaximized();
 }
 
 

@@ -39,6 +39,7 @@
 #include "Album.h"
 #include "Source.h"
 #include "utils/AnimatedSpinner.h"
+#include "TomahawkSettings.h"
 
 #define SCROLL_TIMEOUT 280
 
@@ -274,8 +275,7 @@ TrackView::onItemActivated( const QModelIndex& index )
     if ( !index.isValid() )
         return;
 
-    const bool m_usePartyMode = true;
-    if (m_usePartyMode)
+    if ( TomahawkSettings::instance()->partyModeEnabled() )
     {
         setCustomContextMenuQueries( index );
         m_contextMenu->addToQueue();
@@ -793,6 +793,10 @@ TrackView::setFilter( const QString& filter )
 void
 TrackView::deleteSelectedItems()
 {
+    // do not delete, if the party mode is active
+    if ( TomahawkSettings::instance()->partyModeEnabled() )
+        return;
+
     if ( !model()->isReadOnly() )
     {
         proxyModel()->removeIndexes( selectedIndexes() );

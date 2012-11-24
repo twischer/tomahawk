@@ -88,6 +88,8 @@ private slots:
     void onCoverUpdated();
     void onSocialActionsLoaded();
 
+    void onPartyModeChanged();
+
 private:
     void setCover();
     void setSocialActions();

@@ -27,6 +27,7 @@
 #include "Source.h"
 #include "Artist.h"
 #include "Album.h"
+#include "TomahawkSettings.h"
 
 #include "utils/Logger.h"
 #include "audio/AudioEngine.h"
@@ -79,8 +80,7 @@ ContextMenu::setQueries( const QList<Tomahawk::query_ptr>& queries )
     m_queries.clear();
     m_queries << queries;
 
-    const bool m_usePartyMode = true;
-    if (!m_usePartyMode)
+    if ( !TomahawkSettings::instance()->partyModeEnabled() )
     {
         if ( m_supportedActions & ActionPlay && itemCount() == 1 )
             m_sigmap->setMapping( addAction( tr( "&Play" ) ), ActionPlay );
@@ -90,7 +90,7 @@ ContextMenu::setQueries( const QList<Tomahawk::query_ptr>& queries )
         m_sigmap->setMapping( addAction( tr( "Add to &Queue" ) ), ActionQueue );
 
 
-    if (!m_usePartyMode)
+    if ( !TomahawkSettings::instance()->partyModeEnabled() )
     {
         if ( m_supportedActions & ActionStopAfter && itemCount() == 1 )
         {
@@ -118,7 +118,7 @@ ContextMenu::setQueries( const QList<Tomahawk::query_ptr>& queries )
     if ( m_supportedActions & ActionPage && itemCount() == 1 )
         m_sigmap->setMapping( addAction( tr( "&Show Track Page" ) ), ActionPage );
 
-    if (!m_usePartyMode)
+    if ( !TomahawkSettings::instance()->partyModeEnabled() )
     {
         addSeparator();
 

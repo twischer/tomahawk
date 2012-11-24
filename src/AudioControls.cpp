@@ -32,6 +32,8 @@
 #include "GlobalActionManager.h"
 #include "ViewManager.h"
 #include "Source.h"
+#include "TomahawkSettings.h"
+#include "ActionCollection.h"
 
 #include <QNetworkReply>
 #include <QDropEvent>
@@ -139,6 +141,9 @@ AudioControls::AudioControls( QWidget* parent )
     connect( AudioEngine::instance(), SIGNAL( timerMilliSeconds( qint64 ) ), SLOT( onPlaybackTimer( qint64 ) ) );
     connect( AudioEngine::instance(), SIGNAL( volumeChanged( int ) ), SLOT( onVolumeChanged( int ) ) );
 
+    // <Form ActionCollection> used tu disable next and previous button if party mode was activated
+    connect( ActionCollection::instance(), SIGNAL( partyModeChanged() ), SLOT( onPartyModeChanged() ) );
+
     ui->buttonAreaLayout->setSpacing( 0 );
     ui->stackedLayout->setSpacing( 0 );
     ui->stackedLayout->setContentsMargins( 0, 0, 0, 0 );
@@ -205,7 +210,9 @@ AudioControls::onPlaybackStarted( const Tomahawk::result_ptr& result )
 
     ui->seekSlider->setRange( 0, duration );
     ui->seekSlider->setValue( 0 );
-    ui->seekSlider->setEnabled( AudioEngine::instance()->canSeek() );
+
+    if ( !TomahawkSettings::instance()->partyModeEnabled() )
+        ui->seekSlider->setEnabled( AudioEngine::instance()->canSeek() );
 
     m_sliderTimeLine.stop();
     m_sliderTimeLine.setDuration( duration );
@@ -264,8 +271,11 @@ AudioControls::onPlaybackLoading( const Tomahawk::result_ptr& result )
     ui->loveButton->setToolTip( tr( "Love" ) );
     ui->ownerButton->setToolTip( QString( tr( "Playing from %1" ) ).arg( result->friendlySource() ) );
 
-    ui->prevButton->setEnabled( AudioEngine::instance()->canGoPrevious() );
-    ui->nextButton->setEnabled( AudioEngine::instance()->canGoNext() );
+    if ( !TomahawkSettings::instance()->partyModeEnabled() )
+    {
+        ui->prevButton->setEnabled( AudioEngine::instance()->canGoPrevious() );
+        ui->nextButton->setEnabled( AudioEngine::instance()->canGoNext() );
+    }
 
     QPixmap sourceIcon = result->sourceIcon( Result::Plain, ui->ownerButton->size() );
     if ( !sourceIcon.isNull() )
@@ -397,8 +407,11 @@ AudioControls::onPlaybackStopped()
     ui->loveButton->setToolTip( "" );
     ui->ownerButton->setToolTip( "" );
 
-    ui->prevButton->setEnabled( AudioEngine::instance()->canGoPrevious() );
-    ui->nextButton->setEnabled( AudioEngine::instance()->canGoNext() );
+    if ( !TomahawkSettings::instance()->partyModeEnabled() )
+    {
+        ui->prevButton->setEnabled( AudioEngine::instance()->canGoPrevious() );
+        ui->nextButton->setEnabled( AudioEngine::instance()->canGoNext() );
+    }
 }
 
 
@@ -701,4 +714,15 @@ AudioControls::onOwnerButtonClicked()
     }
     else
         ViewManager::instance()->show( m_currentTrack->collection() );
+}
+
+
+void
+AudioControls::onPartyModeChanged()
+{
+    const bool isPartyMode = TomahawkSettings::instance()->partyModeEnabled();
+
+    ui->prevButton->setDisabled( isPartyMode );
+    ui->nextButton->setDisabled( isPartyMode );
+    ui->seekSlider->setDisabled( isPartyMode );
 }

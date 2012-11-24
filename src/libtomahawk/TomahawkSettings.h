@@ -203,6 +203,10 @@ public:
     PrivateListeningMode privateListeningMode() const;
     void setPrivateListeningMode( PrivateListeningMode mode );
 
+
+    const bool partyModeEnabled() const;
+    void setPartyModeEnabled( const bool enable );
+
     void setImportXspfPath( const QString& path );
     QString importXspfPath() const;
 

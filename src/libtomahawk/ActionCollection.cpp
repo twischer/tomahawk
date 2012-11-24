@@ -72,6 +72,11 @@ ActionCollection::initActions()
     m_actionCollection[ "togglePrivacy" ] = privacyToggle;
     connect( m_actionCollection[ "togglePrivacy" ], SIGNAL( triggered() ), SLOT( togglePrivateListeningMode() ), Qt::UniqueConnection );
 
+    m_actionCollection[ "partyMode" ] = new QAction( tr( "Party Mode" ), this );
+    m_actionCollection[ "partyMode" ]->setCheckable( true );
+    m_actionCollection[ "partyMode" ]->setChecked( TomahawkSettings::instance()->partyModeEnabled() );
+    connect( m_actionCollection[ "partyMode" ], SIGNAL( triggered() ), SLOT( togglePartyMode() ), Qt::UniqueConnection );
+
     m_actionCollection[ "loadPlaylist" ] =   new QAction( tr( "&Load Playlist" ), this );
     m_actionCollection[ "renamePlaylist" ] = new QAction( tr( "&Rename Playlist" ), this );
     m_actionCollection[ "copyPlaylist" ] =   new QAction( tr( "&Copy Playlist Link" ), this );
@@ -140,6 +145,7 @@ ActionCollection::createMenuBar( QWidget *parent )
     controlsMenu->addAction( m_actionCollection[ "nextTrack" ] );
     controlsMenu->addSeparator();
     controlsMenu->addAction( m_actionCollection[ "togglePrivacy" ] );
+    controlsMenu->addAction( m_actionCollection[ "partyMode" ] );
     controlsMenu->addAction( m_actionCollection[ "showOfflineSources" ] );
     controlsMenu->addSeparator();
     controlsMenu->addAction( m_actionCollection[ "loadXSPF" ] );
@@ -199,6 +205,7 @@ ActionCollection::createCompactMenu( QWidget *parent )
     compactMenu->addAction( m_actionCollection[ "nextTrack" ] );
     compactMenu->addSeparator();
     compactMenu->addAction( m_actionCollection[ "togglePrivacy" ] );
+    compactMenu->addAction( m_actionCollection[ "partyMode" ] );
     compactMenu->addAction( m_actionCollection[ "showOfflineSources" ] );
     compactMenu->addSeparator();
     compactMenu->addAction( m_actionCollection[ "loadXSPF" ] );
@@ -308,4 +315,24 @@ ActionCollection::togglePrivateListeningMode()
     privacyToggle->setIconVisibleInMenu( isPublic );
 
     emit privacyModeChanged();
+}
+
+void
+ActionCollection::togglePartyMode()
+{
+    tDebug() << Q_FUNC_INFO;
+    const bool isPartyMode = m_actionCollection[ "partyMode" ]->isChecked();
+    TomahawkSettings::instance()->setPartyModeEnabled( isPartyMode );
+
+    // Disable/Enable menu elements if party mode was activated
+    QStringList lockedActions;
+    lockedActions << "loadPlaylist" << "renamePlaylist" << "copyPlaylist" << "stop";
+    lockedActions << "previousTrack" << "nextTrack" << "quit" << "loadXSPF" << "preferences";
+    foreach (const QString &str, lockedActions)
+    {
+        m_actionCollection[ str ]->setDisabled( isPartyMode );
+    }
+
+
+    emit partyModeChanged();
 }

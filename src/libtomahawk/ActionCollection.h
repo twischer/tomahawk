@@ -89,9 +89,11 @@ public:
 
 public slots:
     void togglePrivateListeningMode();
+    void togglePartyMode();
 
 signals:
     void privacyModeChanged();
+    void partyModeChanged();
 
 private:
     static ActionCollection* s_instance;
