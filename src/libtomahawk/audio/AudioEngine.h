@@ -28,6 +28,7 @@
 #include "DllMacro.h"
 
 #include <phonon/MediaObject>
+#include <phonon/MediaSource>
 #include <phonon/AudioOutput>
 #include <phonon/BackendCapabilities>
 
@@ -123,12 +124,13 @@ signals:
     void error( AudioEngine::AudioErrorCode errorCode );
 
 private slots:
-    bool loadTrack( const Tomahawk::result_ptr& result );
+    bool loadTrack( const Tomahawk::result_ptr& result, const bool doCrossfading );
     void loadPreviousTrack();
-    void loadNextTrack();
+    void loadNextTrack( const bool doCrossfading );
 
     void onAboutToFinish();
     void onStateChanged( Phonon::State newState, Phonon::State oldState );
+    void onPrefinishMarkReached( qint32 msecToEnd );
     void onVolumeChanged( qreal volume ) { emit volumeChanged( volume * 100 ); }
     void timerTriggered( qint64 time );
 

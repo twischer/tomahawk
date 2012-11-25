@@ -46,6 +46,7 @@
 using namespace Tomahawk;
 
 #define AUDIO_VOLUME_STEP 5
+#define CROSSFADING_TIME_IN_MS  8000
 
 static QString s_aeInfoIdentifier = QString( "AUDIOENGINE" );
 
@@ -78,9 +79,12 @@ AudioEngine::AudioEngine()
     Phonon::createPath( m_mediaObject, m_audioOutput );
 
     m_mediaObject->setTickInterval( 150 );
+    m_mediaObject->setPrefinishMark( CROSSFADING_TIME_IN_MS * 2 );
+    m_mediaObject->setTransitionTime( -CROSSFADING_TIME_IN_MS );
     connect( m_mediaObject, SIGNAL( stateChanged( Phonon::State, Phonon::State ) ), SLOT( onStateChanged( Phonon::State, Phonon::State ) ) );
     connect( m_mediaObject, SIGNAL( tick( qint64 ) ), SLOT( timerTriggered( qint64 ) ) );
     connect( m_mediaObject, SIGNAL( aboutToFinish() ), SLOT( onAboutToFinish() ) );
+    connect( m_mediaObject, SIGNAL( prefinishMarkReached( qint32 ) ), SLOT( onPrefinishMarkReached( qint32 ) ) );
 
     connect( m_audioOutput, SIGNAL( volumeChanged( qreal ) ), SLOT( onVolumeChanged( qreal ) ) );
 
@@ -204,7 +208,7 @@ AudioEngine::next()
     tDebug( LOGEXTRA ) << Q_FUNC_INFO;
 
     if ( canGoNext() )
-        loadNextTrack();
+        loadNextTrack( false );
 }
 
 
@@ -415,7 +419,7 @@ AudioEngine::onNowPlayingInfoReady( const Tomahawk::InfoSystem::InfoType type )
 
 
 bool
-AudioEngine::loadTrack( const Tomahawk::result_ptr& result )
+AudioEngine::loadTrack( const Tomahawk::result_ptr& result, const bool doCrossfading )
 {
     bool err = false;
     {
@@ -441,16 +445,21 @@ AudioEngine::loadTrack( const Tomahawk::result_ptr& result )
 
         if ( !err )
         {
+            if ( !doCrossfading )
+            {
+                // clear the queue so the next loaded track will be directly played
+                m_mediaObject->clear();
+            }
+
             tLog() << "Starting new song:" << m_currentTrack->url();
             emit loading( m_currentTrack );
 
             if ( !isHttpResult( m_currentTrack->url() ) && !isLocalResult( m_currentTrack->url() ) )
             {
                 if ( QNetworkReply* qnr_io = qobject_cast< QNetworkReply* >( io.data() ) )
-                    m_mediaObject->setCurrentSource( new QNR_IODeviceStream( qnr_io, this ) );
+                    m_mediaObject->enqueue( new QNR_IODeviceStream( qnr_io, this ) );
                 else
-                    m_mediaObject->setCurrentSource( io.data() );
-                m_mediaObject->currentSource().setAutoDelete( false );
+                    m_mediaObject->enqueue( io.data() );
             }
             else
             {
@@ -462,7 +471,10 @@ AudioEngine::loadTrack( const Tomahawk::result_ptr& result )
                         furl = QUrl( m_currentTrack->url().left( m_currentTrack->url().indexOf( '?' ) ) );
                         furl.setEncodedQuery( QString( m_currentTrack->url().mid( m_currentTrack->url().indexOf( '?' ) + 1 ) ).toLocal8Bit() );
                     }
-                    m_mediaObject->setCurrentSource( furl );
+                    m_mediaObject->enqueue( furl );
+
+                    // no need to setAutoDelete to false
+                    // false is the defautl setting
                 }
                 else
                 {
@@ -472,11 +484,16 @@ AudioEngine::loadTrack( const Tomahawk::result_ptr& result )
                         furl = furl.right( furl.length() - 7 );
 #endif
                     tLog( LOGVERBOSE ) << "Passing to Phonon:" << furl << furl.toLatin1();
-                    m_mediaObject->setCurrentSource( furl );
+                    m_mediaObject->enqueue( furl );
                 }
 
-                m_mediaObject->currentSource().setAutoDelete( true );
+                // setAutoDelete to true for the last added media source
+                if ( m_mediaObject->queue().isEmpty() )
+                    m_mediaObject->currentSource().setAutoDelete( true );
+                else
+                    m_mediaObject->queue().last().setAutoDelete( true );
             }
+
 
             if ( !m_input.isNull() )
             {
@@ -521,14 +538,14 @@ AudioEngine::loadPreviousTrack()
 
     Tomahawk::result_ptr result = m_playlist.data()->previousItem();
     if ( !result.isNull() )
-        loadTrack( result );
+        loadTrack( result, false );
     else
         stop();
 }
 
 
 void
-AudioEngine::loadNextTrack()
+AudioEngine::loadNextTrack( const bool doCrossfading )
 {
     tDebug( LOGEXTRA ) << Q_FUNC_INFO;
 
@@ -559,7 +576,7 @@ AudioEngine::loadNextTrack()
     if ( !result.isNull() )
     {
         tDebug( LOGVERBOSE ) << Q_FUNC_INFO << "Got next item, loading track";
-        loadTrack( result );
+        loadTrack( result, doCrossfading );
     }
     else
     {
@@ -588,7 +605,7 @@ AudioEngine::playItem( Tomahawk::playlistinterface_ptr playlist, const Tomahawk:
 
     if ( !result.isNull() )
     {
-        loadTrack( result );
+        loadTrack( result, false );
     }
     else if ( !m_playlist.isNull() && m_playlist.data()->retryMode() == PlaylistModes::Retry )
     {
@@ -687,7 +704,7 @@ AudioEngine::onPlaylistNextTrackReady()
     if ( m_playlist && m_playlist->latchMode() == PlaylistModes::RealTime && ( m_waitingOnNewTrack || m_currentTrack.isNull() || m_currentTrack->id() == 0 || ( currentTrackTotalTime() - currentTime() > 6000 ) ) )
     {
         m_waitingOnNewTrack = false;
-        loadNextTrack();
+        loadNextTrack( false );
         return;
     }
 
@@ -695,7 +712,7 @@ AudioEngine::onPlaylistNextTrackReady()
         return;
 
     m_waitingOnNewTrack = false;
-    loadNextTrack();
+    loadNextTrack( false );
 }
 
 
@@ -758,9 +775,9 @@ AudioEngine::onStateChanged( Phonon::State newState, Phonon::State oldState )
         if ( stopped && m_expectStop )
         {
             m_expectStop = false;
-            tDebug( LOGVERBOSE ) << "Finding next track.";
+            tDebug( LOGVERBOSE ) << "Crossfade has not worked so do it without crossfading.";
             if ( canGoNext() )
-                loadNextTrack();
+                loadNextTrack( false );
             else
             {
                 if ( !m_playlist.isNull() && m_playlist.data()->retryMode() == Tomahawk::PlaylistModes::Retry )
@@ -779,6 +796,14 @@ AudioEngine::onStateChanged( Phonon::State newState, Phonon::State oldState )
             checkStateQueue();
         }
     }
+}
+
+void
+AudioEngine::onPrefinishMarkReached( qint32 msecToEnd )
+{
+    // current source ends in msecToEnd ms
+    // so load next source for crossfading
+    loadNextTrack( true );
 }
 
 
