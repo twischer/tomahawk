@@ -1,16 +1,32 @@
 #include "MediaQueue.h"
+#include <phonon/BackendCapabilities>
+#include "utils/Logger.h"
 
 MediaQueue::MediaQueue( Phonon::AudioOutput* audioOutput )
     : QObject()
 {
     m_currentMediaObject = 0;
 
-    for (int i=0; i<2; i++)
+    for (int i=0; i<MEDIA_OBJECT_COUNT; i++)
     {
         m_mediaObjects[i] = new Phonon::MediaObject( this );
-        Phonon::createPath( m_mediaObjects[i], audioOutput );
+
+        Phonon::Path* path = new Phonon::Path();
+        path->reconnect( m_mediaObjects[i], audioOutput );
+
+        m_mediaFader[i] = new Phonon::VolumeFaderEffect;
+        m_mediaFader[i]->setVolume( 0.0 );
+
+        const bool successful = path->insertEffect( m_mediaFader[i] );
 
         m_mediaObjects[i]->setTickInterval( 150 );
+    }
+
+    QList<Phonon::EffectDescription> list = Phonon::BackendCapabilities::availableAudioEffects();
+
+    foreach ( Phonon::EffectDescription desc, list )
+    {
+        tDebug() << desc.name() << desc.description() << endl;
     }
 
     connect( m_mediaObjects[0], SIGNAL( stateChanged( Phonon::State, Phonon::State ) ), SLOT( onStateChanged1( Phonon::State, Phonon::State ) ) );
@@ -67,6 +83,9 @@ MediaQueue::setNextSource( const Phonon::MediaSource& source, const bool autoDel
     const_cast<Phonon::MediaSource&>(source).setAutoDelete( autoDelete );
     // TODO
     m_mediaObjects[m_currentMediaObject]->setCurrentSource( source );
+
+    m_mediaFader[m_currentMediaObject]->setVolume( 1.0 );
+    m_mediaFader[m_currentMediaObject]->fadeOut( CROSSFADING_TIME_IN_MS );
 }
 
 

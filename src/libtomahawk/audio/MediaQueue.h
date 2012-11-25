@@ -3,10 +3,15 @@
 
 #include "DllMacro.h"
 
-#include <phonon/MediaObject>
 #include <phonon/AudioOutput>
+#include <phonon/MediaObject>
+#include <phonon/VolumeFaderEffect>
 
 #include <QtCore/QObject>
+
+
+#define MEDIA_OBJECT_COUNT  2
+#define CROSSFADING_TIME_IN_MS  16000
 
 
 class DLLEXPORT MediaQueue : public QObject
@@ -45,7 +50,8 @@ private slots:
 private:
     int m_currentMediaObject;
 
-    Phonon::MediaObject* m_mediaObjects[2];
+    Phonon::MediaObject* m_mediaObjects[MEDIA_OBJECT_COUNT];
+    Phonon::VolumeFaderEffect* m_mediaFader[MEDIA_OBJECT_COUNT];
 };
 
 #endif // MEDIAQUEUE_H
