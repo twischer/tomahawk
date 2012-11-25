@@ -215,6 +215,7 @@ set( libSources
     sip/SipInfo.cpp
 
     audio/AudioEngine.cpp
+    audio/MediaQueue.cpp
 
     database/Database.cpp
     database/FuzzyIndex.cpp

@@ -27,8 +27,7 @@
 
 #include "DllMacro.h"
 
-#include <phonon/MediaObject>
-#include <phonon/MediaSource>
+#include "MediaQueue.h"
 #include <phonon/AudioOutput>
 #include <phonon/BackendCapabilities>
 
@@ -68,8 +67,8 @@ public:
 
     Tomahawk::query_ptr stopAfterTrack() const  { return m_stopAfterTrack; }
 
-    qint64 currentTime() const { return m_mediaObject->currentTime(); }
-    qint64 currentTrackTotalTime() const { return m_mediaObject->totalTime(); }
+    qint64 currentTime() const { return m_mediaQueue->currentTime(); }
+    qint64 currentTrackTotalTime() const { return m_mediaQueue->totalTime(); }
 
 public slots:
     void playPause();
@@ -124,13 +123,12 @@ signals:
     void error( AudioEngine::AudioErrorCode errorCode );
 
 private slots:
-    bool loadTrack( const Tomahawk::result_ptr& result, const bool doCrossfading );
+    bool loadTrack( const Tomahawk::result_ptr& result );
     void loadPreviousTrack();
-    void loadNextTrack( const bool doCrossfading );
+    void loadNextTrack();
 
     void onAboutToFinish();
     void onStateChanged( Phonon::State newState, Phonon::State oldState );
-    void onPrefinishMarkReached( qint32 msecToEnd );
     void onVolumeChanged( qreal volume ) { emit volumeChanged( volume * 100 ); }
     void timerTriggered( qint64 time );
 
@@ -160,7 +158,7 @@ private:
     Tomahawk::playlistinterface_ptr m_currentTrackPlaylist;
     Tomahawk::playlistinterface_ptr m_queue;
 
-    Phonon::MediaObject* m_mediaObject;
+    MediaQueue* m_mediaQueue;
     Phonon::AudioOutput* m_audioOutput;
 
     unsigned int m_timeElapsed;
