@@ -28,7 +28,6 @@
 #include "DllMacro.h"
 
 #include "MediaQueue.h"
-#include <phonon/AudioOutput>
 #include <phonon/BackendCapabilities>
 
 #include <QtCore/QObject>
@@ -50,7 +49,7 @@ public:
     ~AudioEngine();
 
     QStringList supportedMimeTypes() const;
-    unsigned int volume() const { return m_audioOutput->volume() * 100.0; } // in percent
+    unsigned int volume() const { return m_mediaQueue->volume() * 100.0; } // in percent
 
     AudioState state() const { return m_state; }
     bool isPlaying() const { return m_state == Playing; }
@@ -129,6 +128,7 @@ private slots:
 
     void onAboutToFinish();
     void onStateChanged( Phonon::State newState, Phonon::State oldState );
+    void onNeedNextSource();
     void onVolumeChanged( qreal volume ) { emit volumeChanged( volume * 100 ); }
     void timerTriggered( qint64 time );
 
@@ -159,7 +159,6 @@ private:
     Tomahawk::playlistinterface_ptr m_queue;
 
     MediaQueue* m_mediaQueue;
-    Phonon::AudioOutput* m_audioOutput;
 
     unsigned int m_timeElapsed;
     bool m_expectStop;

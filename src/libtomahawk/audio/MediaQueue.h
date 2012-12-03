@@ -3,15 +3,13 @@
 
 #include "DllMacro.h"
 
-#include <phonon/AudioOutput>
-#include <phonon/MediaObject>
-#include <phonon/VolumeFaderEffect>
+#include "MediaOutput.h"
 
 #include <QtCore/QObject>
 
 
 #define MEDIA_OBJECT_COUNT  2
-#define CROSSFADING_TIME_IN_MS  16000
+#define CROSSFADING_TIME_IN_MS  4000
 
 
 class DLLEXPORT MediaQueue : public QObject
@@ -19,7 +17,7 @@ class DLLEXPORT MediaQueue : public QObject
     Q_OBJECT
 
 public:
-    MediaQueue( Phonon::AudioOutput* audioOutput );
+    MediaQueue();
 
     qint64 currentTime() const;
     qint64 totalTime() const;
@@ -34,24 +32,32 @@ public:
     QString	errorString() const;
     Phonon::ErrorType errorType() const;
 
+    void setVolume( qreal newVolume );
+    qreal volume();
+
 
 signals:
     void aboutToFinish();
     void stateChanged( Phonon::State newState, Phonon::State oldState );
     void tick( qint64 time );
+    void needNextSource();
+    void volumeChanged( qreal volume );
 
 
 private slots:
     void onAboutToFinish1();
     void onStateChanged1( Phonon::State newState, Phonon::State oldState );
     void timerTriggered1( qint64 time );
+    void onPrefinishMarkReached1( qint32 msecToEnd );
+    void onVolumeChanged( qreal volume );
 
 
 private:
+    const int getNextMediaIndex(const int lastMediaQueue) const;
+
     int m_currentMediaObject;
 
-    Phonon::MediaObject* m_mediaObjects[MEDIA_OBJECT_COUNT];
-    Phonon::VolumeFaderEffect* m_mediaFader[MEDIA_OBJECT_COUNT];
+    MediaOutput* m_mediaOutputs[MEDIA_OBJECT_COUNT];
 };
 
 #endif // MEDIAQUEUE_H

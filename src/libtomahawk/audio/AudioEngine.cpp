@@ -73,20 +73,20 @@ AudioEngine::AudioEngine()
     qRegisterMetaType< AudioErrorCode >("AudioErrorCode");
     qRegisterMetaType< AudioState >("AudioState");
 
-    m_audioOutput = new Phonon::AudioOutput( Phonon::MusicCategory, this );
-    m_mediaQueue = new MediaQueue( m_audioOutput );
+    m_mediaQueue = new MediaQueue();
 
     connect( m_mediaQueue, SIGNAL( stateChanged( Phonon::State, Phonon::State ) ), SLOT( onStateChanged( Phonon::State, Phonon::State ) ) );
     connect( m_mediaQueue, SIGNAL( tick( qint64 ) ), SLOT( timerTriggered( qint64 ) ) );
     connect( m_mediaQueue, SIGNAL( aboutToFinish() ), SLOT( onAboutToFinish() ) );
+    connect( m_mediaQueue, SIGNAL( needNextSource() ), SLOT( onNeedNextSource() ) );
 
-    connect( m_audioOutput, SIGNAL( volumeChanged( qreal ) ), SLOT( onVolumeChanged( qreal ) ) );
+    connect( m_mediaQueue, SIGNAL( volumeChanged( qreal ) ), SLOT( onVolumeChanged( qreal ) ) );
 
     m_stateQueueTimer.setInterval( 5000 );
     m_stateQueueTimer.setSingleShot( true );
     connect( &m_stateQueueTimer, SIGNAL( timeout() ), SLOT( queueStateSafety() ) );
 
-    onVolumeChanged( m_audioOutput->volume() );
+    onVolumeChanged( m_mediaQueue->volume() );
 
     setVolume( TomahawkSettings::instance()->volume() );
 }
@@ -294,7 +294,7 @@ AudioEngine::setVolume( int percentage )
     tDebug( LOGVERBOSE ) << Q_FUNC_INFO << percentage;
 
     percentage = qBound( 0, percentage, 100 );
-    m_audioOutput->setVolume( (qreal)percentage / 100.0 );
+    m_mediaQueue->setVolume( (qreal)percentage / 100.0 );
     emit volumeChanged( percentage );
 }
 
@@ -776,6 +776,12 @@ AudioEngine::onStateChanged( Phonon::State newState, Phonon::State oldState )
     }
 }
 
+
+void
+AudioEngine::onNeedNextSource()
+{
+    loadNextTrack();
+}
 
 void
 AudioEngine::timerTriggered( qint64 time )

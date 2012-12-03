@@ -1,127 +1,166 @@
 #include "MediaQueue.h"
-#include <phonon/BackendCapabilities>
-#include "utils/Logger.h"
 
-MediaQueue::MediaQueue( Phonon::AudioOutput* audioOutput )
+
+MediaQueue::MediaQueue()
     : QObject()
 {
     m_currentMediaObject = 0;
 
     for (int i=0; i<MEDIA_OBJECT_COUNT; i++)
     {
-        m_mediaObjects[i] = new Phonon::MediaObject( this );
+        MediaOutput* mediaOutput = new MediaOutput;
 
-        Phonon::Path* path = new Phonon::Path();
-        path->reconnect( m_mediaObjects[i], audioOutput );
+        mediaOutput->setTickInterval( 150 );
 
-        m_mediaFader[i] = new Phonon::VolumeFaderEffect;
-        m_mediaFader[i]->setVolume( 0.0 );
+        connect( mediaOutput, SIGNAL( stateChanged( Phonon::State, Phonon::State ) ), SLOT( onStateChanged1( Phonon::State, Phonon::State ) ) );
+        connect( mediaOutput, SIGNAL( tick( qint64 ) ), SLOT( timerTriggered1( qint64 ) ) );
+        connect( mediaOutput, SIGNAL( aboutToFinish() ), SLOT( onAboutToFinish1() ) );
+        connect( mediaOutput, SIGNAL( volumeChanged( qreal ) ), SLOT( onVolumeChanged( qreal ) ) );
 
-        const bool successful = path->insertEffect( m_mediaFader[i] );
+        // only need next source earlier if the fading is available and so a crossfading is possible
+        // if fading not available do not make a crossfading
+        if ( mediaOutput->isFadingAvailable() )
+        {
+            mediaOutput->setPrefinishMark( CROSSFADING_TIME_IN_MS );
+            connect( mediaOutput, SIGNAL( prefinishMarkReached( qint32 ) ), SLOT( onPrefinishMarkReached1( qint32 ) ) );
+        }
 
-        m_mediaObjects[i]->setTickInterval( 150 );
+        m_mediaOutputs[i] = mediaOutput;
     }
-
-    QList<Phonon::EffectDescription> list = Phonon::BackendCapabilities::availableAudioEffects();
-
-    foreach ( Phonon::EffectDescription desc, list )
-    {
-        tDebug() << desc.name() << desc.description() << endl;
-    }
-
-    connect( m_mediaObjects[0], SIGNAL( stateChanged( Phonon::State, Phonon::State ) ), SLOT( onStateChanged1( Phonon::State, Phonon::State ) ) );
-    connect( m_mediaObjects[0], SIGNAL( tick( qint64 ) ), SLOT( timerTriggered1( qint64 ) ) );
-    connect( m_mediaObjects[0], SIGNAL( aboutToFinish() ), SLOT( onAboutToFinish1() ) );
 }
 
 
 qint64
 MediaQueue::currentTime() const
 {
-    return m_mediaObjects[m_currentMediaObject]->currentTime();
+    return m_mediaOutputs[m_currentMediaObject]->currentTime();
 }
 
 
 qint64
 MediaQueue::totalTime() const
 {
-    return m_mediaObjects[m_currentMediaObject]->totalTime();
+    return m_mediaOutputs[m_currentMediaObject]->totalTime();
 }
 
 
 void
 MediaQueue::play()
 {
-    m_mediaObjects[m_currentMediaObject]->play();
+    m_mediaOutputs[m_currentMediaObject]->play();
 }
 
 
 void
 MediaQueue::pause()
 {
-    m_mediaObjects[m_currentMediaObject]->pause();
+    m_mediaOutputs[m_currentMediaObject]->pause();
 }
 
 
 void
 MediaQueue::stop()
 {
-    m_mediaObjects[m_currentMediaObject]->stop();
+    m_mediaOutputs[m_currentMediaObject]->stop();
 }
 
 
 void
 MediaQueue::seek( qint64 time )
 {
-    m_mediaObjects[m_currentMediaObject]->seek( time );
+    m_mediaOutputs[m_currentMediaObject]->seek( time );
 }
 
 
 void
 MediaQueue::setNextSource( const Phonon::MediaSource& source, const bool autoDelete )
 {
-    const_cast<Phonon::MediaSource&>(source).setAutoDelete( autoDelete );
-    // TODO
-    m_mediaObjects[m_currentMediaObject]->setCurrentSource( source );
+    // fade out running source
+    m_mediaOutputs[m_currentMediaObject]->fadeOut( CROSSFADING_TIME_IN_MS );
 
-    m_mediaFader[m_currentMediaObject]->setVolume( 1.0 );
-    m_mediaFader[m_currentMediaObject]->fadeOut( CROSSFADING_TIME_IN_MS );
+    m_currentMediaObject = getNextMediaIndex( m_currentMediaObject );
+
+    // load next source
+    const_cast<Phonon::MediaSource&>(source).setAutoDelete( autoDelete );
+    m_mediaOutputs[m_currentMediaObject]->setCurrentSource( source );
+
+    // fade in next source
+//    m_mediaOutputs[m_currentMediaObject]->setVolume( 0.0 );
+    m_mediaOutputs[m_currentMediaObject]->fadeIn( CROSSFADING_TIME_IN_MS );
+
+    // start next source
+    play();
+}
+
+
+const int
+MediaQueue::getNextMediaIndex(const int lastMediaQueue) const
+{
+    int nextMediaQueue = lastMediaQueue + 1;
+    nextMediaQueue %= MEDIA_OBJECT_COUNT;
+
+    return nextMediaQueue;
 }
 
 
 QString
 MediaQueue::errorString() const
 {
-    m_mediaObjects[m_currentMediaObject]->errorString();
+    m_mediaOutputs[m_currentMediaObject]->errorString();
 }
 
 
 Phonon::ErrorType
 MediaQueue::errorType() const
 {
-    m_mediaObjects[m_currentMediaObject]->errorType();
+    m_mediaOutputs[m_currentMediaObject]->errorType();
 }
 
 
 void
 MediaQueue::onAboutToFinish1()
 {
-    if ( m_currentMediaObject == 0 )
-        emit aboutToFinish();
+    emit aboutToFinish();
 }
 
 
 void
 MediaQueue::onStateChanged1( Phonon::State newState, Phonon::State oldState )
 {
-    if ( m_currentMediaObject == 0 )
-        emit stateChanged( newState, oldState );
+    emit stateChanged( newState, oldState );
 }
 
 
 void
 MediaQueue::timerTriggered1( qint64 time )
 {
-    if ( m_currentMediaObject == 0 )
-        emit tick( time );
+    emit tick( time );
+}
+
+void
+MediaQueue::onPrefinishMarkReached1( qint32 msecToEnd )
+{
+    emit needNextSource();
+}
+
+
+qreal
+MediaQueue::volume()
+{
+    return m_mediaOutputs[m_currentMediaObject]->volume();
+}
+
+
+void
+MediaQueue::setVolume( qreal newVolume )
+{
+    for (int i=0; i<MEDIA_OBJECT_COUNT; i++)
+        m_mediaOutputs[i]->setVolume( newVolume );
+}
+
+
+void
+MediaQueue::onVolumeChanged( qreal volume )
+{
+    emit volumeChanged( volume );
 }
