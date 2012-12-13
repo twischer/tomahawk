@@ -27,7 +27,7 @@ public:
     void stop();
     void seek( qint64 time );
 
-    void setNextSource( const Phonon::MediaSource& source, const bool autoDelete );
+    void setNextSource( const Phonon::MediaSource& source, const bool autoDelete, const bool doCrossfading );
 
     QString	errorString() const;
     Phonon::ErrorType errorType() const;

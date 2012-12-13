@@ -202,7 +202,7 @@ AudioEngine::next()
     tDebug( LOGEXTRA ) << Q_FUNC_INFO;
 
     if ( canGoNext() )
-        loadNextTrack();
+        loadNextTrack( false );
 }
 
 
@@ -413,7 +413,7 @@ AudioEngine::onNowPlayingInfoReady( const Tomahawk::InfoSystem::InfoType type )
 
 
 bool
-AudioEngine::loadTrack( const Tomahawk::result_ptr& result )
+AudioEngine::loadTrack( const Tomahawk::result_ptr& result, const bool doCrossfading )
 {
     bool err = false;
     {
@@ -445,9 +445,9 @@ AudioEngine::loadTrack( const Tomahawk::result_ptr& result )
             if ( !isHttpResult( m_currentTrack->url() ) && !isLocalResult( m_currentTrack->url() ) )
             {
                 if ( QNetworkReply* qnr_io = qobject_cast< QNetworkReply* >( io.data() ) )
-                    m_mediaQueue->setNextSource( new QNR_IODeviceStream( qnr_io, this ), false );
+                    m_mediaQueue->setNextSource( new QNR_IODeviceStream( qnr_io, this ), false, doCrossfading );
                 else
-                    m_mediaQueue->setNextSource( io.data(), false );
+                    m_mediaQueue->setNextSource( io.data(), false, doCrossfading );
             }
             else
             {
@@ -459,7 +459,7 @@ AudioEngine::loadTrack( const Tomahawk::result_ptr& result )
                         furl = QUrl( m_currentTrack->url().left( m_currentTrack->url().indexOf( '?' ) ) );
                         furl.setEncodedQuery( QString( m_currentTrack->url().mid( m_currentTrack->url().indexOf( '?' ) + 1 ) ).toLocal8Bit() );
                     }
-                    m_mediaQueue->setNextSource( furl, true );
+                    m_mediaQueue->setNextSource( furl, true, doCrossfading );
                 }
                 else
                 {
@@ -469,7 +469,7 @@ AudioEngine::loadTrack( const Tomahawk::result_ptr& result )
                         furl = furl.right( furl.length() - 7 );
 #endif
                     tLog( LOGVERBOSE ) << "Passing to Phonon:" << furl << furl.toLatin1();
-                    m_mediaQueue->setNextSource( furl, true );
+                    m_mediaQueue->setNextSource( furl, true, doCrossfading );
                 }
             }
 
@@ -516,14 +516,14 @@ AudioEngine::loadPreviousTrack()
 
     Tomahawk::result_ptr result = m_playlist.data()->previousItem();
     if ( !result.isNull() )
-        loadTrack( result );
+        loadTrack( result, false );
     else
         stop();
 }
 
 
 void
-AudioEngine::loadNextTrack()
+AudioEngine::loadNextTrack( const bool doCrossfading )
 {
     tDebug( LOGEXTRA ) << Q_FUNC_INFO;
 
@@ -554,7 +554,7 @@ AudioEngine::loadNextTrack()
     if ( !result.isNull() )
     {
         tDebug( LOGVERBOSE ) << Q_FUNC_INFO << "Got next item, loading track";
-        loadTrack( result );
+        loadTrack( result, doCrossfading );
     }
     else
     {
@@ -583,7 +583,7 @@ AudioEngine::playItem( Tomahawk::playlistinterface_ptr playlist, const Tomahawk:
 
     if ( !result.isNull() )
     {
-        loadTrack( result );
+        loadTrack( result, false );
     }
     else if ( !m_playlist.isNull() && m_playlist.data()->retryMode() == PlaylistModes::Retry )
     {
@@ -682,7 +682,7 @@ AudioEngine::onPlaylistNextTrackReady()
     if ( m_playlist && m_playlist->latchMode() == PlaylistModes::RealTime && ( m_waitingOnNewTrack || m_currentTrack.isNull() || m_currentTrack->id() == 0 || ( currentTrackTotalTime() - currentTime() > 6000 ) ) )
     {
         m_waitingOnNewTrack = false;
-        loadNextTrack();
+        loadNextTrack( false );
         return;
     }
 
@@ -690,7 +690,7 @@ AudioEngine::onPlaylistNextTrackReady()
         return;
 
     m_waitingOnNewTrack = false;
-    loadNextTrack();
+    loadNextTrack( false );
 }
 
 
@@ -755,7 +755,7 @@ AudioEngine::onStateChanged( Phonon::State newState, Phonon::State oldState )
             m_expectStop = false;
             tDebug( LOGVERBOSE ) << "Finding next track.";
             if ( canGoNext() )
-                loadNextTrack();
+                loadNextTrack( false );
             else
             {
                 if ( !m_playlist.isNull() && m_playlist.data()->retryMode() == Tomahawk::PlaylistModes::Retry )
@@ -780,7 +780,7 @@ AudioEngine::onStateChanged( Phonon::State newState, Phonon::State oldState )
 void
 AudioEngine::onNeedNextSource()
 {
-    loadNextTrack();
+    loadNextTrack( true );
 }
 
 void

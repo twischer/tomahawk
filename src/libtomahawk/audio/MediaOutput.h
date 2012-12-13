@@ -19,6 +19,8 @@ public:
 
     bool isFadingAvailable();
 
+    void blockSignals( bool block );
+
     void setVolume( qreal newVolume );
     qreal volume();
 
@@ -38,8 +40,6 @@ private:
     bool fadingAvailable;
     Phonon::AudioOutput m_audioOutput;
     Phonon::VolumeFaderEffect m_mediaFader;
-
-    void blockSignals( bool block );
 };
 
 #endif // MEDIAOUTPUT_H

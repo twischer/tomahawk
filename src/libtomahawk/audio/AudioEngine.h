@@ -122,9 +122,9 @@ signals:
     void error( AudioEngine::AudioErrorCode errorCode );
 
 private slots:
-    bool loadTrack( const Tomahawk::result_ptr& result );
+    bool loadTrack( const Tomahawk::result_ptr& result, const bool doCrossfading );
     void loadPreviousTrack();
-    void loadNextTrack();
+    void loadNextTrack( const bool doCrossfading);
 
     void onAboutToFinish();
     void onStateChanged( Phonon::State newState, Phonon::State oldState );

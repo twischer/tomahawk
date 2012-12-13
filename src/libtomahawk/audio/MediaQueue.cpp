@@ -73,20 +73,32 @@ MediaQueue::seek( qint64 time )
 
 
 void
-MediaQueue::setNextSource( const Phonon::MediaSource& source, const bool autoDelete )
+MediaQueue::setNextSource( const Phonon::MediaSource& source, const bool autoDelete, const bool doCrossfading )
 {
-    // fade out running source
-    m_mediaOutputs[m_currentMediaObject]->fadeOut( CROSSFADING_TIME_IN_MS );
+    // TODO lautstärke muss wird auf 100% gesetzt werden wenn doCrassfading == false
+    if (doCrossfading)
+        // fade out running source
+        m_mediaOutputs[m_currentMediaObject]->fadeOut( CROSSFADING_TIME_IN_MS );
+    else
+        stop();
+
+    m_mediaOutputs[m_currentMediaObject]->blockSignals( true );
 
     m_currentMediaObject = getNextMediaIndex( m_currentMediaObject );
+
+    m_mediaOutputs[m_currentMediaObject]->blockSignals( false );
+
+    // TODO nach 3. lied keine wiedergabe mehr
 
     // load next source
     const_cast<Phonon::MediaSource&>(source).setAutoDelete( autoDelete );
     m_mediaOutputs[m_currentMediaObject]->setCurrentSource( source );
 
-    // fade in next source
-//    m_mediaOutputs[m_currentMediaObject]->setVolume( 0.0 );
-    m_mediaOutputs[m_currentMediaObject]->fadeIn( CROSSFADING_TIME_IN_MS );
+    if (doCrossfading)
+    {
+        // fade in next source
+        m_mediaOutputs[m_currentMediaObject]->fadeIn( CROSSFADING_TIME_IN_MS );
+    }
 
     // start next source
     play();

@@ -26,8 +26,6 @@ MediaOutput::isFadingAvailable()
 void
 MediaOutput::fadeIn( int fadeTime )
 {
-    blockSignals( false );
-
     m_mediaFader.setVolume( 0.0 );
     m_mediaFader.fadeIn( fadeTime );
 }
@@ -37,8 +35,6 @@ void
 MediaOutput::fadeOut( int fadeTime )
 {
     m_mediaFader.fadeOut( fadeTime );
-
-    blockSignals( true );
 }
 
 
