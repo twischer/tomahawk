@@ -27,8 +27,7 @@
 
 #include "DllMacro.h"
 
-#include <phonon/MediaObject>
-#include <phonon/AudioOutput>
+#include "MediaQueue.h"
 #include <phonon/BackendCapabilities>
 
 #include <QtCore/QObject>
@@ -50,7 +49,7 @@ public:
     ~AudioEngine();
 
     QStringList supportedMimeTypes() const;
-    unsigned int volume() const { return m_audioOutput->volume() * 100.0; } // in percent
+    unsigned int volume() const { return m_mediaQueue->volume() * 100.0; } // in percent
 
     AudioState state() const { return m_state; }
     bool isPlaying() const { return m_state == Playing; }
@@ -67,8 +66,8 @@ public:
 
     Tomahawk::query_ptr stopAfterTrack() const  { return m_stopAfterTrack; }
 
-    qint64 currentTime() const { return m_mediaObject->currentTime(); }
-    qint64 currentTrackTotalTime() const { return m_mediaObject->totalTime(); }
+    qint64 currentTime() const { return m_mediaQueue->currentTime(); }
+    qint64 currentTrackTotalTime() const { return m_mediaQueue->totalTime(); }
 
 public slots:
     void playPause();
@@ -123,12 +122,13 @@ signals:
     void error( AudioEngine::AudioErrorCode errorCode );
 
 private slots:
-    bool loadTrack( const Tomahawk::result_ptr& result );
+    bool loadTrack( const Tomahawk::result_ptr& result, const bool doCrossfading );
     void loadPreviousTrack();
-    void loadNextTrack();
+    void loadNextTrack( const bool doCrossfading);
 
     void onAboutToFinish();
     void onStateChanged( Phonon::State newState, Phonon::State oldState );
+    void onNeedNextSource();
     void onVolumeChanged( qreal volume ) { emit volumeChanged( volume * 100 ); }
     void timerTriggered( qint64 time );
 
@@ -158,8 +158,7 @@ private:
     Tomahawk::playlistinterface_ptr m_currentTrackPlaylist;
     Tomahawk::playlistinterface_ptr m_queue;
 
-    Phonon::MediaObject* m_mediaObject;
-    Phonon::AudioOutput* m_audioOutput;
+    MediaQueue* m_mediaQueue;
 
     unsigned int m_timeElapsed;
     bool m_expectStop;
