@@ -395,7 +395,7 @@ AudioEngine::onNowPlayingInfoReady( const Tomahawk::InfoSystem::InfoType type )
     }
     else
         tDebug() << Q_FUNC_INFO << "Cover from query is null!";
-#endif
+#endif<
 
     Tomahawk::InfoSystem::InfoStringHash trackInfo;
     trackInfo["title"] = m_currentTrack->track();
@@ -442,12 +442,14 @@ AudioEngine::loadTrack( const Tomahawk::result_ptr& result, const bool doCrossfa
             tLog() << "Starting new song:" << m_currentTrack->url();
             emit loading( m_currentTrack );
 
+            qint64 totalTime = m_currentTrack->duration() * 1000;
+
             if ( !isHttpResult( m_currentTrack->url() ) && !isLocalResult( m_currentTrack->url() ) )
             {
                 if ( QNetworkReply* qnr_io = qobject_cast< QNetworkReply* >( io.data() ) )
-                    m_mediaQueue->setNextSource( new QNR_IODeviceStream( qnr_io, this ), false, doCrossfading );
+                    m_mediaQueue->setNextSource( new QNR_IODeviceStream( qnr_io, this ), false, doCrossfading, totalTime );
                 else
-                    m_mediaQueue->setNextSource( io.data(), false, doCrossfading );
+                    m_mediaQueue->setNextSource( io.data(), false, doCrossfading, totalTime );
             }
             else
             {
@@ -459,7 +461,7 @@ AudioEngine::loadTrack( const Tomahawk::result_ptr& result, const bool doCrossfa
                         furl = QUrl( m_currentTrack->url().left( m_currentTrack->url().indexOf( '?' ) ) );
                         furl.setEncodedQuery( QString( m_currentTrack->url().mid( m_currentTrack->url().indexOf( '?' ) + 1 ) ).toLocal8Bit() );
                     }
-                    m_mediaQueue->setNextSource( furl, true, doCrossfading );
+                    m_mediaQueue->setNextSource( furl, true, doCrossfading, totalTime );
                 }
                 else
                 {
@@ -469,7 +471,7 @@ AudioEngine::loadTrack( const Tomahawk::result_ptr& result, const bool doCrossfa
                         furl = furl.right( furl.length() - 7 );
 #endif
                     tLog( LOGVERBOSE ) << "Passing to Phonon:" << furl << furl.toLatin1();
-                    m_mediaQueue->setNextSource( furl, true, doCrossfading );
+                    m_mediaQueue->setNextSource( furl, true, doCrossfading, totalTime );
                 }
             }
 
@@ -731,7 +733,13 @@ AudioEngine::onStateChanged( Phonon::State newState, Phonon::State oldState )
                 if ( m_mediaQueue && m_currentTrack )
                 {
                     qint64 duration = m_mediaQueue->totalTime() > 0 ? m_mediaQueue->totalTime() : m_currentTrack->duration() * 1000;
-                    stopped = ( duration - 1000 < m_mediaQueue->currentTime() );
+                    qint64 currentTime = m_mediaQueue->currentTime();
+                    stopped = ( duration - 1000 < currentTime );
+
+                    // gstreamer backend returns 0 if the track reachs its end
+                    // so mark it as stopped anyway
+                    if (!stopped && currentTime <= 0)
+                        stopped = true;
                 }
                 else
                     stopped = true;

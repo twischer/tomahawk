@@ -9,7 +9,7 @@
 
 
 #define MEDIA_OBJECT_COUNT  2
-#define CROSSFADING_TIME_IN_MS  4000
+#define CROSSFADING_TIME_IN_MS  6000
 
 
 class DLLEXPORT MediaQueue : public QObject
@@ -27,7 +27,7 @@ public:
     void stop();
     void seek( qint64 time );
 
-    void setNextSource( const Phonon::MediaSource& source, const bool autoDelete, const bool doCrossfading );
+    void setNextSource( const Phonon::MediaSource& source, const bool autoDelete, const bool doCrossfading, const qint64 totalTime );
 
     QString	errorString() const;
     Phonon::ErrorType errorType() const;
@@ -45,10 +45,10 @@ signals:
 
 
 private slots:
-    void onAboutToFinish1();
-    void onStateChanged1( Phonon::State newState, Phonon::State oldState );
-    void timerTriggered1( qint64 time );
-    void onPrefinishMarkReached1( qint32 msecToEnd );
+    void onAboutToFinish();
+    void onStateChanged( Phonon::State newState, Phonon::State oldState );
+    void timerTriggered( qint64 time );
+    void onPrefinishMarkReached( qint32 msecToEnd );
     void onVolumeChanged( qreal volume );
 
 

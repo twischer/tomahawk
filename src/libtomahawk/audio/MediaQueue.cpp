@@ -12,9 +12,9 @@ MediaQueue::MediaQueue()
 
         mediaOutput->setTickInterval( 150 );
 
-        connect( mediaOutput, SIGNAL( stateChanged( Phonon::State, Phonon::State ) ), SLOT( onStateChanged1( Phonon::State, Phonon::State ) ) );
-        connect( mediaOutput, SIGNAL( tick( qint64 ) ), SLOT( timerTriggered1( qint64 ) ) );
-        connect( mediaOutput, SIGNAL( aboutToFinish() ), SLOT( onAboutToFinish1() ) );
+        connect( mediaOutput, SIGNAL( stateChanged( Phonon::State, Phonon::State ) ), SLOT( onStateChanged( Phonon::State, Phonon::State ) ) );
+        connect( mediaOutput, SIGNAL( tick( qint64 ) ), SLOT( timerTriggered( qint64 ) ) );
+        connect( mediaOutput, SIGNAL( aboutToFinish() ), SLOT( onAboutToFinish() ) );
         connect( mediaOutput, SIGNAL( volumeChanged( qreal ) ), SLOT( onVolumeChanged( qreal ) ) );
 
         // only need next source earlier if the fading is available and so a crossfading is possible
@@ -22,7 +22,7 @@ MediaQueue::MediaQueue()
         if ( mediaOutput->isFadingAvailable() )
         {
             mediaOutput->setPrefinishMark( CROSSFADING_TIME_IN_MS );
-            connect( mediaOutput, SIGNAL( prefinishMarkReached( qint32 ) ), SLOT( onPrefinishMarkReached1( qint32 ) ) );
+            connect( mediaOutput, SIGNAL( prefinishMarkReached( qint32 ) ), SLOT( onPrefinishMarkReached( qint32 ) ) );
         }
 
         m_mediaOutputs[i] = mediaOutput;
@@ -73,31 +73,32 @@ MediaQueue::seek( qint64 time )
 
 
 void
-MediaQueue::setNextSource( const Phonon::MediaSource& source, const bool autoDelete, const bool doCrossfading )
+MediaQueue::setNextSource( const Phonon::MediaSource& source, const bool autoDelete, const bool doCrossfading, const qint64 totalTime )
 {
-    // TODO lautstärke muss wird auf 100% gesetzt werden wenn doCrassfading == false
     if (doCrossfading)
         // fade out running source
         m_mediaOutputs[m_currentMediaObject]->fadeOut( CROSSFADING_TIME_IN_MS );
     else
         stop();
-
     m_mediaOutputs[m_currentMediaObject]->blockSignals( true );
-
     m_currentMediaObject = getNextMediaIndex( m_currentMediaObject );
 
     m_mediaOutputs[m_currentMediaObject]->blockSignals( false );
 
-    // TODO nach 3. lied keine wiedergabe mehr
-
     // load next source
     const_cast<Phonon::MediaSource&>(source).setAutoDelete( autoDelete );
     m_mediaOutputs[m_currentMediaObject]->setCurrentSource( source );
+    m_mediaOutputs[m_currentMediaObject]->setTotalTime(totalTime);
 
     if (doCrossfading)
     {
         // fade in next source
         m_mediaOutputs[m_currentMediaObject]->fadeIn( CROSSFADING_TIME_IN_MS );
+    }
+    else
+    {
+        // the volume has to be set to max always, otherwise the track will be played silent
+        m_mediaOutputs[m_currentMediaObject]->fadeIn( 0 );
     }
 
     // start next source
@@ -130,27 +131,27 @@ MediaQueue::errorType() const
 
 
 void
-MediaQueue::onAboutToFinish1()
+MediaQueue::onAboutToFinish()
 {
     emit aboutToFinish();
 }
 
 
 void
-MediaQueue::onStateChanged1( Phonon::State newState, Phonon::State oldState )
+MediaQueue::onStateChanged( Phonon::State newState, Phonon::State oldState )
 {
     emit stateChanged( newState, oldState );
 }
 
 
 void
-MediaQueue::timerTriggered1( qint64 time )
+MediaQueue::timerTriggered( qint64 time )
 {
     emit tick( time );
 }
 
 void
-MediaQueue::onPrefinishMarkReached1( qint32 msecToEnd )
+MediaQueue::onPrefinishMarkReached( qint32 msecToEnd )
 {
     emit needNextSource();
 }
