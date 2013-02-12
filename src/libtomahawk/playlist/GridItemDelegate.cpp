@@ -42,6 +42,7 @@
 #include "utils/AnimatedSpinner.h"
 #include "widgets/ImageButton.h"
 #include "utils/Logger.h"
+#include "TomahawkSettings.h"
 
 namespace {
     static const int FADE_DURATION = 200;
@@ -319,20 +320,25 @@ GridItemDelegate::editorEvent( QEvent* event, QAbstractItemModel* model, const Q
                 button->deleteLater();
             m_playButton.clear();
 
-            ImageButton* button = new ImageButton( m_view );
-            button->setPixmap( RESPATH "images/play-rest.png" );
-            button->setPixmap( RESPATH "images/play-pressed.png", QIcon::Off, QIcon::Active );
-            button->setFixedSize( 48, 48 );
-            button->move( option.rect.center() - QPoint( 23, 23 ) );
-            button->setContentsMargins( 0, 0, 0, 0 );
-            button->setFocusPolicy( Qt::NoFocus );
-            button->installEventFilter( this );
-            button->show();
+            // only add the play button to a album picture if the party mode is not active
+            const bool isPartyMode = TomahawkSettings::instance()->partyModeEnabled();
+            if ( !isPartyMode )
+                {
+                ImageButton* button = new ImageButton( m_view );
+                button->setPixmap( RESPATH "images/play-rest.png" );
+                button->setPixmap( RESPATH "images/play-pressed.png", QIcon::Off, QIcon::Active );
+                button->setFixedSize( 48, 48 );
+                button->move( option.rect.center() - QPoint( 23, 23 ) );
+                button->setContentsMargins( 0, 0, 0, 0 );
+                button->setFocusPolicy( Qt::NoFocus );
+                button->installEventFilter( this );
+                button->show();
 
-            NewClosure( button, SIGNAL( clicked( bool ) ),
-                        const_cast<GridItemDelegate*>(this), SLOT( onPlayClicked( QPersistentModelIndex ) ), QPersistentModelIndex( index ) );
+                NewClosure( button, SIGNAL( clicked( bool ) ),
+                            const_cast<GridItemDelegate*>(this), SLOT( onPlayClicked( QPersistentModelIndex ) ), QPersistentModelIndex( index ) );
 
-            m_playButton[ index ] = button;
+                m_playButton[ index ] = button;
+            }
         }
 
         if ( m_hoveringOver != index || ( !hoveringArtist && m_hoveringOver.isValid() ) )
