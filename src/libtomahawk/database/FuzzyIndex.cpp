@@ -163,7 +163,7 @@ FuzzyIndex::appendFields( const QMap< unsigned int, QMap< QString, QString > >& 
             if ( values.contains( "track" ) )
             {
                 doc.add( *( _CLNEW Field( _T( "fulltext" ), DatabaseImpl::sortname( QString( "%1 %2" ).arg( values.value( "artist" ) ).arg( values.value( "track" ) ) ).toStdWString().c_str(),
-                                          Field::STORE_NO | Field::INDEX_UNTOKENIZED ) ) );
+                                          Field::STORE_NO | Field::INDEX_TOKENIZED ) ) );
 
                 doc.add( *( _CLNEW Field( _T( "track" ), DatabaseImpl::sortname( values.value( "track" ) ).toStdWString().c_str(),
                                           Field::STORE_NO | Field::INDEX_UNTOKENIZED ) ) );
