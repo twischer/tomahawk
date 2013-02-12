@@ -219,8 +219,11 @@ AudioControls::onControlStateChanged()
         QMetaObject::invokeMethod( this, "onControlStateChanged", Qt::QueuedConnection );
     }
 
-    ui->prevButton->setEnabled( AudioEngine::instance()->canGoPrevious() );
-    ui->nextButton->setEnabled( AudioEngine::instance()->canGoNext() );
+    if ( !TomahawkSettings::instance()->partyModeEnabled() )
+    {
+        ui->prevButton->setEnabled( AudioEngine::instance()->canGoPrevious() );
+        ui->nextButton->setEnabled( AudioEngine::instance()->canGoNext() );
+    }
 }
 
 
