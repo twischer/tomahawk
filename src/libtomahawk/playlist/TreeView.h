@@ -109,6 +109,7 @@ private slots:
 
 private:
     void updateHoverIndex( const QPoint& pos );
+    void setCustomContextMenuQueries( const QModelIndex& idx );
 
     ViewHeader* m_header;
     OverlayWidget* m_overlay;
