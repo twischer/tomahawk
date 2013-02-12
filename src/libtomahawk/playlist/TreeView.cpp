@@ -232,10 +232,14 @@ TreeView::onItemActivated( const QModelIndex& index )
     if ( item )
     {
         if ( !item->artist().isNull() )
+        {
             ViewManager::instance()->show( item->artist() );
+        }
         else if ( !item->album().isNull() )
+        {
             ViewManager::instance()->show( item->album() );
-        else if ( !item->result().isNull() && item->result()->isOnline() )
+        }
+        else
         {
             // if party mode is activated add the track to the queue and not play it now
             const bool isPartyMode = TomahawkSettings::instance()->partyModeEnabled();
@@ -244,10 +248,13 @@ TreeView::onItemActivated( const QModelIndex& index )
                 setCustomContextMenuQueries( index );
                 m_contextMenu->addToQueue();
             }
-            else
+            else if ( !item->result().isNull() && item->result()->isOnline() )
             {
-                m_model->setCurrentItem( item->index );
                 AudioEngine::instance()->playItem( m_proxyModel->playlistInterface(), item->result() );
+            }
+            else if ( !item->query().isNull() )
+            {
+                AudioEngine::instance()->playItem( m_proxyModel->playlistInterface(), item->query() );
             }
         }
     }
@@ -368,6 +375,8 @@ TreeView::onCustomContextMenu( const QPoint& pos )
     idx = idx.sibling( idx.row(), 0 );
 
     setCustomContextMenuQueries( idx );
+
+    m_contextMenu->setPlaylistInterface( playlistInterface() );
 
     m_contextMenu->exec( viewport()->mapToGlobal( pos ) );
 }

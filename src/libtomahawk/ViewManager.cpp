@@ -121,7 +121,6 @@ ViewManager::ViewManager( QObject* parent )
 
 ViewManager::~ViewManager()
 {
-    saveCurrentPlaylistSettings();
     delete m_whatsHotWidget;
     delete m_newReleasesWidget;
     delete m_welcomeWidget;
@@ -140,6 +139,7 @@ ViewManager::createPageForPlaylist( const playlist_ptr& playlist )
     PlaylistView* pv = new PlaylistView();
     view->setDetailedView( pv );
     view->setPixmap( pv->pixmap() );
+    view->setEmptyTip( tr( "This playlist is empty!" ) );
 
     // We need to set the model on the view before loading the playlist, so spinners & co are connected
     view->setPlaylistModel( model );
@@ -393,7 +393,7 @@ ViewManager::showRecentPlaysPage()
     if ( !m_recentPlaysWidget )
     {
         FlexibleView* pv = new FlexibleView( m_widget );
-        pv->setPixmap( QPixmap( RESPATH "images/recently-played.png" ) );
+        pv->setPixmap( TomahawkUtils::defaultPixmap( TomahawkUtils::RecentlyPlayed ) );
 
         RecentlyPlayedModel* raModel = new RecentlyPlayedModel( pv );
         raModel->setTitle( tr( "Recently Played Tracks" ) );
@@ -524,10 +524,6 @@ ViewManager::setPage( ViewPage* page, bool trackHistory )
     if ( page == m_currentPage )
         return;
 
-    // save the old playlist shuffle state in config before we change playlists
-    saveCurrentPlaylistSettings();
-    unlinkPlaylist();
-
     if ( m_stack->indexOf( page->widget() ) < 0 )
     {
         m_stack->addWidget( page->widget() );
@@ -592,57 +588,11 @@ ViewManager::isNewPlaylistPageVisible() const
 
 
 void
-ViewManager::unlinkPlaylist()
-{
-    if ( currentPlaylistInterface() )
-    {
-        disconnect( currentPlaylistInterface().data(), SIGNAL( repeatModeChanged( Tomahawk::PlaylistModes::RepeatMode ) ),
-                    this,                              SIGNAL( repeatModeChanged( Tomahawk::PlaylistModes::RepeatMode ) ) );
-
-        disconnect( currentPlaylistInterface().data(), SIGNAL( shuffleModeChanged( bool ) ),
-                    this,                              SIGNAL( shuffleModeChanged( bool ) ) );
-    }
-}
-
-
-void
-ViewManager::saveCurrentPlaylistSettings()
-{
-    TomahawkSettings* s = TomahawkSettings::instance();
-    Tomahawk::playlist_ptr pl = playlistForInterface( currentPlaylistInterface() );
-
-    if ( !pl.isNull() )
-    {
-        s->setShuffleState( pl->guid(), currentPlaylistInterface()->shuffled() );
-        s->setRepeatMode( pl->guid(), currentPlaylistInterface()->repeatMode() );
-    }
-    else
-    {
-        Tomahawk::dynplaylist_ptr dynPl = dynamicPlaylistForInterface( currentPlaylistInterface() );
-        if ( !dynPl.isNull() )
-        {
-            s->setShuffleState( dynPl->guid(), currentPlaylistInterface()->shuffled() );
-            s->setRepeatMode( dynPl->guid(), currentPlaylistInterface()->repeatMode() );
-        }
-    }
-}
-
-
-void
 ViewManager::updateView()
 {
     if ( currentPlaylistInterface() )
     {
-        connect( currentPlaylistInterface().data(), SIGNAL( repeatModeChanged( Tomahawk::PlaylistModes::RepeatMode ) ),
-                                                    SIGNAL( repeatModeChanged( Tomahawk::PlaylistModes::RepeatMode ) ) );
-
-        connect( currentPlaylistInterface().data(), SIGNAL( shuffleModeChanged( bool ) ),
-                                                    SIGNAL( shuffleModeChanged( bool ) ) );
-
         m_infobar->setFilter( currentPage()->filter() );
-
-        emit repeatModeChanged( currentPlaylistInterface()->repeatMode() );
-        emit shuffleModeChanged( currentPlaylistInterface()->shuffled() );
     }
 
 /*    if ( currentPage()->queueVisible() )
@@ -671,31 +621,6 @@ ViewManager::updateView()
     }
     m_infobar->setLongDescription( currentPage()->longDescription() );
     m_infobar->setPixmap( currentPage()->pixmap() );
-
-    // turn on shuffle/repeat mode for the new playlist view if specified in config
-    loadCurrentPlaylistSettings();
-}
-
-
-void
-ViewManager::loadCurrentPlaylistSettings()
-{
-    TomahawkSettings* s = TomahawkSettings::instance();
-    Tomahawk::playlist_ptr pl = playlistForInterface( currentPlaylistInterface() );
-
-    if ( !pl.isNull() )
-    {
-        currentPlaylistInterface()->setShuffled( s->shuffleState( pl->guid() ));
-        currentPlaylistInterface()->setRepeatMode( s->repeatMode( pl->guid() ));
-    }
-    else
-    {
-        Tomahawk::dynplaylist_ptr dynPl = dynamicPlaylistForInterface( currentPlaylistInterface() );
-        if ( !dynPl.isNull() )
-        {
-            currentPlaylistInterface()->setShuffled( s->shuffleState( dynPl->guid() ));
-        }
-    }
 }
 
 
@@ -732,24 +657,6 @@ ViewManager::onWidgetDestroyed( QWidget* widget )
     {
         m_currentPage = 0;
         historyBack();
-    }
-}
-
-
-void
-ViewManager::setRepeatMode( Tomahawk::PlaylistModes::RepeatMode mode )
-{
-    if ( currentPlaylistInterface() )
-        currentPlaylistInterface()->setRepeatMode( mode );
-}
-
-
-void
-ViewManager::setShuffled( bool enabled )
-{
-    if ( currentPlaylistInterface() )
-    {
-        currentPlaylistInterface()->setShuffled( enabled );
     }
 }
 

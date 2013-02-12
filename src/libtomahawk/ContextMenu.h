@@ -43,6 +43,9 @@ public:
        ActionLove =         16,
        ActionStopAfter =    32,
        ActionPage =         64,
+       ActionTrackPage =    65,
+       ActionArtistPage =   66,
+       ActionAlbumPage =    67,
        ActionEditMetadata = 128
     };
 
@@ -75,7 +78,7 @@ signals:
 private slots:
     void onTriggered( int action );
     void copyLink();
-    void openPage();
+    void openPage( MenuActions action );
 
     void onSocialActionsLoaded();
 

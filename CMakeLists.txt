@@ -12,10 +12,11 @@ SET( TOMAHAWK_APPLICATION_NAME  "Tomahawk" )
 SET( TOMAHAWK_DESCRIPTION_SUMMARY "The social media player" )
 
 SET( TOMAHAWK_VERSION_MAJOR 0 )
-SET( TOMAHAWK_VERSION_MINOR 5 )
-SET( TOMAHAWK_VERSION_PATCH 99 )
-
+SET( TOMAHAWK_VERSION_MINOR 6 )
+SET( TOMAHAWK_VERSION_PATCH 0 )
 #SET( TOMAHAWK_VERSION_RC 0 )
+
+SET( TOMAHAWK_TRANSLATION_LANGUAGES ar bg bn_IN ca cs de en el es fi fr hi_IN hu gl it ja lt pl pt_BR ru sv tr zh_CN zh_TW )
 
 # enforce proper symbol exporting on all platforms
 add_definitions( "-fvisibility=hidden" )
@@ -121,20 +122,23 @@ macro_log_feature(TAGLIB_FOUND "TagLib" "Audio Meta-Data Library" "http://develo
 include( CheckTagLibFileName )
 check_taglib_filename( COMPLEX_TAGLIB_FILENAME )
 
-macro_optional_find_package( Boost )
+macro_optional_find_package(Boost)
 macro_log_feature(Boost_FOUND "Boost" "Provides free peer-reviewed portable C++ source libraries" "http://www.boost.org" TRUE "" "") #FIXME: give useful explaination
 
 macro_optional_find_package(QCA2)
 macro_log_feature(QCA2_FOUND "QCA2" "Provides encryption and signing functions required for Grooveshark resolver" "http://delta.affinix.com/qca/" TRUE "" "")
 
 macro_optional_find_package(LibAttica 0.4.0)
-macro_log_feature(LIBATTICA_FOUND "libattica" "Provides support for automatic fetching and managing of resolvers from the tomahawk website" "https://projects.kde.org/projects/kdesupport/attica" TRUE "" "")
+macro_log_feature(LIBATTICA_FOUND "libattica" "Provides support for installation of resolvers from the Tomahawk website" "https://projects.kde.org/projects/kdesupport/attica" TRUE "" "")
 
 macro_optional_find_package(QuaZip)
 macro_log_feature(QuaZip_FOUND "QuaZip" "Provides support for extracting downloaded resolvers automatically." "http://quazip.sourceforge.net/" TRUE "" "")
 
 macro_optional_find_package(Jreen 1.0.5)
 macro_log_feature(JREEN_FOUND "Jreen" "Qt XMPP Library" "http://qutim.org/jreen / https://github.com/euroelessar/jreen" FALSE "" "Jreen is needed for the Jabber SIP plugin.\n")
+if(PC_JREEN_VERSION STREQUAL "1.1.0")
+    message(FATAL_ERROR "Jreen 1.1.0 has a very annoying bug that breaks accepting auth requests in Tomahawk. Please upgrade to 1.1.1 or downgrade to 1.0.5.")
+endif()
 
 macro_optional_find_package(QTweetLib)
 macro_log_feature(QTWEETLIB_FOUND "QTweetLib" "Qt Twitter Library" "https://github.com/minimoog/QTweetLib" FALSE "" "QTweetLib is needed for the Twitter SIP plugin.\n")

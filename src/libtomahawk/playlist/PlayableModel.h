@@ -38,7 +38,8 @@ class DLLEXPORT PlayableModel : public QAbstractItemModel
 Q_OBJECT
 
 public:
-    enum Columns {
+    enum Columns
+    {
         Artist = 0,
         Track = 1,
         Composer = 2,
@@ -100,8 +101,9 @@ public:
 
     virtual void ensureResolved();
 
-    PlayableItem* itemFromIndex( const QModelIndex& index ) const;
-    PlayableItem* itemFromQuery( const Tomahawk::query_ptr& query ) const;
+    virtual PlayableItem* itemFromIndex( const QModelIndex& index ) const;
+    virtual PlayableItem* itemFromQuery( const Tomahawk::query_ptr& query ) const;
+    virtual PlayableItem* itemFromResult( const Tomahawk::result_ptr& result ) const;
 
     /// Returns a flat list of all tracks in this model
     QList< Tomahawk::query_ptr > queries() const;
@@ -113,16 +115,19 @@ signals:
     void repeatModeChanged( Tomahawk::PlaylistModes::RepeatMode mode );
     void shuffleModeChanged( bool enabled );
 
-    void trackCountChanged( unsigned int tracks );
     void itemCountChanged( unsigned int items );
 
     void loadingStarted();
     void loadingFinished();
 
+    void indexResolved( const QModelIndex& index );
+    void indexPlayable( const QModelIndex& index );
+
     void changed();
+    void currentIndexChanged();
 
 public slots:
-    virtual void setCurrentItem( const QModelIndex& index );
+    virtual void setCurrentIndex( const QModelIndex& index );
 
     virtual void clear();
 
@@ -150,10 +155,14 @@ public slots:
 
 protected:
     PlayableItem* rootItem() const { return m_rootItem; }
+    QModelIndex createIndex( int row, int column, PlayableItem* item = 0 ) const;
 
 private slots:
     void onDataChanged();
 
+    void onQueryBecamePlayable( bool playable );
+    void onQueryResolved( bool hasResults );
+    
     void onPlaybackStarted( const Tomahawk::result_ptr& result );
     void onPlaybackStopped();
 

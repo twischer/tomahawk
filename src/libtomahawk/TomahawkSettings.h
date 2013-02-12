@@ -79,6 +79,9 @@ public:
     bool menuBarVisible() const;
     void setMenuBarVisible( bool visible );
 
+    bool fullscreenEnabled() const;
+    void setFullscreenEnabled( bool fullscreen );
+
     // Collection Stuff
     bool showOfflineSources() const;
     void setShowOfflineSources( bool show );
@@ -138,6 +141,9 @@ public:
 
     bool crashReporterEnabled() const; /// true by default
     void setCrashReporterEnabled( bool enable );
+
+    bool songChangeNotificationEnabled() const; /// true by default
+    void setSongChangeNotificationEnabled( bool enable );
 
     QString externalHostname() const;
     void setExternalHostname( const QString& externalHostname );

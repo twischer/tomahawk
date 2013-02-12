@@ -76,6 +76,14 @@ namespace Tomahawk
         InfoSystemMode,
     };
 
+    enum ModelTypes
+    {
+        TypeArtist = 0,
+        TypeAlbum,
+        TypeQuery,
+        TypeResult
+    };
+
     class ExternalResolver;
     typedef boost::function<Tomahawk::ExternalResolver*(QString)> ResolverFactoryFunc;
 
@@ -198,6 +206,7 @@ namespace Tomahawk
 
         class InfoPlugin;
 
+        typedef QSet< InfoType > InfoTypeSet;
         typedef QMap< InfoType, QVariant > InfoTypeMap;
         typedef QMap< InfoType, uint > InfoTimeoutMap;
         typedef QHash< QString, QString > InfoStringHash;

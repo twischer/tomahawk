@@ -171,6 +171,12 @@ MediaQueue::setVolume( qreal newVolume )
         m_mediaOutputs[i]->setVolume( newVolume );
 }
 
+Phonon::State
+MediaQueue::state() const
+{
+    m_mediaOutputs[m_currentMediaObject]->state();
+}
+
 
 void
 MediaQueue::onVolumeChanged( qreal volume )

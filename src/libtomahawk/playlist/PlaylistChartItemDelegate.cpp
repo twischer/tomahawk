@@ -59,10 +59,11 @@ PlaylistChartItemDelegate::PlaylistChartItemDelegate( TrackView* parent, Playabl
     m_bottomOption = QTextOption( Qt::AlignBottom );
     m_bottomOption.setWrapMode( QTextOption::NoWrap );
 
+    connect( this, SIGNAL( updateIndex( QModelIndex ) ), parent, SLOT( update( QModelIndex ) ) );
+
     connect( m_model, SIGNAL( modelReset() ), this, SLOT( modelChanged() ) );
     if ( PlaylistView* plView = qobject_cast< PlaylistView* >( parent ) )
         connect( plView, SIGNAL( modelChanged() ), this, SLOT( modelChanged() ) );
-
 }
 
 
@@ -91,11 +92,8 @@ PlaylistChartItemDelegate::sizeHint( const QStyleOptionViewItem& option, const Q
                 stretch = 2;
     }
 
-    if ( index.isValid() )
-    {
-        int rowHeight = option.fontMetrics.height() + 8;
-        size.setHeight( rowHeight * stretch );
-    }
+    int rowHeight = option.fontMetrics.height() + 8;
+    size.setHeight( rowHeight * stretch );
 
     return size;
 }
@@ -144,16 +142,16 @@ PlaylistChartItemDelegate::paint( QPainter* painter, const QStyleOptionViewItem&
 
     painter->save();
     {
-        QRect r = opt.rect.adjusted( 3, 6, 0, -6 );
-
+        QRect r = opt.rect.adjusted( 4, 6, 0, -6 );
+        
         // Paint Now Playing Speaker Icon
         if ( item->isPlaying() )
         {
-            QPixmap nowPlayingIcon = TomahawkUtils::defaultPixmap( TomahawkUtils::NowPlayingSpeaker );
-            QRect npr = r.adjusted( 3, r.height() / 2 - nowPlayingIcon.height() / 2, 18 - r.width(), -r.height() / 2 + nowPlayingIcon.height() / 2 );
-            nowPlayingIcon = TomahawkUtils::defaultPixmap( TomahawkUtils::NowPlayingSpeaker, TomahawkUtils::Original, npr.size() );
-            painter->drawPixmap( npr, nowPlayingIcon );
-            r.adjust( 22, 0, 0, 0 );
+            const int pixMargin = 4;
+            const int pixHeight = r.height() - pixMargin * 2;
+            QRect npr = r.adjusted( pixMargin, pixMargin + 1, pixHeight - r.width() + pixMargin, -pixMargin + 1 );
+            painter->drawPixmap( npr, TomahawkUtils::defaultPixmap( TomahawkUtils::NowPlayingSpeaker, TomahawkUtils::Original, npr.size() ) );
+            r.adjust( pixHeight + 8, 0, 0, 0 );
         }
 
         QFont figureFont = opt.font;
@@ -207,7 +205,7 @@ PlaylistChartItemDelegate::paint( QPainter* painter, const QStyleOptionViewItem&
 
         if ( !m_pixmaps.contains( index ) )
         {
-            m_pixmaps.insert( index, QSharedPointer< Tomahawk::PixmapDelegateFader >( new Tomahawk::PixmapDelegateFader( item->query(), pixmapRect.size(), TomahawkUtils::ScaledCover, false ) ) );
+            m_pixmaps.insert( index, QSharedPointer< Tomahawk::PixmapDelegateFader >( new Tomahawk::PixmapDelegateFader( item->query(), pixmapRect.size(), TomahawkUtils::Original, false ) ) );
             _detail::Closure* closure = NewClosure( m_pixmaps[ index ], SIGNAL( repaintRequest() ), const_cast<PlaylistChartItemDelegate*>(this), SLOT( doUpdateIndex( const QPersistentModelIndex& ) ), QPersistentModelIndex( index ) );
             closure->setAutoDelete( false );
         }
@@ -241,7 +239,7 @@ PlaylistChartItemDelegate::paint( QPainter* painter, const QStyleOptionViewItem&
 void
 PlaylistChartItemDelegate::doUpdateIndex( const QPersistentModelIndex& idx )
 {
-    emit updateRequest( idx );
+    emit updateIndex( idx );
 }
 
 

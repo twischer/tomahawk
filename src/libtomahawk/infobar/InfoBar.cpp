@@ -83,7 +83,6 @@ InfoBar::InfoBar( QWidget* parent )
     m_queryLabel = new QueryLabel( this );
     m_queryLabel->setType( QueryLabel::Artist );
     m_queryLabel->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Preferred );
-    m_queryLabel->setTextPen( palette().brightText().color() );
     m_queryLabel->setFont( boldFont );
     m_queryLabel->hide();
     connect( m_queryLabel, SIGNAL( clickedArtist() ), this, SLOT( artistClicked() ) );
@@ -95,10 +94,10 @@ InfoBar::InfoBar( QWidget* parent )
 
     ui->horizontalLayout->addWidget( m_searchWidget );
 
-    setAutoFillBackground( true );
+    QPalette pal = palette();
 
+    setPalette( pal );
     setFixedHeight( 80 );
-    m_bgTile = TomahawkUtils::createTiledPixmap( 2000, height(), QImage( RESPATH "images/playlist-header-tiled.png" ) );
 
     connect( ViewManager::instance(), SIGNAL( filterAvailable( bool ) ), SLOT( setFilterAvailable( bool ) ) );
 }
@@ -282,29 +281,30 @@ InfoBar::onFilterEdited()
     emit filterTextChanged( m_searchWidget->text() );
 }
 
+
 void
-InfoBar::paintEvent( QPaintEvent* e )
+InfoBar::paintEvent( QPaintEvent* event )
 {
-    Q_UNUSED( e );
+    QWidget::paintEvent( event );
 
-    if ( m_bgTile.isNull() || width() > m_bgTile.width() )
-        m_bgTile = TomahawkUtils::createTiledPixmap( width(), height(), QImage( RESPATH "images/playlist-header-tiled.png" ) );
+    QPainter painter( this );
+    painter.setRenderHint( QPainter::Antialiasing );
 
-    if ( m_bgTile.isNull() )
-        return;
+    QLinearGradient gradient( QPoint( 0, 0 ), QPoint( 0, 1 ) );
+    gradient.setCoordinateMode( QGradient::ObjectBoundingMode );
+    gradient.setColorAt( 0.0, QColor( "#707070" ) );
+    gradient.setColorAt( 1.0, QColor( "#25292c" ) );
 
-    QPainter p( this );
-
-    // Truncate bg pixmap and paint into bg
-    p.drawPixmap( rect(), m_bgTile, rect() );
+    painter.setBrush( gradient );
+    painter.fillRect( rect(), gradient );
 }
 
 
 void
-InfoBar::changeEvent( QEvent* e )
+InfoBar::changeEvent( QEvent* event )
 {
-    QWidget::changeEvent( e );
-    switch ( e->type() )
+    QWidget::changeEvent( event );
+    switch ( event->type() )
     {
         case QEvent::LanguageChange:
 //            ui->retranslateUi( this );

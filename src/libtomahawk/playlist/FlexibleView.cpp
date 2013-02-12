@@ -35,38 +35,6 @@
 using namespace Tomahawk;
 
 
-class FlexibleViewInterface : public PlayableProxyModelPlaylistInterface
-{
-    Q_OBJECT
-public:
-    explicit FlexibleViewInterface( PlayableProxyModel* proxy, FlexibleView* view )
-        : PlayableProxyModelPlaylistInterface( proxy )
-        , m_view( view )
-    {
-    }
-
-    virtual bool hasChildInterface( playlistinterface_ptr playlistInterface )
-    {
-        if ( m_view.isNull() )
-            return false;
-
-        if ( m_view.data()->detailedView() && m_view.data()->detailedView()->proxyModel()->playlistInterface() == playlistInterface )
-            return true;
-
-        if ( m_view.data()->gridView() && m_view.data()->gridView()->playlistInterface()->hasChildInterface( playlistInterface ) )
-            return true;
-
-        if ( m_view.data()->trackView() && m_view.data()->trackView()->proxyModel()->playlistInterface() == playlistInterface )
-            return true;
-
-        return false;
-    }
-
-private:
-    QWeakPointer<FlexibleView> m_view;
-};
-
-
 FlexibleView::FlexibleView( QWidget* parent )
     : QWidget( parent )
     , m_header( new FlexibleHeader( this ) )
@@ -77,9 +45,9 @@ FlexibleView::FlexibleView( QWidget* parent )
 {
     qRegisterMetaType< FlexibleViewMode >( "FlexibleViewMode" );
 
-    m_playlistInterface = playlistinterface_ptr( new FlexibleViewInterface( m_trackView->proxyModel(), this ) );
-    m_trackView->setPlaylistInterface( m_playlistInterface );
-    m_detailedView->setPlaylistInterface( m_playlistInterface );
+//    m_trackView->setPlaylistInterface( m_playlistInterface );
+    m_detailedView->setPlaylistInterface( m_trackView->proxyModel()->playlistInterface() );
+    m_gridView->setPlaylistInterface( m_trackView->proxyModel()->playlistInterface() );
 
     m_detailedView->setColumnHidden( PlayableModel::Age, true ); // Hide age column per default
     m_detailedView->setColumnHidden( PlayableModel::Filesize, true ); // Hide filesize column per default
@@ -130,7 +98,7 @@ FlexibleView::setTrackView( TrackView* view )
         delete m_trackView;
     }
 
-    view->setPlaylistInterface( m_playlistInterface );
+//    view->setPlaylistInterface( m_playlistInterface );
 
     m_trackView = view;
     m_stack->addWidget( view );
@@ -148,7 +116,7 @@ FlexibleView::setDetailedView( TrackView* view )
 
     connect( view, SIGNAL( destroyed( QWidget* ) ), SLOT( onWidgetDestroyed( QWidget* ) ), Qt::UniqueConnection );
 
-    view->setPlaylistInterface( m_playlistInterface );
+    view->setPlaylistInterface( m_trackView->proxyModel()->playlistInterface() );
 
     m_detailedView = view;
     m_stack->addWidget( view );
@@ -163,6 +131,8 @@ FlexibleView::setGridView( GridView* view )
         m_stack->removeWidget( m_gridView );
         delete m_gridView;
     }
+
+    view->setPlaylistInterface( m_trackView->proxyModel()->playlistInterface() );
 
     m_gridView = view;
     m_stack->addWidget( view );
@@ -241,7 +211,7 @@ FlexibleView::setCurrentMode( FlexibleViewMode mode )
 Tomahawk::playlistinterface_ptr
 FlexibleView::playlistInterface() const
 {
-    return m_playlistInterface;
+    return m_trackView->proxyModel()->playlistInterface();
 }
 
 

@@ -41,7 +41,7 @@ Q_OBJECT
 
 public:
     enum AudioErrorCode { StreamReadError, AudioDeviceError, DecodeError, UnknownError, NoError };
-    enum AudioState { Stopped, Playing, Paused, Error };
+    enum AudioState { Stopped = 0, Playing = 1, Paused = 2, Error = 3, Loading = 4 };
 
     static AudioEngine* instance();
 
@@ -63,7 +63,6 @@ public:
     Tomahawk::playlistinterface_ptr playlist() const { return m_playlist; }
 
     Tomahawk::result_ptr currentTrack() const { return m_currentTrack; }
-
     Tomahawk::query_ptr stopAfterTrack() const  { return m_stopAfterTrack; }
 
     qint64 currentTime() const { return m_mediaQueue->currentTime(); }
@@ -94,9 +93,12 @@ public slots:
     void playItem( const Tomahawk::artist_ptr& artist );
     void playItem( const Tomahawk::album_ptr& album );
     void setPlaylist( Tomahawk::playlistinterface_ptr playlist );
-    void setQueue( Tomahawk::playlistinterface_ptr queue ) { m_queue = queue; }
+    void setQueue( const Tomahawk::playlistinterface_ptr& queue );
 
     void setStopAfterTrack( const Tomahawk::query_ptr& query );
+
+    void setRepeatMode( Tomahawk::PlaylistModes::RepeatMode mode );
+    void setShuffled( bool enabled );
 
 signals:
     void loading( const Tomahawk::result_ptr& track );
@@ -110,6 +112,9 @@ signals:
 
     void seeked( qint64 ms );
 
+    void shuffleModeChanged( bool enabled );
+    void repeatModeChanged( Tomahawk::PlaylistModes::RepeatMode mode );
+    void controlStateChanged();
     void stateChanged( AudioState newState, AudioState oldState );
     void volumeChanged( int volume /* in percent */ );
 
@@ -134,7 +139,7 @@ private slots:
 
     void setCurrentTrack( const Tomahawk::result_ptr& result );
     void onNowPlayingInfoReady( const Tomahawk::InfoSystem::InfoType type );
-    void onPlaylistNextTrackReady();
+    void onPlaylistNextTrackAvailable();
 
     void sendNowPlayingNotification( const Tomahawk::InfoSystem::InfoType type );
     void sendWaitingNotification() const;
@@ -165,7 +170,6 @@ private:
     bool m_waitingOnNewTrack;
 
     mutable QStringList m_supportedMimeTypes;
-    unsigned int m_volume;
 
     AudioState m_state;
     QQueue< AudioState > m_stateQueue;

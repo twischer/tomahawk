@@ -22,24 +22,26 @@
 #include <QKeyEvent>
 #include <QPainter>
 #include <QScrollBar>
+#include <QStyleOptionViewItem>
 
 #include "ViewHeader.h"
 #include "ViewManager.h"
 #include "PlayableModel.h"
 #include "PlayableProxyModel.h"
 #include "PlayableItem.h"
-#include "audio/AudioEngine.h"
-#include "context/ContextWidget.h"
-#include "widgets/OverlayWidget.h"
-#include "utils/TomahawkUtilsGui.h"
-#include "utils/Logger.h"
-#include "utils/Closure.h"
 #include "DropJob.h"
 #include "Artist.h"
 #include "Album.h"
 #include "Source.h"
+#include "TomahawkSettings.h"
+#include "audio/AudioEngine.h"
+#include "context/ContextWidget.h"
+#include "widgets/OverlayWidget.h"
+#include "utils/TomahawkUtilsGui.h"
+#include "utils/Closure.h"
 #include "utils/AnimatedSpinner.h"
 #include "TomahawkSettings.h"
+#include "utils/Logger.h"
 
 #define SCROLL_TIMEOUT 280
 
@@ -75,6 +77,7 @@ TrackView::TrackView( QWidget* parent )
     setVerticalScrollMode( QAbstractItemView::ScrollPerPixel );
     setRootIsDecorated( false );
     setUniformRowHeights( true );
+    setAutoResize( false );
 
     setHeader( m_header );
     setSortingEnabled( true );
@@ -96,19 +99,47 @@ TrackView::TrackView( QWidget* parent )
 
 TrackView::~TrackView()
 {
-    tDebug() << Q_FUNC_INFO;
+    tDebug() << Q_FUNC_INFO << ( m_guid.isEmpty() ? QString( "with empty guid" ) : QString( "with guid %1" ).arg( m_guid ) );
+
+    if ( !m_guid.isEmpty() && proxyModel()->playlistInterface() )
+    {
+        tDebug() << Q_FUNC_INFO << "Storing shuffle & random mode settings for guid" << m_guid;
+
+        TomahawkSettings* s = TomahawkSettings::instance();
+        s->setShuffleState( m_guid, proxyModel()->playlistInterface()->shuffled() );
+        s->setRepeatMode( m_guid, proxyModel()->playlistInterface()->repeatMode() );
+    }
+}
+
+
+QString
+TrackView::guid() const
+{
+    if ( m_guid.isEmpty() )
+        return QString();
+
+    return QString( "%1/%2" ).arg( m_guid ).arg( m_proxyModel->columnCount() );
 }
 
 
 void
-TrackView::setGuid( const QString& guid )
+TrackView::setGuid( const QString& newguid )
 {
-    if ( !guid.isEmpty() )
+    if ( !newguid.isEmpty() )
     {
-        tDebug() << Q_FUNC_INFO << "Setting guid on header" << guid << "for a view with" << m_proxyModel->columnCount() << "columns";
+        tDebug() << Q_FUNC_INFO << "Setting guid on header" << newguid << "for a view with" << m_proxyModel->columnCount() << "columns";
 
-        m_guid = QString( "%1/%2" ).arg( guid ).arg( m_proxyModel->columnCount() );
-        m_header->setGuid( m_guid );
+        m_guid = newguid;
+        m_header->setGuid( guid() );
+
+        if ( !m_guid.isEmpty() && proxyModel()->playlistInterface() )
+        {
+            tDebug() << Q_FUNC_INFO << "Restoring shuffle & random mode settings for guid" << m_guid;
+
+            TomahawkSettings* s = TomahawkSettings::instance();
+            proxyModel()->playlistInterface()->setShuffled( s->shuffleState( m_guid ) );
+            proxyModel()->playlistInterface()->setRepeatMode( s->repeatMode( m_guid ) );
+        }
     }
 }
 
@@ -116,8 +147,21 @@ TrackView::setGuid( const QString& guid )
 void
 TrackView::setProxyModel( PlayableProxyModel* model )
 {
+    if ( m_proxyModel )
+    {
+        disconnect( m_proxyModel, SIGNAL( filterChanged( QString ) ), this, SLOT( onFilterChanged( QString ) ) );
+        disconnect( m_proxyModel, SIGNAL( rowsInserted( QModelIndex, int, int ) ), this, SLOT( onViewChanged() ) );
+        disconnect( m_proxyModel, SIGNAL( rowsInserted( QModelIndex, int, int ) ), this, SLOT( verifySize() ) );
+        disconnect( m_proxyModel, SIGNAL( rowsRemoved( QModelIndex, int, int ) ), this, SLOT( verifySize() ) );
+    }
+    
     m_proxyModel = model;
 
+    connect( m_proxyModel, SIGNAL( filterChanged( QString ) ), SLOT( onFilterChanged( QString ) ) );
+    connect( m_proxyModel, SIGNAL( rowsInserted( QModelIndex, int, int ) ), SLOT( onViewChanged() ) );
+    connect( m_proxyModel, SIGNAL( rowsInserted( QModelIndex, int, int ) ), SLOT( verifySize() ) );
+    connect( m_proxyModel, SIGNAL( rowsRemoved( QModelIndex, int, int ) ), SLOT( verifySize() ) );
+    
     m_delegate = new PlaylistItemDelegate( this, m_proxyModel );
     setItemDelegate( m_delegate );
 
@@ -135,6 +179,17 @@ TrackView::setModel( QAbstractItemModel* model )
 
 
 void
+TrackView::setPlaylistItemDelegate( PlaylistItemDelegate* delegate )
+{
+    m_delegate = delegate;
+    setItemDelegate( delegate );
+    connect( delegate, SIGNAL( updateIndex( QModelIndex ) ), SLOT( update( QModelIndex ) ) );
+
+    verifySize();
+}
+
+
+void
 TrackView::setPlayableModel( PlayableModel* model )
 {
     m_model = model;
@@ -143,9 +198,6 @@ TrackView::setPlayableModel( PlayableModel* model )
     {
         m_proxyModel->setSourcePlayableModel( m_model );
     }
-
-    connect( m_proxyModel, SIGNAL( filterChanged( QString ) ), SLOT( onFilterChanged( QString ) ) );
-    connect( m_proxyModel, SIGNAL( rowsInserted( QModelIndex, int, int ) ), SLOT( onViewChanged() ) );
 
     setAcceptDrops( true );
     m_header->setDefaultColumnWeights( m_proxyModel->columnWeights() );
@@ -249,7 +301,6 @@ TrackView::autoPlayResolveFinished( const query_ptr& query, int row )
     const QModelIndex sib = index.sibling( index.row() + 1, index.column() );
     if ( sib.isValid() )
         startAutoPlay( sib );
-
 }
 
 
@@ -316,7 +367,6 @@ TrackView::tryToPlayItem( const QModelIndex& index )
     PlayableItem* item = m_model->itemFromIndex( m_proxyModel->mapToSource( index ) );
     if ( item && !item->query().isNull() )
     {
-        m_proxyModel->setCurrentIndex( index );
         AudioEngine::instance()->playItem( playlistInterface(), item->query() );
 
         return true;
@@ -566,6 +616,8 @@ TrackView::startDrag( Qt::DropActions supportedActions )
     {
         m_proxyModel->removeIndexes( pindexes );
     }
+
+    // delete drag; FIXME? On OSX it doesn't seem to get deleted automatically.
 }
 
 
@@ -736,19 +788,14 @@ TrackView::mousePressEvent( QMouseEvent* event )
 Tomahawk::playlistinterface_ptr
 TrackView::playlistInterface() const
 {
-    if ( m_playlistInterface.isNull() )
-    {
-        return proxyModel()->playlistInterface();
-    }
-
-    return m_playlistInterface;
+    return proxyModel()->playlistInterface();
 }
 
 
 void
 TrackView::setPlaylistInterface( const Tomahawk::playlistinterface_ptr& playlistInterface )
 {
-    m_playlistInterface = playlistInterface;
+    proxyModel()->setPlaylistInterface( playlistInterface );
 }
 
 
@@ -769,7 +816,7 @@ TrackView::description() const
 QPixmap
 TrackView::pixmap() const
 {
-    return QPixmap( RESPATH "images/music-icon.png" );
+    return TomahawkUtils::defaultPixmap( TomahawkUtils::SuperCollection );
 }
 
 
@@ -805,4 +852,25 @@ TrackView::deleteSelectedItems()
     {
         tDebug() << Q_FUNC_INFO << "Error: Model is read-only!";
     }
+}
+
+
+void
+TrackView::verifySize()
+{
+    if ( !autoResize() || !m_proxyModel )
+        return;
+
+    if ( m_proxyModel->rowCount() > 0 )
+        setFixedHeight( m_proxyModel->rowCount() * m_delegate->sizeHint( QStyleOptionViewItem(), m_proxyModel->index( 0, 0 ) ).height() + frameWidth() * 2 );
+}
+
+
+void
+TrackView::setAutoResize( bool b )
+{
+    m_autoResize = b;
+
+    if ( m_autoResize )
+        setVerticalScrollBarPolicy( Qt::ScrollBarAlwaysOff );
 }

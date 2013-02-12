@@ -45,9 +45,10 @@ public:
     explicit TrackView( QWidget* parent = 0 );
     ~TrackView();
 
-    virtual QString guid() const { return m_guid; }
-    virtual void setGuid( const QString& guid );
+    virtual QString guid() const;
+    virtual void setGuid( const QString& newguid );
 
+    virtual void setPlaylistItemDelegate( PlaylistItemDelegate* delegate );
     virtual void setPlayableModel( PlayableModel* model );
     virtual void setModel( QAbstractItemModel* model );
     void setProxyModel( PlayableProxyModel* model );
@@ -80,6 +81,9 @@ public:
 
     bool updatesContextView() const { return m_updateContextView; }
     void setUpdatesContextView( bool b ) { m_updateContextView = b; }
+
+    bool autoResize() const { return m_autoResize; }
+    void setAutoResize( bool b );
 
     // Starts playing from the beginning if resolved, or waits until a track is playable
     void startPlayingFromStart();
@@ -126,6 +130,8 @@ private slots:
 
     void autoPlayResolveFinished( const Tomahawk::query_ptr& query, int row );
 
+    void verifySize();
+    
 private:
     void startAutoPlay( const QModelIndex& index );
     bool tryToPlayItem( const QModelIndex& index );
@@ -146,8 +152,8 @@ private:
     QRect m_dropRect;
 
     bool m_updateContextView;
+    bool m_autoResize;
 
-    Tomahawk::playlistinterface_ptr m_playlistInterface;
     QModelIndex m_hoveredIndex;
     QModelIndex m_contextMenuIndex;
 

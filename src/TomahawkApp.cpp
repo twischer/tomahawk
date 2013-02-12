@@ -20,6 +20,8 @@
 
 #include "TomahawkApp.h"
 
+#include <boost/bind.hpp>
+
 #include "TomahawkVersion.h"
 #include "AclRegistryImpl.h"
 #include "Album.h"
@@ -132,61 +134,25 @@ TomahawkApp::TomahawkApp( int& argc, char *argv[] )
     , m_headless( false )
     , m_loaded( false )
 {
-    setOrganizationName( QLatin1String( TOMAHAWK_ORGANIZATION_NAME ) );
-    setOrganizationDomain( QLatin1String( TOMAHAWK_ORGANIZATION_DOMAIN ) );
-    setApplicationName( QLatin1String( TOMAHAWK_APPLICATION_NAME ) );
-    setApplicationVersion( QLatin1String( TOMAHAWK_VERSION ) );
-
-    registerMetaTypes();
-    installTranslator();
-}
-
-
-void
-TomahawkApp::installTranslator()
-{
-    QString locale = QLocale::system().name();
-    if ( locale == "C" )
-        locale = "en";
-
-    // Tomahawk translations
-    QTranslator* translator = new QTranslator( this );
-    if ( translator->load( QString( ":/lang/tomahawk_" ) + locale ) )
-    {
-        tDebug( LOGVERBOSE ) << "Translation: Tomahawk: Using system locale:" << locale;
-    }
-    else
-    {
-        tDebug( LOGVERBOSE ) << "Translation: Tomahawk: Using default locale, system locale one not found:" << locale;
-        translator->load( QString( ":/lang/tomahawk_en" ) );
-    }
-
-    TOMAHAWK_APPLICATION::installTranslator( translator );
-
-    // Qt translations
-    translator = new QTranslator( this );
-    if ( translator->load( QString( ":/lang/qt_" ) + locale ) )
-    {
-        tDebug( LOGVERBOSE ) << "Translation: Qt: Using system locale:" << locale;
-    }
-    else
-    {
-        tDebug( LOGVERBOSE ) << "Translation: Qt: Using default locale, system locale one not found:" << locale;
-    }
-
-    TOMAHAWK_APPLICATION::installTranslator( translator );
-}
-
-
-void
-TomahawkApp::init()
-{
     if ( arguments().contains( "--help" ) || arguments().contains( "-h" ) )
     {
         printHelp();
         ::exit( 0 );
     }
 
+    setOrganizationName( QLatin1String( TOMAHAWK_ORGANIZATION_NAME ) );
+    setOrganizationDomain( QLatin1String( TOMAHAWK_ORGANIZATION_DOMAIN ) );
+    setApplicationName( QLatin1String( TOMAHAWK_APPLICATION_NAME ) );
+    setApplicationVersion( QLatin1String( TOMAHAWK_VERSION ) );
+
+    registerMetaTypes();
+    TomahawkUtils::installTranslator( this );
+}
+
+
+void
+TomahawkApp::init()
+{
     qDebug() << "TomahawkApp thread:" << thread();
     Logger::setupLogfile();
     qsrand( QTime( 0, 0, 0 ).secsTo( QTime::currentTime() ) );
@@ -365,7 +331,7 @@ TomahawkApp::init()
 
 TomahawkApp::~TomahawkApp()
 {
-    tLog() << "Shutting down Tomahawk...";
+    tDebug( LOGVERBOSE ) << "Shutting down Tomahawk...";
 
     if ( !m_session.isNull() )
         delete m_session.data();
@@ -403,7 +369,7 @@ TomahawkApp::~TomahawkApp()
 
     delete TomahawkUtils::Cache::instance();
 
-    tLog() << "Finished shutdown.";
+    tDebug( LOGVERBOSE ) << "Finished shutdown.";
 }
 
 
@@ -422,8 +388,8 @@ TomahawkApp::printHelp()
     echo( "Usage: " + arguments().at( 0 ) + " [options] [url]" );
     echo( "Options are:" );
     echo( "  --help         Show this help" );
-    echo( "  --http         Initialize HTTP server" );
-    echo( "  --filescan     Scan files on startup" );
+//    echo( "  --http         Initialize HTTP server" );
+//    echo( "  --filescan     Scan files on startup" );
 //    echo( "  --headless     Run without a GUI" );
     echo( "  --hide         Hide main window on startup" );
     echo( "  --testdb       Use a test database instead of real collection" );

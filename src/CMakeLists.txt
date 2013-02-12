@@ -75,6 +75,7 @@ SET( tomahawkSourcesGui ${tomahawkSourcesGui}
      SocialWidget.cpp
 
      widgets/ContainedMenuButton.cpp
+     widgets/AccountListView.cpp
      widgets/AccountListWidget.cpp
      widgets/AccountModelFactoryProxy.cpp
      widgets/AccountWidget.cpp
@@ -119,7 +120,6 @@ INCLUDE_DIRECTORIES(
     ${LIBATTICA_INCLUDE_DIR}
     ${ECHONEST_INCLUDE_DIR}
     ${LIBLASTFM_INCLUDE_DIRS}
-    ${LIBLASTFM_INCLUDE_DIRS}/..
 )
 
 SET( OS_SPECIFIC_LINK_LIBRARIES "" )
@@ -156,7 +156,7 @@ INCLUDE(GNUInstallDirs)
 
 # translations
 include( ${CMAKE_SOURCE_DIR}/lang/translations.cmake )
-add_tomahawk_translations(ar bg ca de en es fr ja pl pt_BR ru sv tr zh_CN zh_TW)
+add_tomahawk_translations( ${TOMAHAWK_TRANSLATION_LANGUAGES} )
 
 SET( final_src ${final_src} ${tomahawkMoc} ${tomahawkSources} ${trans_outfile})
 

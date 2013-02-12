@@ -31,6 +31,7 @@ public:
 
     QString	errorString() const;
     Phonon::ErrorType errorType() const;
+    Phonon::State state() const;
 
     void setVolume( qreal newVolume );
     qreal volume();

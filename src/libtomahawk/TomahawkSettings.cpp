@@ -372,7 +372,7 @@ TomahawkSettings::doUpgrade( int oldVersion, int newVersion )
             }
             else if ( pluginName == "sipzeroconf" )
             {
-                setValue( QString( "accounts/%1/accountfriendlyname" ).arg( accountKey ), "Local Network" );
+                setValue( QString( "accounts/%1/accountfriendlyname" ).arg( accountKey ), tr( "Local Network" ) );
             }
 
             beginGroup( "accounts/" + accountKey );
@@ -727,6 +727,20 @@ TomahawkSettings::setCrashReporterEnabled( bool enable )
 }
 
 
+bool
+TomahawkSettings::songChangeNotificationEnabled() const
+{
+    return value( "ui/songChangeNotification", true ).toBool();
+}
+
+
+void
+TomahawkSettings::setSongChangeNotificationEnabled(bool enable)
+{
+    setValue( "ui/songChangeNotification", enable );
+}
+
+
 unsigned int
 TomahawkSettings::volume() const
 {
@@ -915,6 +929,7 @@ TomahawkSettings::setVerboseNotifications( bool notifications )
     setValue( "ui/notifications/verbose", notifications );
 }
 
+
 bool
 TomahawkSettings::menuBarVisible() const
 {
@@ -925,12 +940,27 @@ TomahawkSettings::menuBarVisible() const
 #endif
 }
 
+
 void
 TomahawkSettings::setMenuBarVisible( bool visible )
 {
 #ifndef Q_OS_MAC
     setValue( "ui/mainwindow/menuBarVisible", visible );
 #endif
+}
+
+
+bool
+TomahawkSettings::fullscreenEnabled() const
+{
+    return value( "ui/mainwindow/fullscreenEnabled", false ).toBool();
+}
+
+
+void
+TomahawkSettings::setFullscreenEnabled( bool enabled )
+{
+    setValue( "ui/mainwindow/fullscreenEnabled", enabled );
 }
 
 

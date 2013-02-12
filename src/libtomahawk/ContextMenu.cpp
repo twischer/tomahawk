@@ -18,8 +18,10 @@
 
 #include "ContextMenu.h"
 
-#include "GlobalActionManager.h"
+#include "audio/AudioEngine.h"
 #include "playlist/PlaylistView.h"
+#include "filemetadata/MetadataEditor.h"
+#include "GlobalActionManager.h"
 #include "ViewManager.h"
 #include "Query.h"
 #include "Result.h"
@@ -29,9 +31,8 @@
 #include "Album.h"
 #include "TomahawkSettings.h"
 
+#include "utils/ImageRegistry.h"
 #include "utils/Logger.h"
-#include "audio/AudioEngine.h"
-#include "filemetadata/MetadataEditor.h"
 
 using namespace Tomahawk;
 
@@ -112,15 +113,25 @@ ContextMenu::setQueries( const QList<Tomahawk::query_ptr>& queries )
         onSocialActionsLoaded();
     }
 
-    if ( m_supportedActions & ActionCopyLink && itemCount() == 1 )
-        m_sigmap->setMapping( addAction( tr( "&Copy Track Link" ) ), ActionCopyLink );
+    addSeparator();
 
     if ( m_supportedActions & ActionPage && itemCount() == 1 )
-        m_sigmap->setMapping( addAction( tr( "&Show Track Page" ) ), ActionPage );
+    {
+        m_sigmap->setMapping( addAction( ImageRegistry::instance()->icon( RESPATH "images/track-icon.svg" ),
+                                         tr( "&Go to \"%1\"" ).arg( m_queries.first()->track() ) ), ActionTrackPage );
+        if ( !m_queries.first()->album().isEmpty() )
+            m_sigmap->setMapping( addAction( ImageRegistry::instance()->icon( RESPATH "images/album-icon.svg" ),
+                                             tr( "Go to \"%1\"" ).arg( m_queries.first()->album() ) ), ActionAlbumPage );
+        m_sigmap->setMapping( addAction( ImageRegistry::instance()->icon( RESPATH "images/artist-icon.svg" ),
+                                         tr( "Go to \"%1\"" ).arg( m_queries.first()->artist() ) ), ActionArtistPage );
+    }
 
     if ( !TomahawkSettings::instance()->partyModeEnabled() )
     {
         addSeparator();
+
+        if ( m_supportedActions & ActionCopyLink && itemCount() == 1 )
+            m_sigmap->setMapping( addAction( tr( "&Copy Track Link" ) ), ActionCopyLink );
 
         if ( m_supportedActions & ActionEditMetadata && itemCount() == 1 )
             m_sigmap->setMapping( addAction( tr( "Properties..." ) ), ActionEditMetadata );
@@ -160,14 +171,18 @@ ContextMenu::setAlbums( const QList<Tomahawk::album_ptr>& albums )
     m_albums.clear();
     m_albums << albums;
 
-/*    if ( m_supportedActions & ActionPlay && itemCount() == 1 )
-        m_sigmap->setMapping( addAction( tr( "Show &Album Page" ) ), ActionPlay );*/
-
     if ( m_supportedActions & ActionQueue )
         m_sigmap->setMapping( addAction( tr( "Add to &Queue" ) ), ActionQueue );
 
+    addSeparator();
+
     if ( m_supportedActions & ActionPage && itemCount() == 1 )
-        m_sigmap->setMapping( addAction( tr( "&Show Album Page" ) ), ActionPage );
+    {
+        m_sigmap->setMapping( addAction( ImageRegistry::instance()->icon( RESPATH "images/album-icon.svg" ),
+                                         tr( "&Go to \"%1\"" ).arg( m_albums.first()->name() ) ), ActionAlbumPage );
+        m_sigmap->setMapping( addAction( ImageRegistry::instance()->icon( RESPATH "images/artist-icon.svg" ),
+                                         tr( "Go to \"%1\"" ).arg( m_albums.first()->artist()->name() ) ), ActionArtistPage );
+    }
 
     //m_sigmap->setMapping( addAction( tr( "&Add to Playlist" ) ), ActionAddToPlaylist );
 
@@ -208,8 +223,11 @@ ContextMenu::setArtists( const QList<Tomahawk::artist_ptr>& artists )
     if ( m_supportedActions & ActionQueue )
         m_sigmap->setMapping( addAction( tr( "Add to &Queue" ) ), ActionQueue );
 
+    addSeparator();
+
     if ( m_supportedActions & ActionPage && itemCount() == 1 )
-        m_sigmap->setMapping( addAction( tr( "&Show Artist Page" ) ), ActionPage );
+        m_sigmap->setMapping( addAction( ImageRegistry::instance()->icon( RESPATH "images/artist-icon.svg" ),
+                                         tr( "&Go to \"%1\"" ).arg( m_artists.first()->name() ) ), ActionArtistPage );
 
     //m_sigmap->setMapping( addAction( tr( "&Add to Playlist" ) ), ActionAddToPlaylist );
 
@@ -247,8 +265,10 @@ ContextMenu::onTriggered( int action )
             copyLink();
             break;
 
-        case ActionPage:
-            openPage();
+        case ActionTrackPage:
+        case ActionArtistPage:
+        case ActionAlbumPage:
+            openPage( (MenuActions)action );
             break;
 
         case ActionLove:
@@ -315,19 +335,41 @@ ContextMenu::copyLink()
 
 
 void
-ContextMenu::openPage()
+ContextMenu::openPage( MenuActions action )
 {
     if ( m_queries.count() )
     {
-        ViewManager::instance()->show( m_queries.first() );
+        if ( action == ActionTrackPage )
+        {
+            ViewManager::instance()->show( m_queries.first() );
+        }
+        else
+        {
+            const Tomahawk::artist_ptr artist = Artist::get( m_queries.first()->artist(), false );
+            if ( action == ActionArtistPage )
+            {
+                ViewManager::instance()->show( artist );
+            }
+            else if ( action == ActionAlbumPage )
+            {
+                ViewManager::instance()->show( Album::get( artist, m_queries.first()->album(), false ) );
+            }
+        }
+    }
+    else if ( m_albums.count() )
+    {
+        if ( action == ActionArtistPage )
+        {
+            ViewManager::instance()->show( m_albums.first()->artist() );
+        }
+        else
+        {
+            ViewManager::instance()->show( m_albums.first() );
+        }
     }
     else if ( m_artists.count() )
     {
         ViewManager::instance()->show( m_artists.first() );
-    }
-    else if ( m_albums.count() )
-    {
-        ViewManager::instance()->show( m_albums.first() );
     }
 }
 
@@ -341,12 +383,12 @@ ContextMenu::onSocialActionsLoaded()
     if ( m_loveAction && m_queries.first()->loved() )
     {
         m_loveAction->setText( tr( "Un-&Love" ) );
-        m_loveAction->setIcon( QIcon( RESPATH "images/not-loved.png" ) );
+        m_loveAction->setIcon( ImageRegistry::instance()->icon( RESPATH "images/not-loved.svg" ) );
     }
     else if ( m_loveAction )
     {
         m_loveAction->setText( tr( "&Love" ) );
-        m_loveAction->setIcon( QIcon( RESPATH "images/loved.png" ) );
+        m_loveAction->setIcon( ImageRegistry::instance()->icon( RESPATH "images/loved.svg" ) );
     }
 }
 

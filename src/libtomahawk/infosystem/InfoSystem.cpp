@@ -108,7 +108,7 @@ InfoSystem::~InfoSystem()
 {
     tDebug() << Q_FUNC_INFO << " beginning";
 
-    if ( m_infoSystemWorkerThreadController->worker() )
+    if ( m_infoSystemWorkerThreadController )
     {
         m_infoSystemWorkerThreadController->quit();
         m_infoSystemWorkerThreadController->wait( 60000 );
@@ -118,7 +118,7 @@ InfoSystem::~InfoSystem()
     }
     tDebug() << Q_FUNC_INFO << " done deleting worker";
 
-    if( m_infoSystemCacheThreadController->cache() )
+    if( m_infoSystemCacheThreadController )
     {
         m_infoSystemCacheThreadController->quit();
         m_infoSystemCacheThreadController->wait( 60000 );
@@ -157,6 +157,12 @@ InfoSystem::init()
 
     connect( worker, SIGNAL( finished( QString, Tomahawk::InfoSystem::InfoType ) ),
              this, SIGNAL( finished( QString, Tomahawk::InfoSystem::InfoType ) ), Qt::UniqueConnection );
+
+    qRegisterMetaType< Tomahawk::InfoSystem::InfoTypeSet >();
+    connect( worker, SIGNAL( updatedSupportedGetTypes( Tomahawk::InfoSystem::InfoTypeSet ) ),
+             this,   SLOT(   receiveUpdatedSupportedGetTypes( Tomahawk::InfoSystem::InfoTypeSet ) ) );
+    connect( worker, SIGNAL( updatedSupportedPushTypes( Tomahawk::InfoSystem::InfoTypeSet ) ),
+             this,   SLOT(   receiveUpdatedSupportedPushTypes( Tomahawk::InfoSystem::InfoTypeSet ) ) );
 
     QMetaObject::invokeMethod( worker, "init", Qt::QueuedConnection, Q_ARG( Tomahawk::InfoSystem::InfoSystemCache*, cache ) );
 
@@ -291,6 +297,22 @@ InfoSystem::removeInfoPlugin( Tomahawk::InfoSystem::InfoPluginPtr plugin )
 
     tDebug() << Q_FUNC_INFO << plugin.data();
     QMetaObject::invokeMethod( m_infoSystemWorkerThreadController->worker(), "removeInfoPlugin", Qt::QueuedConnection, Q_ARG( Tomahawk::InfoSystem::InfoPluginPtr, plugin ) );
+}
+
+
+void
+InfoSystem::receiveUpdatedSupportedGetTypes( InfoTypeSet supportedTypes )
+{
+    m_supportedGetTypes = supportedTypes;
+    emit updatedSupportedGetTypes( m_supportedGetTypes );
+}
+
+
+void
+InfoSystem::receiveUpdatedSupportedPushTypes( InfoTypeSet supportedTypes )
+{
+    m_supportedPushTypes = supportedTypes;
+    emit updatedSupportedPushTypes( m_supportedPushTypes );
 }
 
 
