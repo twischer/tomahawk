@@ -163,7 +163,7 @@ FuzzyIndex::appendFields( const QMap< unsigned int, QMap< QString, QString > >& 
             if ( values.contains( "track" ) )
             {
                 doc.add( *( _CLNEW Field( _T( "fulltext" ), DatabaseImpl::sortname( QString( "%1 %2" ).arg( values.value( "artist" ) ).arg( values.value( "track" ) ) ).toStdWString().c_str(),
-                                          Field::STORE_NO | Field::INDEX_UNTOKENIZED ) ) );
+                                          Field::STORE_NO | Field::INDEX_TOKENIZED ) ) );
 
                 doc.add( *( _CLNEW Field( _T( "track" ), DatabaseImpl::sortname( values.value( "track" ) ).toStdWString().c_str(),
                                           Field::STORE_NO | Field::INDEX_UNTOKENIZED ) ) );
@@ -240,17 +240,14 @@ FuzzyIndex::search( const Tomahawk::query_ptr& query )
         {
             QString escapedQuery = QString::fromWCharArray( parser.escape( DatabaseImpl::sortname( query->fullTextQuery() ).toStdWString().c_str() ) );
 
-            Term* term = _CLNEW Term( _T( "track" ), escapedQuery.toStdWString().c_str() );
-            Query* fqry = _CLNEW FuzzyQuery( term );
-            qry->add( fqry, true, BooleanClause::SHOULD );
-
-            term = _CLNEW Term( _T( "artist" ), escapedQuery.toStdWString().c_str() );
-            fqry = _CLNEW FuzzyQuery( term );
-            qry->add( fqry, true, BooleanClause::SHOULD );
-
-            term = _CLNEW Term( _T( "fulltext" ), escapedQuery.toStdWString().c_str() );
-            fqry = _CLNEW FuzzyQuery( term );
-            qry->add( fqry, true, BooleanClause::SHOULD );
+            // add a search term for each word of the full text query
+            // so titles will be found which was not fully given
+            foreach (QString part, escapedQuery.split(" ") )
+            {
+                Term* term = _CLNEW Term( _T( "fulltext" ), part.toStdWString().c_str() );
+                Query* fqry = _CLNEW FuzzyQuery( term );
+                qry->add( fqry, true, BooleanClause::MUST );
+            }
 
             minScore = 0.00;
         }
