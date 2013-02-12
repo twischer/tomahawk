@@ -1342,7 +1342,8 @@ TomahawkWindow::onPartyModeChanged()
     if ( isPartyMode )
         showFullScreen();
     else
-        showMaximized();
+        showNormal();
+    // TODO maximaize the window on exit party mode
 }
 
 

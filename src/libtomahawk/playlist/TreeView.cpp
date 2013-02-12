@@ -237,8 +237,18 @@ TreeView::onItemActivated( const QModelIndex& index )
             ViewManager::instance()->show( item->album() );
         else if ( !item->result().isNull() && item->result()->isOnline() )
         {
-            m_model->setCurrentItem( item->index );
-            AudioEngine::instance()->playItem( m_proxyModel->playlistInterface(), item->result() );
+            // if party mode is activated add the track to the queue and not play it now
+            const bool isPartyMode = TomahawkSettings::instance()->partyModeEnabled();
+            if ( isPartyMode )
+            {
+                setCustomContextMenuQueries( index );
+                m_contextMenu->addToQueue();
+            }
+            else
+            {
+                m_model->setCurrentItem( item->index );
+                AudioEngine::instance()->playItem( m_proxyModel->playlistInterface(), item->result() );
+            }
         }
     }
 }
@@ -356,10 +366,20 @@ TreeView::onCustomContextMenu( const QPoint& pos )
 
     QModelIndex idx = indexAt( pos );
     idx = idx.sibling( idx.row(), 0 );
+
+    setCustomContextMenuQueries( idx );
+
+    m_contextMenu->exec( viewport()->mapToGlobal( pos ) );
+}
+
+void
+TreeView::setCustomContextMenuQueries( const QModelIndex& idx )
+{
     m_contextMenuIndex = idx;
 
     if ( !idx.isValid() )
         return;
+
 
     QList<query_ptr> queries;
     QList<artist_ptr> artists;
@@ -385,8 +405,6 @@ TreeView::onCustomContextMenu( const QPoint& pos )
     m_contextMenu->setQueries( queries );
     m_contextMenu->setArtists( artists );
     m_contextMenu->setAlbums( albums );
-
-    m_contextMenu->exec( viewport()->mapToGlobal( pos ) );
 }
 
 
