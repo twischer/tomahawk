@@ -18,6 +18,7 @@
 
 #include "PlayableCover.h"
 
+#include "TomahawkSettings.h"
 #include "Artist.h"
 #include "Album.h"
 #include "ContextMenu.h"
@@ -63,7 +64,12 @@ PlayableCover::enterEvent( QEvent* event )
 {
     QLabel::enterEvent( event );
 
-    m_button->show();
+    // only add the play button to a album picture if the party mode is not active
+    const bool isPartyMode = TomahawkSettings::instance()->partyModeEnabled();
+    if ( !isPartyMode )
+    {
+        m_button->show();
+    }
 }
 
 
