@@ -218,8 +218,14 @@ SourceTreeView::setupMenus()
     QAction* addToLocalAction = m_roPlaylistMenu.addAction( addToText );
 
     m_roPlaylistMenu.addAction( copyPlaylistAction );
-    deletePlaylistAction->setEnabled( !readonly );
-    renamePlaylistAction->setEnabled( !readonly );
+
+    // only activate the edit options for the playlists if the party mode is
+    // not active and the playlist is not read only because it is not our own
+    const bool isPartyMode = TomahawkSettings::instance()->partyModeEnabled();
+    const bool shouldPlaylistReadOnly = (isPartyMode || readonly);
+
+    deletePlaylistAction->setDisabled( shouldPlaylistReadOnly );
+    renamePlaylistAction->setDisabled( shouldPlaylistReadOnly );
     addToLocalAction->setEnabled( readonly );
 
     // Handle any custom actions registered for playlists
