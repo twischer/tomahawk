@@ -73,6 +73,7 @@ SET( tomahawkSourcesGui ${tomahawkSourcesGui}
      TomahawkWindow.cpp
      LoadXSPFDialog.cpp
      SocialWidget.cpp
+     PreviewPlayer.cpp
 
      widgets/ContainedMenuButton.cpp
      widgets/AccountListView.cpp
@@ -100,6 +101,7 @@ SET( tomahawkUI ${tomahawkUI}
      AudioControls.ui
      LoadXSPFDialog.ui
      SocialWidget.ui
+     PreviewPlayer.ui
 )
 
 INCLUDE_DIRECTORIES(

@@ -59,6 +59,7 @@ class TomahawkTrayIcon;
 class PlaylistModel;
 class QueueView;
 class AnimatedSplitter;
+class PreviewPlayer;
 
 class AccountsToolButton;
 
@@ -188,6 +189,7 @@ private:
     AnimatedSplitter* m_sidebar;
     JobStatusSortModel* m_jobsModel;
     SettingsDialog* m_settingsDialog;
+    PreviewPlayer* m_previewPlayer;
 
     // Menus and menu actions: Accounts menu
     QMenuBar    *m_menuBar;

@@ -77,6 +77,7 @@
 #include "LoadXSPFDialog.h"
 #include "utils/ImageRegistry.h"
 #include "utils/Logger.h"
+#include "PreviewPlayer.h"
 
 #include "config.h"
 
@@ -110,6 +111,7 @@ TomahawkWindow::TomahawkWindow( QWidget* parent )
     , m_audioControls( new AudioControls( this ) )
     , m_trayIcon( new TomahawkTrayIcon( this ) )
     , m_settingsDialog( 0 )
+    , m_previewPlayer( new PreviewPlayer( this ) )
     , m_audioRetryCounter( 0 )
 {
     setWindowIcon( QIcon( RESPATH "icons/tomahawk-icon-128x128.png" ) );
@@ -154,6 +156,8 @@ TomahawkWindow::TomahawkWindow( QWidget* parent )
         // Window must be fully constructed to toggle fullscreen mode. Queue it up.
         QTimer::singleShot( 0, this, SLOT( toggleFullscreen() ) );
     }
+
+    m_previewPlayer->show();
 }
 
 
