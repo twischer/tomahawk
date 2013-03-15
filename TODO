@@ -1,5 +1,7 @@
 - daktiviere Play button für albums
 - Vorschauplayer
+- Deaktiviere Lautstärkeregler wenn party modus aktiv
+
 - Löschen und ändern von Playlisten im party modus verhindern
 
 - HTTP Server für smartphones (siehe TomahawkApp::initHTTP())
