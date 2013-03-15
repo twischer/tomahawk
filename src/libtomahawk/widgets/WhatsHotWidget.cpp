@@ -29,7 +29,7 @@
 #include "ChartDataLoader.h"
 #include "MetaPlaylistInterface.h"
 
-#include "audio/AudioEngine.h"
+#include "audio/MainAudioEngine.h"
 #include "playlist/dynamic/GeneratorInterface.h"
 #include "playlist/PlayableModel.h"
 #include "playlist/PlaylistModel.h"
@@ -142,10 +142,10 @@ WhatsHotWidget::playlistInterface() const
 bool
 WhatsHotWidget::isBeingPlayed() const
 {
-    if ( AudioEngine::instance()->currentTrackPlaylist() == ui->artistsViewLeft->playlistInterface() )
+    if ( MainAudioEngine::instance()->currentTrackPlaylist() == ui->artistsViewLeft->playlistInterface() )
         return true;
 
-    if ( AudioEngine::instance()->currentTrackPlaylist() == ui->tracksViewLeft->playlistInterface() )
+    if ( MainAudioEngine::instance()->currentTrackPlaylist() == ui->tracksViewLeft->playlistInterface() )
         return true;
 
     if ( ui->albumsView->isBeingPlayed() )

@@ -21,7 +21,7 @@
 
 #include "Source.h"
 #include "Pipeline.h"
-#include "audio/AudioEngine.h"
+#include "audio/MainAudioEngine.h"
 
 #include "utils/Logger.h"
 
@@ -39,8 +39,8 @@ SourcePlaylistInterface::SourcePlaylistInterface( Tomahawk::Source* source, Toma
     if ( !m_source.isNull() )
         connect( m_source.data(), SIGNAL( playbackStarted( const Tomahawk::query_ptr& ) ), SLOT( onSourcePlaybackStarted( const Tomahawk::query_ptr& ) ) );
 
-    if ( AudioEngine::instance() )
-        connect( AudioEngine::instance(), SIGNAL( paused() ), SLOT( audioPaused() ) );
+    if ( MainAudioEngine::instance() )
+        connect( MainAudioEngine::instance(), SIGNAL( paused() ), SLOT( audioPaused() ) );
 }
 
 

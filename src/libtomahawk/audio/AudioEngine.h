@@ -43,8 +43,6 @@ public:
     enum AudioErrorCode { StreamReadError, AudioDeviceError, DecodeError, UnknownError, NoError };
     enum AudioState { Stopped = 0, Playing = 1, Paused = 2, Error = 3, Loading = 4 };
 
-    static AudioEngine* instance();
-
     explicit AudioEngine();
     ~AudioEngine();
 
@@ -174,8 +172,6 @@ private:
     AudioState m_state;
     QQueue< AudioState > m_stateQueue;
     QTimer m_stateQueueTimer;
-
-    static AudioEngine* s_instance;
 };
 
 #endif // AUDIOENGINE_H

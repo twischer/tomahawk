@@ -34,7 +34,7 @@
 #include "Album.h"
 #include "Source.h"
 #include "TomahawkSettings.h"
-#include "audio/AudioEngine.h"
+#include "audio/MainAudioEngine.h"
 #include "context/ContextWidget.h"
 #include "widgets/OverlayWidget.h"
 #include "utils/TomahawkUtilsGui.h"
@@ -367,7 +367,7 @@ TrackView::tryToPlayItem( const QModelIndex& index )
     PlayableItem* item = m_model->itemFromIndex( m_proxyModel->mapToSource( index ) );
     if ( item && !item->query().isNull() )
     {
-        AudioEngine::instance()->playItem( playlistInterface(), item->query() );
+        MainAudioEngine::instance()->playItem( playlistInterface(), item->query() );
 
         return true;
     }

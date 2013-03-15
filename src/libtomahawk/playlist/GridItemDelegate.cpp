@@ -29,7 +29,7 @@
 #include "Query.h"
 #include "Result.h"
 #include "Source.h"
-#include "audio/AudioEngine.h"
+#include "audio/MainAudioEngine.h"
 
 #include "utils/TomahawkUtilsGui.h"
 #include "utils/PixmapDelegateFader.h"
@@ -261,11 +261,11 @@ GridItemDelegate::onPlayClicked( const QPersistentModelIndex& index )
     if ( item )
     {
         if ( !item->query().isNull() )
-            AudioEngine::instance()->playItem( m_model->playlistInterface(), item->query() );
+            MainAudioEngine::instance()->playItem( m_model->playlistInterface(), item->query() );
         else if ( !item->album().isNull() )
-            AudioEngine::instance()->playItem( item->album() );
+            MainAudioEngine::instance()->playItem( item->album() );
         else if ( !item->artist().isNull() )
-            AudioEngine::instance()->playItem( item->artist() );
+            MainAudioEngine::instance()->playItem( item->artist() );
     }
 }
 
@@ -512,7 +512,7 @@ GridItemDelegate::createPauseButton( const QPersistentModelIndex& index )
     button->installEventFilter( this );
     button->show();
 
-    connect( button, SIGNAL( clicked( bool ) ), AudioEngine::instance(), SLOT( playPause() ) );
+    connect( button, SIGNAL( clicked( bool ) ), MainAudioEngine::instance(), SLOT( playPause() ) );
 
     m_pauseButton[ index ] = button;
 }

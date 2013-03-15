@@ -23,7 +23,7 @@
 #define TOMAHAWKWINDOW_H
 
 #include "Result.h"
-#include "audio/AudioEngine.h"
+#include "audio/MainAudioEngine.h"
 #include "utils/XspfLoader.h"
 
 #include "config.h"

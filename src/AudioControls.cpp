@@ -30,7 +30,7 @@
 #include "TomahawkSettings.h"
 #include "ActionCollection.h"
 
-#include "audio/AudioEngine.h"
+#include "audio/MainAudioEngine.h"
 #include "playlist/PlaylistView.h"
 #include "database/Database.h"
 #include "widgets/ImageButton.h"
@@ -109,21 +109,21 @@ AudioControls::AudioControls( QWidget* parent )
     ui->seekSlider->setEnabled( true );
     ui->seekSlider->setTimeLine( &m_sliderTimeLine );
     ui->volumeSlider->setRange( 0, 100 );
-    ui->volumeSlider->setValue( AudioEngine::instance()->volume() );
+    ui->volumeSlider->setValue( MainAudioEngine::instance()->volume() );
 
     m_phononTickCheckTimer.setSingleShot( true );
 
     connect( &m_phononTickCheckTimer, SIGNAL( timeout() ), SLOT( phononTickCheckTimeout() ) );
     connect( &m_sliderTimeLine,    SIGNAL( frameChanged( int ) ), ui->seekSlider, SLOT( setValue( int ) ) );
 
-    connect( ui->seekSlider,       SIGNAL( valueChanged( int ) ), AudioEngine::instance(), SLOT( seek( int ) ) );
-    connect( ui->volumeSlider,     SIGNAL( valueChanged( int ) ), AudioEngine::instance(), SLOT( setVolume( int ) ) );
-    connect( ui->prevButton,       SIGNAL( clicked() ), AudioEngine::instance(), SLOT( previous() ) );
-    connect( ui->playPauseButton,  SIGNAL( clicked() ), AudioEngine::instance(), SLOT( play() ) );
-    connect( ui->pauseButton,      SIGNAL( clicked() ), AudioEngine::instance(), SLOT( pause() ) );
-    connect( ui->nextButton,       SIGNAL( clicked() ), AudioEngine::instance(), SLOT( next() ) );
-    connect( ui->volumeLowButton,  SIGNAL( clicked() ), AudioEngine::instance(), SLOT( lowerVolume() ) );
-    connect( ui->volumeHighButton, SIGNAL( clicked() ), AudioEngine::instance(), SLOT( raiseVolume() ) );
+    connect( ui->seekSlider,       SIGNAL( valueChanged( int ) ), MainAudioEngine::instance(), SLOT( seek( int ) ) );
+    connect( ui->volumeSlider,     SIGNAL( valueChanged( int ) ), MainAudioEngine::instance(), SLOT( setVolume( int ) ) );
+    connect( ui->prevButton,       SIGNAL( clicked() ), MainAudioEngine::instance(), SLOT( previous() ) );
+    connect( ui->playPauseButton,  SIGNAL( clicked() ), MainAudioEngine::instance(), SLOT( play() ) );
+    connect( ui->pauseButton,      SIGNAL( clicked() ), MainAudioEngine::instance(), SLOT( pause() ) );
+    connect( ui->nextButton,       SIGNAL( clicked() ), MainAudioEngine::instance(), SLOT( next() ) );
+    connect( ui->volumeLowButton,  SIGNAL( clicked() ), MainAudioEngine::instance(), SLOT( lowerVolume() ) );
+    connect( ui->volumeHighButton, SIGNAL( clicked() ), MainAudioEngine::instance(), SLOT( raiseVolume() ) );
 
     connect( ui->playPauseButton,  SIGNAL( clicked() ), SIGNAL( playPressed() ) );
     connect( ui->pauseButton,      SIGNAL( clicked() ), SIGNAL( pausePressed() ) );
@@ -138,18 +138,18 @@ AudioControls::AudioControls( QWidget* parent )
     connect( ui->loveButton,       SIGNAL( clicked( bool ) ), SLOT( onLoveButtonClicked( bool ) ) );
     connect( ui->ownerButton,      SIGNAL( clicked() ),       SLOT( onOwnerButtonClicked() ) );
 
-    // <From AudioEngine>
-    connect( AudioEngine::instance(), SIGNAL( loading( Tomahawk::result_ptr ) ), SLOT( onPlaybackLoading( Tomahawk::result_ptr ) ) );
-    connect( AudioEngine::instance(), SIGNAL( started( Tomahawk::result_ptr ) ), SLOT( onPlaybackStarted( Tomahawk::result_ptr ) ) );
-    connect( AudioEngine::instance(), SIGNAL( paused() ), SLOT( onPlaybackPaused() ) );
-    connect( AudioEngine::instance(), SIGNAL( resumed() ), SLOT( onPlaybackResumed() ) );
-    connect( AudioEngine::instance(), SIGNAL( stopped() ), SLOT( onPlaybackStopped() ) );
-    connect( AudioEngine::instance(), SIGNAL( seeked( qint64 ) ), SLOT( onPlaybackSeeked( qint64 ) ) );
-    connect( AudioEngine::instance(), SIGNAL( timerMilliSeconds( qint64 ) ), SLOT( onPlaybackTimer( qint64 ) ) );
-    connect( AudioEngine::instance(), SIGNAL( volumeChanged( int ) ), SLOT( onVolumeChanged( int ) ) );
-    connect( AudioEngine::instance(), SIGNAL( controlStateChanged() ), SLOT( onControlStateChanged() ) );
-    connect( AudioEngine::instance(), SIGNAL( repeatModeChanged( Tomahawk::PlaylistModes::RepeatMode ) ), SLOT( onRepeatModeChanged( Tomahawk::PlaylistModes::RepeatMode ) ) );
-    connect( AudioEngine::instance(), SIGNAL( shuffleModeChanged( bool ) ), SLOT( onShuffleModeChanged( bool ) ) );
+    // <From MainAudioEngine>
+    connect( MainAudioEngine::instance(), SIGNAL( loading( Tomahawk::result_ptr ) ), SLOT( onPlaybackLoading( Tomahawk::result_ptr ) ) );
+    connect( MainAudioEngine::instance(), SIGNAL( started( Tomahawk::result_ptr ) ), SLOT( onPlaybackStarted( Tomahawk::result_ptr ) ) );
+    connect( MainAudioEngine::instance(), SIGNAL( paused() ), SLOT( onPlaybackPaused() ) );
+    connect( MainAudioEngine::instance(), SIGNAL( resumed() ), SLOT( onPlaybackResumed() ) );
+    connect( MainAudioEngine::instance(), SIGNAL( stopped() ), SLOT( onPlaybackStopped() ) );
+    connect( MainAudioEngine::instance(), SIGNAL( seeked( qint64 ) ), SLOT( onPlaybackSeeked( qint64 ) ) );
+    connect( MainAudioEngine::instance(), SIGNAL( timerMilliSeconds( qint64 ) ), SLOT( onPlaybackTimer( qint64 ) ) );
+    connect( MainAudioEngine::instance(), SIGNAL( volumeChanged( int ) ), SLOT( onVolumeChanged( int ) ) );
+    connect( MainAudioEngine::instance(), SIGNAL( controlStateChanged() ), SLOT( onControlStateChanged() ) );
+    connect( MainAudioEngine::instance(), SIGNAL( repeatModeChanged( Tomahawk::PlaylistModes::RepeatMode ) ), SLOT( onRepeatModeChanged( Tomahawk::PlaylistModes::RepeatMode ) ) );
+    connect( MainAudioEngine::instance(), SIGNAL( shuffleModeChanged( bool ) ), SLOT( onShuffleModeChanged( bool ) ) );
 
     // <Form ActionCollection> used tu disable next and previous button if party mode was activated
     connect( ActionCollection::instance(), SIGNAL( partyModeChanged() ), SLOT( onPartyModeChanged() ) );
@@ -221,8 +221,8 @@ AudioControls::onControlStateChanged()
 
     if ( !TomahawkSettings::instance()->partyModeEnabled() )
     {
-        ui->prevButton->setEnabled( AudioEngine::instance()->canGoPrevious() );
-        ui->nextButton->setEnabled( AudioEngine::instance()->canGoNext() );
+        ui->prevButton->setEnabled( MainAudioEngine::instance()->canGoPrevious() );
+        ui->nextButton->setEnabled( MainAudioEngine::instance()->canGoNext() );
     }
 }
 
@@ -236,7 +236,7 @@ AudioControls::onPlaybackStarted( const Tomahawk::result_ptr& result )
     if ( m_currentTrack.isNull() || ( !m_currentTrack.isNull() && m_currentTrack.data()->id() != result.data()->id() ) )
         onPlaybackLoading( result );
 
-    qint64 duration = AudioEngine::instance()->currentTrackTotalTime();
+    qint64 duration = MainAudioEngine::instance()->currentTrackTotalTime();
 
     if ( duration == -1 )
         duration = result.data()->duration() * 1000;
@@ -245,7 +245,7 @@ AudioControls::onPlaybackStarted( const Tomahawk::result_ptr& result )
     ui->seekSlider->setValue( 0 );
 
     if ( !TomahawkSettings::instance()->partyModeEnabled() )
-        ui->seekSlider->setEnabled( AudioEngine::instance()->canSeek() );
+        ui->seekSlider->setEnabled( MainAudioEngine::instance()->canSeek() );
 
     ui->timeLabel->setText( TomahawkUtils::timeToString( 0 ) );
     ui->timeLeftLabel->setText( "-" + TomahawkUtils::timeToString( 0 ) );
@@ -306,8 +306,8 @@ AudioControls::onPlaybackLoading( const Tomahawk::result_ptr& result )
 
     if ( !TomahawkSettings::instance()->partyModeEnabled() )
     {
-        ui->prevButton->setEnabled( AudioEngine::instance()->canGoPrevious() );
-        ui->nextButton->setEnabled( AudioEngine::instance()->canGoNext() );
+        ui->prevButton->setEnabled( MainAudioEngine::instance()->canGoPrevious() );
+        ui->nextButton->setEnabled( MainAudioEngine::instance()->canGoNext() );
     }
 
     ui->seekSlider->setRange( 0, 0 );
@@ -316,7 +316,7 @@ AudioControls::onPlaybackLoading( const Tomahawk::result_ptr& result )
     m_sliderTimeLine.stop();
 
     // If the ViewManager doesn't know a page for the current interface, we can't offer the jump link
-    ui->artistTrackLabel->setJumpLinkVisible( ( ViewManager::instance()->pageForInterface( AudioEngine::instance()->currentTrackPlaylist() ) ) );
+    ui->artistTrackLabel->setJumpLinkVisible( ( ViewManager::instance()->pageForInterface( MainAudioEngine::instance()->currentTrackPlaylist() ) ) );
 
     onControlStateChanged();
 
@@ -389,7 +389,7 @@ AudioControls::onInfoSystemPushTypesUpdated( InfoSystem::InfoTypeSet supportedTy
         m_shouldShowShareAction = false;
     }
 
-    if ( AudioEngine::instance()->state() == AudioEngine::Stopped )
+    if ( MainAudioEngine::instance()->state() == AudioEngine::Stopped )
         ui->socialButton->setVisible( false );
     else
         ui->socialButton->setVisible( m_shouldShowShareAction );
@@ -475,8 +475,8 @@ AudioControls::onPlaybackStopped()
 
     if ( !TomahawkSettings::instance()->partyModeEnabled() )
     {
-        ui->prevButton->setEnabled( AudioEngine::instance()->canGoPrevious() );
-        ui->nextButton->setEnabled( AudioEngine::instance()->canGoNext() );
+        ui->prevButton->setEnabled( MainAudioEngine::instance()->canGoPrevious() );
+        ui->nextButton->setEnabled( MainAudioEngine::instance()->canGoNext() );
     }
 
     onControlStateChanged();
@@ -510,7 +510,7 @@ AudioControls::onPlaybackTimer( qint64 msElapsed )
         return;
 
     int currentTime = m_sliderTimeLine.currentTime();
-    //tDebug( LOGEXTRA ) << Q_FUNC_INFO << "msElapsed =" << msElapsed << "and timer current time =" << currentTime << "and audio engine state is" << (int)AudioEngine::instance()->state();
+    //tDebug( LOGEXTRA ) << Q_FUNC_INFO << "msElapsed =" << msElapsed << "and timer current time =" << currentTime << "and audio engine state is" << (int)MainAudioEngine::instance()->state();
 
     // First condition checks for the common case where
     // 1) the track has been started
@@ -519,7 +519,7 @@ AudioControls::onPlaybackTimer( qint64 msElapsed )
     // 4) The audio engine is actually currently running
     if ( !m_seeked
             && qAbs( msElapsed - currentTime ) <= ALLOWED_MAX_DIVERSION
-            && AudioEngine::instance()->state() == AudioEngine::Playing )
+            && MainAudioEngine::instance()->state() == AudioEngine::Playing )
     {
         if ( m_sliderTimeLine.state() != QTimeLine::Running )
             m_sliderTimeLine.resume();
@@ -539,12 +539,12 @@ AudioControls::onPlaybackTimer( qint64 msElapsed )
             m_sliderTimeLine.setPaused( true );
             m_sliderTimeLine.setCurrentTime( msElapsed );
             m_seeked = false;
-            if ( AudioEngine::instance()->state() == AudioEngine::Playing )
+            if ( MainAudioEngine::instance()->state() == AudioEngine::Playing )
                 m_sliderTimeLine.resume();
         }
         // Next handle falling behind by too much, or getting ahead by too much (greater than allowed amount, which would have been sorted above)
         // However, a Phonon bug means that after a seek we'll actually have AudioEngine's state be Playing, when it ain't, so have to detect that
-        else if ( AudioEngine::instance()->state() == AudioEngine::Playing )
+        else if ( MainAudioEngine::instance()->state() == AudioEngine::Playing )
         {
             //tDebug() << Q_FUNC_INFO << "AudioEngine playing";
             m_sliderTimeLine.setPaused( true );
@@ -553,7 +553,7 @@ AudioControls::onPlaybackTimer( qint64 msElapsed )
                 m_sliderTimeLine.resume();
         }
         // Finally, the case where the audioengine isn't playing; if the timeline is still running, pause it and catch up
-        else if ( AudioEngine::instance()->state() != AudioEngine::Playing )
+        else if ( MainAudioEngine::instance()->state() != AudioEngine::Playing )
         {
             //tDebug() << Q_FUNC_INFO << "AudioEngine not playing";
             if ( msElapsed != currentTime || m_sliderTimeLine.state() == QTimeLine::Running)
@@ -619,21 +619,21 @@ AudioControls::onRepeatClicked()
         case PlaylistModes::NoRepeat:
         {
             // switch to RepeatOne
-            AudioEngine::instance()->setRepeatMode( PlaylistModes::RepeatOne );
+            MainAudioEngine::instance()->setRepeatMode( PlaylistModes::RepeatOne );
         }
         break;
 
         case PlaylistModes::RepeatOne:
         {
             // switch to RepeatAll
-            AudioEngine::instance()->setRepeatMode( PlaylistModes::RepeatAll );
+            MainAudioEngine::instance()->setRepeatMode( PlaylistModes::RepeatAll );
         }
         break;
 
         case PlaylistModes::RepeatAll:
         {
             // switch to NoRepeat
-            AudioEngine::instance()->setRepeatMode( PlaylistModes::NoRepeat );
+            MainAudioEngine::instance()->setRepeatMode( PlaylistModes::NoRepeat );
         }
         break;
 
@@ -670,7 +670,7 @@ AudioControls::onShuffleModeChanged( bool enabled )
 void
 AudioControls::onShuffleClicked()
 {
-    AudioEngine::instance()->setShuffled( m_shuffled ^ true );
+    MainAudioEngine::instance()->setShuffled( m_shuffled ^ true );
 }
 
 

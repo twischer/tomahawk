@@ -25,7 +25,7 @@
 #include "SourceList.h"
 #include "Pipeline.h"
 #include "TomahawkSettings.h"
-#include "audio/AudioEngine.h"
+#include "audio/MainAudioEngine.h"
 #include "database/LocalCollection.h"
 #include "playlist/dynamic/GeneratorInterface.h"
 
@@ -557,7 +557,7 @@ GlobalActionManager::handleOpenTrack( const query_ptr& q )
     ViewManager::instance()->queue()->model()->appendQuery( q );
     ViewManager::instance()->showQueue();
 
-    if ( !AudioEngine::instance()->isPlaying() && !AudioEngine::instance()->isPaused() )
+    if ( !MainAudioEngine::instance()->isPlaying() && !MainAudioEngine::instance()->isPaused() )
     {
         connect( q.data(), SIGNAL( resolvingFinished( bool ) ), this, SLOT( waitingForResolved( bool ) ) );
         m_waitingToPlay = q;
@@ -574,7 +574,7 @@ GlobalActionManager::handleOpenTracks( const QList< query_ptr >& queries )
     ViewManager::instance()->queue()->model()->appendQueries( queries );
     ViewManager::instance()->showQueue();
 
-    if ( !AudioEngine::instance()->isPlaying() && !AudioEngine::instance()->isPaused() )
+    if ( !MainAudioEngine::instance()->isPlaying() && !MainAudioEngine::instance()->isPaused() )
     {
         connect( queries.first().data(), SIGNAL( resolvingFinished( bool ) ), this, SLOT( waitingForResolved( bool ) ) );
         m_waitingToPlay = queries.first();
@@ -1383,19 +1383,19 @@ GlobalActionManager::waitingForResolved( bool /* success */ )
     if ( !m_waitingToPlay.isNull() && m_waitingToPlay->playable() )
     {
         // play it!
-//         AudioEngine::instance()->playItem( AudioEngine::instance()->playlist(), m_waitingToPlay->results().first() );
+//         MainAudioEngine::instance()->playItem( MainAudioEngine::instance()->playlist(), m_waitingToPlay->results().first() );
         if ( sender() && sender()->property( "playNow" ).toBool() )
         {
-            if ( !AudioEngine::instance()->playlist().isNull() )
-                AudioEngine::instance()->playItem( AudioEngine::instance()->playlist(), m_waitingToPlay->results().first() );
+            if ( !MainAudioEngine::instance()->playlist().isNull() )
+                MainAudioEngine::instance()->playItem( MainAudioEngine::instance()->playlist(), m_waitingToPlay->results().first() );
             else
             {
                 ViewManager::instance()->queue()->model()->appendQuery( m_waitingToPlay );
-                AudioEngine::instance()->play();
+                MainAudioEngine::instance()->play();
             }
         }
         else
-            AudioEngine::instance()->play();
+            MainAudioEngine::instance()->play();
 
         m_waitingToPlay.clear();
     }

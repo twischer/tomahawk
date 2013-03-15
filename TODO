@@ -1,0 +1,9 @@
+- daktiviere Play button für albums
+- Vorschauplayer
+- Löschen und ändern von Playlisten im party modus verhindern
+
+- HTTP Server für smartphones (siehe TomahawkApp::initHTTP())
+
+
+- Beim verlassen des Party modes player maximieren und nicht minimieren
+- Party modus mit passwort schutz ausstatten

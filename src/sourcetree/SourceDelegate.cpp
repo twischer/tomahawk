@@ -31,7 +31,7 @@
 #include "items/CategoryItems.h"
 #include "items/TemporaryPageItem.h"
 
-#include "audio/AudioEngine.h"
+#include "audio/MainAudioEngine.h"
 #include "AnimationHelper.h"
 #include "Source.h"
 #include "TomahawkSettings.h"
@@ -121,7 +121,7 @@ SourceDelegate::paintDecorations( QPainter* painter, const QStyleOptionViewItem&
         type == SourcesModel::TemporaryPage ||
         type == SourcesModel::LovedTracksPage ||
         type == SourcesModel::GenericPage );
-    const bool playing = ( AudioEngine::instance()->isPlaying() || AudioEngine::instance()->isPaused() );
+    const bool playing = ( MainAudioEngine::instance()->isPlaying() || MainAudioEngine::instance()->isPaused() );
 
     if ( playable && playing && item->isBeingPlayed() )
     {

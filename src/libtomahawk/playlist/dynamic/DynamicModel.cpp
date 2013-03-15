@@ -23,7 +23,7 @@
 #include "Pipeline.h"
 #include "Query.h"
 #include "Source.h"
-#include "audio/AudioEngine.h"
+#include "audio/MainAudioEngine.h"
 
 #include "utils/Logger.h"
 
@@ -88,7 +88,7 @@ DynamicModel::description() const
 void
 DynamicModel::startOnDemand()
 {
-    connect( AudioEngine::instance(), SIGNAL( loading( Tomahawk::result_ptr ) ), this, SLOT( newTrackLoading() ) );
+    connect( MainAudioEngine::instance(), SIGNAL( loading( Tomahawk::result_ptr ) ), this, SLOT( newTrackLoading() ) );
 
     m_playlist->generator()->startOnDemand();
 
@@ -131,9 +131,9 @@ DynamicModel::stopOnDemand( bool stopPlaying )
 {
     m_onDemandRunning = false;
     if ( stopPlaying )
-        AudioEngine::instance()->stop();
+        MainAudioEngine::instance()->stop();
 
-    disconnect( AudioEngine::instance(), SIGNAL( loading( Tomahawk::result_ptr ) ), this, SLOT( newTrackLoading() ) );
+    disconnect( MainAudioEngine::instance(), SIGNAL( loading( Tomahawk::result_ptr ) ), this, SLOT( newTrackLoading() ) );
 }
 
 

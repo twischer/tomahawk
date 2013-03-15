@@ -21,7 +21,7 @@
 #include "AlbumInfoWidget.h"
 #include "ui_AlbumInfoWidget.h"
 
-#include "audio/AudioEngine.h"
+#include "audio/MainAudioEngine.h"
 #include "ViewManager.h"
 #include "database/Database.h"
 #include "playlist/TreeModel.h"
@@ -160,10 +160,10 @@ AlbumInfoWidget::isBeingPlayed() const
     if ( ui->albums && ui->albums->isBeingPlayed() )
         return true;
 
-    if ( ui->albums && ui->albums->playlistInterface() == AudioEngine::instance()->currentTrackPlaylist() )
+    if ( ui->albums && ui->albums->playlistInterface() == MainAudioEngine::instance()->currentTrackPlaylist() )
         return true;
 
-    if ( ui->tracks && ui->tracks->playlistInterface() == AudioEngine::instance()->currentTrackPlaylist() )
+    if ( ui->tracks && ui->tracks->playlistInterface() == MainAudioEngine::instance()->currentTrackPlaylist() )
         return true;
 
     return false;

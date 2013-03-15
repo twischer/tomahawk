@@ -20,7 +20,7 @@
 #include "TomahawkTrayIcon.h"
 
 #include "Artist.h"
-#include "audio/AudioEngine.h"
+#include "audio/MainAudioEngine.h"
 #include "TomahawkApp.h"
 #include "TomahawkWindow.h"
 #include "Query.h"
@@ -83,12 +83,12 @@ TomahawkTrayIcon::TomahawkTrayIcon( QObject* parent )
     connect( m_loveTrackAction, SIGNAL( triggered() ), SLOT( loveTrackTriggered() ) );
     connect( m_stopContinueAfterTrackAction, SIGNAL( triggered() ), SLOT( stopContinueAfterTrackActionTriggered() ) );
 
-    connect( AudioEngine::instance(), SIGNAL( loading( Tomahawk::result_ptr ) ), SLOT( setResult( Tomahawk::result_ptr ) ) );
-    connect( AudioEngine::instance(), SIGNAL( started( Tomahawk::result_ptr ) ), SLOT( onPlay() ) );
-    connect( AudioEngine::instance(), SIGNAL( resumed() ), SLOT( onResume() ) );
-    connect( AudioEngine::instance(), SIGNAL( stopped() ), SLOT( onStop() ) );
-    connect( AudioEngine::instance(), SIGNAL( paused() ),  SLOT( onPause() ) );
-    connect( AudioEngine::instance(), SIGNAL( stopAfterTrackChanged() ), SLOT( onStopContinueAfterTrackChanged() ) );
+    connect( MainAudioEngine::instance(), SIGNAL( loading( Tomahawk::result_ptr ) ), SLOT( setResult( Tomahawk::result_ptr ) ) );
+    connect( MainAudioEngine::instance(), SIGNAL( started( Tomahawk::result_ptr ) ), SLOT( onPlay() ) );
+    connect( MainAudioEngine::instance(), SIGNAL( resumed() ), SLOT( onResume() ) );
+    connect( MainAudioEngine::instance(), SIGNAL( stopped() ), SLOT( onStop() ) );
+    connect( MainAudioEngine::instance(), SIGNAL( paused() ),  SLOT( onPause() ) );
+    connect( MainAudioEngine::instance(), SIGNAL( stopAfterTrackChanged() ), SLOT( onStopContinueAfterTrackChanged() ) );
 
     connect( &m_animationTimer, SIGNAL( timeout() ), SLOT( onAnimationTimer() ) );
     connect( this, SIGNAL( activated( QSystemTrayIcon::ActivationReason ) ), SLOT( onActivated( QSystemTrayIcon::ActivationReason ) ) );
@@ -172,7 +172,7 @@ TomahawkTrayIcon::setResult( const Tomahawk::result_ptr& result )
 void
 TomahawkTrayIcon::onStopContinueAfterTrackChanged()
 {
-    if ( m_currentTrack && m_currentTrack->toQuery()->equals( AudioEngine::instance()->stopAfterTrack() ) )
+    if ( m_currentTrack && m_currentTrack->toQuery()->equals( MainAudioEngine::instance()->stopAfterTrack() ) )
         m_stopContinueAfterTrackAction->setText( tr( "&Continue Playback after current Track" ) );
     else
         m_stopContinueAfterTrackAction->setText( tr( "&Stop Playback after current Track" ) );
@@ -243,7 +243,7 @@ TomahawkTrayIcon::onActivated( QSystemTrayIcon::ActivationReason reason )
 
         case QSystemTrayIcon::MiddleClick:
         {
-            AudioEngine::instance()->playPause();
+            MainAudioEngine::instance()->playPause();
         }
         break;
 
@@ -304,10 +304,10 @@ TomahawkTrayIcon::stopContinueAfterTrackActionTriggered()
     if ( !m_currentTrack )
         return;
 
-    if ( !m_currentTrack->toQuery()->equals( AudioEngine::instance()->stopAfterTrack() ) )
-        AudioEngine::instance()->setStopAfterTrack( m_currentTrack->toQuery() );
+    if ( !m_currentTrack->toQuery()->equals( MainAudioEngine::instance()->stopAfterTrack() ) )
+        MainAudioEngine::instance()->setStopAfterTrack( m_currentTrack->toQuery() );
     else
-        AudioEngine::instance()->setStopAfterTrack( Tomahawk::query_ptr() );
+        MainAudioEngine::instance()->setStopAfterTrack( Tomahawk::query_ptr() );
 }
 
 
@@ -337,11 +337,11 @@ TomahawkTrayIcon::event( QEvent* e )
     {
         if ( ((QWheelEvent*)e)->delta() > 0 )
         {
-            AudioEngine::instance()->raiseVolume();
+            MainAudioEngine::instance()->raiseVolume();
         }
         else
         {
-            AudioEngine::instance()->lowerVolume();
+            MainAudioEngine::instance()->lowerVolume();
         }
 
         return true;

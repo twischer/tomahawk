@@ -23,7 +23,7 @@
 
 #include "TomahawkSettings.h"
 #include "Source.h"
-#include "audio/AudioEngine.h"
+#include "audio/MainAudioEngine.h"
 #include "utils/ImageRegistry.h"
 #include "utils/TomahawkUtils.h"
 #include "utils/Logger.h"
@@ -97,7 +97,7 @@ ActionCollection::initActions()
     m_actionCollection[ "quit" ]->setMenuRole( QAction::QuitRole );
 
     // connect actions to AudioEngine
-    AudioEngine *ae = AudioEngine::instance();
+    MainAudioEngine *ae = MainAudioEngine::instance();
     connect( m_actionCollection[ "playPause" ],     SIGNAL( triggered() ), ae,   SLOT( playPause() ), Qt::UniqueConnection );
     connect( m_actionCollection[ "stop" ],          SIGNAL( triggered() ), ae,   SLOT( stop() ),      Qt::UniqueConnection );
     connect( m_actionCollection[ "previousTrack" ], SIGNAL( triggered() ), ae,   SLOT( previous() ),  Qt::UniqueConnection );

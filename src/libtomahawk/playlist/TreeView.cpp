@@ -24,7 +24,7 @@
 #include <QPainter>
 #include <QScrollBar>
 
-#include "audio/AudioEngine.h"
+#include "audio/MainAudioEngine.h"
 #include "context/ContextWidget.h"
 #include "utils/AnimatedSpinner.h"
 #include "widgets/OverlayWidget.h"
@@ -250,11 +250,11 @@ TreeView::onItemActivated( const QModelIndex& index )
             }
             else if ( !item->result().isNull() && item->result()->isOnline() )
             {
-                AudioEngine::instance()->playItem( m_proxyModel->playlistInterface(), item->result() );
+                MainAudioEngine::instance()->playItem( m_proxyModel->playlistInterface(), item->result() );
             }
             else if ( !item->query().isNull() )
             {
-                AudioEngine::instance()->playItem( m_proxyModel->playlistInterface(), item->query() );
+                MainAudioEngine::instance()->playItem( m_proxyModel->playlistInterface(), item->query() );
             }
         }
     }

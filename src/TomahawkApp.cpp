@@ -51,7 +51,8 @@
 #include "DropJob.h"
 #include "EchonestCatalogSynchronizer.h"
 
-#include "audio/AudioEngine.h"
+#include "audio/MainAudioEngine.h"
+#include "audio/PreviewAudioEngine.h"
 #include "utils/XspfLoader.h"
 #include "utils/JspfLoader.h"
 #include "utils/Logger.h"
@@ -185,7 +186,8 @@ TomahawkApp::init()
     // Cause the creation of the nam, but don't need to address it directly, so prevent warning
     Q_UNUSED( TomahawkUtils::nam() );
 
-    m_audioEngine = QWeakPointer<AudioEngine>( new AudioEngine );
+    m_audioEngine = QWeakPointer<MainAudioEngine>( new MainAudioEngine );
+    m_previewEngine = QWeakPointer<PreviewAudioEngine>( new PreviewAudioEngine );
 
     // init pipeline and resolver factories
     new Pipeline();
@@ -351,6 +353,9 @@ TomahawkApp::~TomahawkApp()
 
     if ( !m_audioEngine.isNull() )
         delete m_audioEngine.data();
+
+    if ( !m_previewEngine.isNull() )
+        delete m_previewEngine.data();
 
     delete Tomahawk::Accounts::AccountManager::instance();
 
@@ -740,21 +745,21 @@ TomahawkApp::instanceStarted( KDSingleApplicationGuard::Instance instance )
     }
 
     if ( arguments.contains( "--next" ) )
-        AudioEngine::instance()->next();
+        MainAudioEngine::instance()->next();
     else if ( arguments.contains( "--prev" ) )
-        AudioEngine::instance()->previous();
+        MainAudioEngine::instance()->previous();
     else if ( arguments.contains( "--playpause" ) )
-        AudioEngine::instance()->playPause();
+        MainAudioEngine::instance()->playPause();
     else if ( arguments.contains( "--play" ) )
-        AudioEngine::instance()->play();
+        MainAudioEngine::instance()->play();
     else if ( arguments.contains( "--pause" ) )
-        AudioEngine::instance()->pause();
+        MainAudioEngine::instance()->pause();
     else if ( arguments.contains( "--stop" ) )
-        AudioEngine::instance()->stop();
+        MainAudioEngine::instance()->stop();
     else if ( arguments.contains( "--voldown" ) )
-        AudioEngine::instance()->lowerVolume();
+        MainAudioEngine::instance()->lowerVolume();
     else if ( arguments.contains( "--volup" ) )
-        AudioEngine::instance()->raiseVolume();
+        MainAudioEngine::instance()->raiseVolume();
     else
         activate();
 }

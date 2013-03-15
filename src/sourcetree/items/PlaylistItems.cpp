@@ -25,7 +25,7 @@
 #include "SourceItem.h"
 #include "DropJob.h"
 #include "Source.h"
-#include "audio/AudioEngine.h"
+#include "audio/MainAudioEngine.h"
 #include "playlist/dynamic/GeneratorInterface.h"
 #include "playlist/PlaylistView.h"
 #include "utils/TomahawkUtilsGui.h"
@@ -108,9 +108,9 @@ PlaylistItem::isBeingPlayed() const
 {
     if ( ViewPage* page = ViewManager::instance()->pageForPlaylist( m_playlist ) )
     {
-        if ( AudioEngine::instance()->currentTrackPlaylist() == page->playlistInterface() )
+        if ( MainAudioEngine::instance()->currentTrackPlaylist() == page->playlistInterface() )
             return true;
-        if ( page->playlistInterface()->hasChildInterface( AudioEngine::instance()->currentTrackPlaylist() ) )
+        if ( page->playlistInterface()->hasChildInterface( MainAudioEngine::instance()->currentTrackPlaylist() ) )
             return true;
     }
     return false;
@@ -600,7 +600,7 @@ bool
 DynamicPlaylistItem::isBeingPlayed() const
 {
     if ( ViewManager::instance()->pageForDynPlaylist( m_dynplaylist ) )
-        return AudioEngine::instance()->currentTrackPlaylist() == ViewManager::instance()->pageForDynPlaylist( m_dynplaylist )->playlistInterface();
+        return MainAudioEngine::instance()->currentTrackPlaylist() == ViewManager::instance()->pageForDynPlaylist( m_dynplaylist )->playlistInterface();
     return false;
 }
 

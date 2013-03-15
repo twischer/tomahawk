@@ -23,7 +23,7 @@
 #include "Album.h"
 #include "ContextMenu.h"
 #include "ViewManager.h"
-#include "audio/AudioEngine.h"
+#include "audio/MainAudioEngine.h"
 #include "widgets/ImageButton.h"
 #include "utils/TomahawkUtilsGui.h"
 #include "utils/Logger.h"
@@ -304,11 +304,11 @@ void
 PlayableCover::onClicked()
 {
     if ( m_artist )
-        AudioEngine::instance()->playItem( m_artist );
+        MainAudioEngine::instance()->playItem( m_artist );
     else if ( m_album )
-        AudioEngine::instance()->playItem( m_album );
+        MainAudioEngine::instance()->playItem( m_album );
     else if ( m_query )
-        AudioEngine::instance()->playItem( Tomahawk::playlistinterface_ptr(), m_query );
+        MainAudioEngine::instance()->playItem( Tomahawk::playlistinterface_ptr(), m_query );
 }
 
 
