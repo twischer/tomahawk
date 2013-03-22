@@ -17,13 +17,8 @@ MediaQueue::MediaQueue()
         connect( mediaOutput, SIGNAL( aboutToFinish() ), SLOT( onAboutToFinish() ) );
         connect( mediaOutput, SIGNAL( volumeChanged( qreal ) ), SLOT( onVolumeChanged( qreal ) ) );
 
-        // only need next source earlier if the fading is available and so a crossfading is possible
-        // if fading not available do not make a crossfading
-        if ( mediaOutput->isFadingAvailable() )
-        {
-            mediaOutput->setPrefinishMark( CROSSFADING_TIME_IN_MS );
-            connect( mediaOutput, SIGNAL( prefinishMarkReached( qint32 ) ), SLOT( onPrefinishMarkReached( qint32 ) ) );
-        }
+        mediaOutput->setPrefinishMark( CROSSFADING_TIME_IN_MS );
+        connect( mediaOutput, SIGNAL( prefinishMarkReached( qint32 ) ), SLOT( onPrefinishMarkReached( qint32 ) ) );
 
         m_mediaOutputs[i] = mediaOutput;
     }
@@ -75,6 +70,8 @@ MediaQueue::seek( qint64 time )
 void
 MediaQueue::setNextSource( const Phonon::MediaSource& source, const bool autoDelete, const bool doCrossfading, const qint64 totalTime )
 {
+    const qreal userVolume = m_mediaOutputs[m_currentMediaObject]->volume();
+
     if (doCrossfading)
         // fade out running source
         m_mediaOutputs[m_currentMediaObject]->fadeOut( CROSSFADING_TIME_IN_MS );
@@ -93,12 +90,12 @@ MediaQueue::setNextSource( const Phonon::MediaSource& source, const bool autoDel
     if (doCrossfading)
     {
         // fade in next source
-        m_mediaOutputs[m_currentMediaObject]->fadeIn( CROSSFADING_TIME_IN_MS );
+        m_mediaOutputs[m_currentMediaObject]->fadeIn( CROSSFADING_TIME_IN_MS, userVolume );
     }
     else
     {
         // the volume has to be set to max always, otherwise the track will be played silent
-        m_mediaOutputs[m_currentMediaObject]->fadeIn( 0 );
+        m_mediaOutputs[m_currentMediaObject]->fadeIn( 0, userVolume );
     }
 
     // start next source

@@ -1,50 +1,54 @@
 #include "MediaOutput.h"
 
+
+const qint32 MediaOutput::CROSSFADING_INTERVAL_IN_MS = 100;
+
+
 MediaOutput::MediaOutput()
     : totalTimeInMSec(0)
     , prefinishMark( 0 )
+    , fadeVolumeDiff( 0.0 )
+    , leftFadeSteps ( 0 )
+    , timer(this)
     , m_audioOutput( Phonon::MusicCategory, this )
-    , m_mediaFader()
 {
-    m_mediaFader.setFadeCurve( Phonon::VolumeFaderEffect::Fade12Decibel );
-
     Phonon::Path path = Phonon::createPath( this, &m_audioOutput );
-
-    fadingAvailable = path.insertEffect( &m_mediaFader );
 
     connect( &m_audioOutput, SIGNAL( volumeChanged( qreal ) ), SLOT( onVolumeChanged( qreal ) ) );
     connect( this, SIGNAL( tick( qint64 ) ), SLOT( checkPrefinishMark( qint64 ) ) );
+
+    connect( &timer, SIGNAL(timeout()), SLOT(timerTriggered()) );
 
     blockSignals( true );
 }
 
 
-bool
-MediaOutput::isFadingAvailable()
-{
-    return fadingAvailable;
-}
-
-
 void
-MediaOutput::fadeIn( int fadeTime )
+MediaOutput::fadeIn( qint32 fadeTime, qreal targetVolume )
 {
     if (fadeTime <= 0)
-        m_mediaFader.setVolume( 1.0 );
+        setVolume( targetVolume );
     else
     {
-        m_mediaFader.setVolume( 0.0 );
-        m_mediaFader.fadeIn( fadeTime );
+        setVolume( 0.0 );
+        fadeTo( fadeTime, targetVolume );
     }
 }
 
 
 void
-MediaOutput::fadeOut( int fadeTime )
+MediaOutput::fadeOut( qint32 fadeTime )
 {
-    m_mediaFader.fadeOut( fadeTime );
+    fadeTo( fadeTime, -volume() );
 }
 
+void
+MediaOutput::fadeTo( qint32 fadeTime, qreal targetVolumeDiff )
+{
+    leftFadeSteps = fadeTime / CROSSFADING_INTERVAL_IN_MS;
+    fadeVolumeDiff = targetVolumeDiff / leftFadeSteps;
+    timer.start(CROSSFADING_INTERVAL_IN_MS);
+}
 
 qreal
 MediaOutput::volume()
@@ -72,7 +76,6 @@ MediaOutput::blockSignals( bool block )
 {
     Phonon::MediaObject::blockSignals( block );
     m_audioOutput.blockSignals( block );
-    m_mediaFader.blockSignals( block );
 }
 
 
@@ -120,5 +123,20 @@ MediaOutput::checkPrefinishMark( qint64 time )
         const qint64 timeToEnd = totalTimeInMSec - currentTime();
         if (timeToEnd < prefinishMark)
             emit prefinishMarkReached(timeToEnd);
+    }
+}
+
+void
+MediaOutput::timerTriggered()
+{
+    leftFadeSteps--;
+
+    if (leftFadeSteps >= 0)
+    {
+        const qreal currentVolume = volume();
+        setVolume( currentVolume + fadeVolumeDiff );
+
+        if (leftFadeSteps == 0)
+            timer.stop();
     }
 }
