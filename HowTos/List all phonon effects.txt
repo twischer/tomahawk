@@ -1,0 +1,36 @@
+#include <iostream>
+#include <phonon/BackendCapabilities>
+#include <phonon/EffectDescription>
+#include <phonon/Effect>
+#include <phonon/EffectParameter>
+#include <phonon/EffectWidget>
+
+
+std::cout << "START START START" << std::endl;
+
+QList<Phonon::EffectDescription> effects = Phonon::BackendCapabilities::availableAudioEffects();
+foreach (Phonon::EffectDescription e, effects)
+{
+		std::cout << e.name().toAscii().data() << std::endl;
+
+		Phonon::Effect *effect = new Phonon::Effect(e);
+		path.insertEffect(effect);
+
+		Phonon::EffectWidget *effectWidget = new Phonon::EffectWidget(effect);
+		effectWidget->show();
+
+		foreach (Phonon::EffectParameter p, effect->parameters())
+		{
+			std::cout << "# " << p.name().toAscii().data() << std::endl;
+		}
+}
+
+QList<Phonon::EffectDescription> effectDescriptions =
+			Phonon::BackendCapabilities::availableAudioEffects();
+	Phonon::EffectDescription effectDescription = effectDescriptions.at(4);
+
+Phonon::Effect *effect = new Phonon::Effect(effectDescription);
+	path.insertEffect(effect);
+
+	Phonon::EffectWidget *effectWidget = new Phonon::EffectWidget(effect);
+	effectWidget->show(); 
