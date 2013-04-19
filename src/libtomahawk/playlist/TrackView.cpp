@@ -35,6 +35,7 @@
 #include "Source.h"
 #include "TomahawkSettings.h"
 #include "audio/MainAudioEngine.h"
+#include "audio/PreviewAudioEngine.h"
 #include "context/ContextWidget.h"
 #include "widgets/OverlayWidget.h"
 #include "utils/TomahawkUtilsGui.h"
@@ -89,6 +90,7 @@ TrackView::TrackView( QWidget* parent )
     connect( verticalScrollBar(), SIGNAL( valueChanged( int ) ), SLOT( onViewChanged() ) );
     connect( &m_timer, SIGNAL( timeout() ), SLOT( onScrollTimeout() ) );
 
+    connect( this, SIGNAL( clicked( QModelIndex ) ), SLOT( onItemClicked( QModelIndex ) ) );
     connect( this, SIGNAL( doubleClicked( QModelIndex ) ), SLOT( onItemActivated( QModelIndex ) ) );
     connect( this, SIGNAL( customContextMenuRequested( const QPoint& ) ), SLOT( onCustomContextMenu( const QPoint& ) ) );
     connect( m_contextMenu, SIGNAL( triggered( int ) ), SLOT( onMenuTriggered( int ) ) );
@@ -317,6 +319,18 @@ TrackView::currentChanged( const QModelIndex& current, const QModelIndex& previo
     {
         ViewManager::instance()->context()->setQuery( item->query() );
     }
+}
+
+
+void
+TrackView::onItemClicked( const QModelIndex& index )
+{
+    if ( !index.isValid() )
+        return;
+
+    PlayableItem* item = m_model->itemFromIndex( m_proxyModel->mapToSource( index ) );
+    if ( item && !item->query().isNull() )
+        PreviewAudioEngine::instance()->playItem( playlistInterface(), item->query() );
 }
 
 

@@ -25,6 +25,7 @@
 #include <QScrollBar>
 
 #include "audio/MainAudioEngine.h"
+#include "audio/PreviewAudioEngine.h"
 #include "context/ContextWidget.h"
 #include "utils/AnimatedSpinner.h"
 #include "widgets/OverlayWidget.h"
@@ -81,6 +82,7 @@ TreeView::TreeView( QWidget* parent )
     connect( verticalScrollBar(), SIGNAL( valueChanged( int ) ), SLOT( onViewChanged() ) );
     connect( &m_timer, SIGNAL( timeout() ), SLOT( onScrollTimeout() ) );
 
+    connect( this, SIGNAL( clicked( QModelIndex ) ), SLOT( onItemClicked( QModelIndex ) ) );
     connect( this, SIGNAL( doubleClicked( QModelIndex ) ), SLOT( onItemActivated( QModelIndex ) ) );
     connect( this, SIGNAL( customContextMenuRequested( QPoint ) ), SLOT( onCustomContextMenu( QPoint ) ) );
     connect( m_contextMenu, SIGNAL( triggered( int ) ), SLOT( onMenuTriggered( int ) ) );
@@ -221,6 +223,27 @@ TreeView::currentChanged( const QModelIndex& current, const QModelIndex& previou
             ViewManager::instance()->context()->setAlbum( item->album() );
         else if ( !item->query().isNull() )
             ViewManager::instance()->context()->setQuery( item->query() );
+    }
+}
+
+
+void
+TreeView::onItemClicked( const QModelIndex& index )
+{
+    if ( !index.isValid() )
+        return;
+
+    PlayableItem* item = m_model->itemFromIndex( m_proxyModel->mapToSource( index ) );
+    if ( item )
+    {
+        if ( !item->result().isNull() && item->result()->isOnline() )
+        {
+            PreviewAudioEngine::instance()->playItem( m_proxyModel->playlistInterface(), item->result() );
+        }
+        else if ( !item->query().isNull() )
+        {
+            PreviewAudioEngine::instance()->playItem( m_proxyModel->playlistInterface(), item->query() );
+        }
     }
 }
 

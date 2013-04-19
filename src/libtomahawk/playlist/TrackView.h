@@ -123,6 +123,8 @@ protected slots:
     virtual void currentChanged( const QModelIndex& current, const QModelIndex& previous );
 
 private slots:
+    void onItemClicked( const QModelIndex& index );
+
     void onItemResized( const QModelIndex& index );
     void onFilterChanged( const QString& filter );
 
