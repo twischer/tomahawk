@@ -21,9 +21,9 @@ PreviewPlayer::PreviewPlayer(QWidget *parent) :
     // <From PreviewAudioEngine>
     connect( PreviewAudioEngine::instance(), SIGNAL( loading( Tomahawk::result_ptr ) ), SLOT( onPlaybackLoading( Tomahawk::result_ptr ) ) );
     connect( PreviewAudioEngine::instance(), SIGNAL( started( Tomahawk::result_ptr ) ), SLOT( onPlaybackStarted( Tomahawk::result_ptr ) ) );
-/*    connect( PreviewAudioEngine::instance(), SIGNAL( seeked( qint64 ) ), SLOT( onPlaybackSeeked( qint64 ) ) );
+//    connect( PreviewAudioEngine::instance(), SIGNAL( seeked( qint64 ) ), SLOT( onPlaybackSeeked( qint64 ) ) );
     connect( PreviewAudioEngine::instance(), SIGNAL( timerMilliSeconds( qint64 ) ), SLOT( onPlaybackTimer( qint64 ) ) );
-    connect( PreviewAudioEngine::instance(), SIGNAL( volumeChanged( int ) ), SLOT( onVolumeChanged( int ) ) );*/
+//    connect( PreviewAudioEngine::instance(), SIGNAL( volumeChanged( int ) ), SLOT( onVolumeChanged( int ) ) );
 }
 
 
@@ -65,6 +65,8 @@ PreviewPlayer::onPlaybackStarted( const Tomahawk::result_ptr& result )
 void
 PreviewPlayer::onPlaybackLoading( const Tomahawk::result_ptr& result )
 {
+    m_currentTrack = result;
+
     ui->artistTrackLabel->setResult( result );
     ui->albumLabel->setResult( result );
 
@@ -75,3 +77,91 @@ PreviewPlayer::onPlaybackLoading( const Tomahawk::result_ptr& result )
     ui->timeLeftLabel->setText( "-" + duration );
 }
 
+
+void
+PreviewPlayer::onPlaybackTimer( qint64 msElapsed )
+{
+    //tDebug() << Q_FUNC_INFO;
+
+//    m_phononTickCheckTimer.stop();
+
+    if ( m_currentTrack.isNull() )
+    {
+        m_sliderTimeLine.stop();
+        return;
+    }
+
+    const int seconds = msElapsed / 1000;
+    if ( seconds != m_lastTextSecondShown )
+    {
+        ui->timeLabel->setText( TomahawkUtils::timeToString( seconds ) );
+        ui->timeLeftLabel->setText( "-" + TomahawkUtils::timeToString( m_currentTrack->duration() - seconds ) );
+        m_lastTextSecondShown = seconds;
+    }
+
+//    m_phononTickCheckTimer.start( 500 );
+
+    if ( msElapsed == 0 )
+        return;
+
+    int currentTime = m_sliderTimeLine.currentTime();
+    //tDebug( LOGEXTRA ) << Q_FUNC_INFO << "msElapsed =" << msElapsed << "and timer current time =" << currentTime << "and audio engine state is" << (int)MainAudioEngine::instance()->state();
+
+    // First condition checks for the common case where
+    // 1) the track has been started
+    // 2) we haven't seeked,
+    // 3) the timeline is pretty close to the actual time elapsed, within ALLOWED_MAX_DIVERSIONmsec, so no adustment needed, and
+    // 4) The audio engine is actually currently running
+/*    if ( !m_seeked
+            && qAbs( msElapsed - currentTime ) <= ALLOWED_MAX_DIVERSION
+            && MainAudioEngine::instance()->state() == AudioEngine::Playing )
+    {
+        if ( m_sliderTimeLine.state() != QTimeLine::Running )
+            m_sliderTimeLine.resume();
+        m_lastSliderCheck = msElapsed;
+        return;
+    }
+    else
+    {
+        //tDebug() << Q_FUNC_INFO << "Fallthrough";
+        // If we're in here we're offset, so we need to do some munging around
+        ui->seekSlider->blockSignals( true );
+
+        // First handle seeks
+        if ( m_seeked )
+        {
+            //tDebug() << Q_FUNC_INFO << "Seeked";
+            m_sliderTimeLine.setPaused( true );
+            m_sliderTimeLine.setCurrentTime( msElapsed );
+            m_seeked = false;
+            if ( MainAudioEngine::instance()->state() == AudioEngine::Playing )
+                m_sliderTimeLine.resume();
+        }
+        // Next handle falling behind by too much, or getting ahead by too much (greater than allowed amount, which would have been sorted above)
+        // However, a Phonon bug means that after a seek we'll actually have AudioEngine's state be Playing, when it ain't, so have to detect that
+        else if ( MainAudioEngine::instance()->state() == AudioEngine::Playing )
+        {
+            //tDebug() << Q_FUNC_INFO << "AudioEngine playing";
+            m_sliderTimeLine.setPaused( true );
+            m_sliderTimeLine.setCurrentTime( msElapsed );
+            if ( msElapsed != m_lastSliderCheck )
+                m_sliderTimeLine.resume();
+        }
+        // Finally, the case where the audioengine isn't playing; if the timeline is still running, pause it and catch up
+        else if ( MainAudioEngine::instance()->state() != AudioEngine::Playing )
+        {
+            //tDebug() << Q_FUNC_INFO << "AudioEngine not playing";
+            if ( msElapsed != currentTime || m_sliderTimeLine.state() == QTimeLine::Running)
+            {
+                m_sliderTimeLine.setPaused( true );
+                m_sliderTimeLine.setCurrentTime( msElapsed );
+            }
+        }
+        else
+        {
+            tDebug() << Q_FUNC_INFO << "What to do? How could we even get here?";
+        }
+        m_lastSliderCheck = msElapsed;
+        ui->seekSlider->blockSignals( false );
+    }*/
+}

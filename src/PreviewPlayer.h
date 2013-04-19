@@ -18,13 +18,21 @@ class PreviewPlayer : public QDialog
 public:
     explicit PreviewPlayer(QWidget *parent = 0);
     ~PreviewPlayer();
-    
-private:
-    Ui::PreviewPlayer *ui;
-    QTimeLine m_sliderTimeLine;
 
+private slots:
     void onPlaybackStarted( const Tomahawk::result_ptr& result );
     void onPlaybackLoading( const Tomahawk::result_ptr& result );
+//    void onPlaybackSeeked( qint64 msec );
+//    void onPlaybackStopped();
+
+    void onPlaybackTimer( qint64 msElapsed );
+//    void onVolumeChanged( int volume );
+
+private:
+    qint64 m_lastTextSecondShown;
+    Ui::PreviewPlayer *ui;
+    QTimeLine m_sliderTimeLine;
+    Tomahawk::result_ptr m_currentTrack;
 
 };
 
