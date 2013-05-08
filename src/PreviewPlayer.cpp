@@ -39,6 +39,9 @@ PreviewPlayer::onPlaybackStarted( const Tomahawk::result_ptr& result )
     if ( result.isNull() )
         return;
 
+    if ( m_currentTrack.isNull() || ( !m_currentTrack.isNull() && m_currentTrack.data()->id() != result.data()->id() ) )
+        onPlaybackLoading( result );
+
     qint64 duration = PreviewAudioEngine::instance()->currentTrackTotalTime();
 
     if ( duration == -1 )
@@ -59,6 +62,8 @@ PreviewPlayer::onPlaybackStarted( const Tomahawk::result_ptr& result )
 
     int updateRate = (double)1000 / ( (double)ui->seekSlider->contentsRect().width() / (double)( duration / 1000 ) );
     m_sliderTimeLine.setUpdateInterval( qBound( 40, updateRate, 500 ) );
+
+    m_sliderTimeLine.resume();
 }
 
 
@@ -105,23 +110,18 @@ PreviewPlayer::onPlaybackTimer( qint64 msElapsed )
         return;
 
     int currentTime = m_sliderTimeLine.currentTime();
-    //tDebug( LOGEXTRA ) << Q_FUNC_INFO << "msElapsed =" << msElapsed << "and timer current time =" << currentTime << "and audio engine state is" << (int)MainAudioEngine::instance()->state();
-
-    // First condition checks for the common case where
-    // 1) the track has been started
-    // 2) we haven't seeked,
-    // 3) the timeline is pretty close to the actual time elapsed, within ALLOWED_MAX_DIVERSIONmsec, so no adustment needed, and
-    // 4) The audio engine is actually currently running
-/*    if ( !m_seeked
-            && qAbs( msElapsed - currentTime ) <= ALLOWED_MAX_DIVERSION
-            && MainAudioEngine::instance()->state() == AudioEngine::Playing )
+    if ( qAbs( msElapsed - currentTime ) > AudioControls::ALLOWED_MAX_DIVERSION )
     {
-        if ( m_sliderTimeLine.state() != QTimeLine::Running )
-            m_sliderTimeLine.resume();
-        m_lastSliderCheck = msElapsed;
-        return;
+        ui->seekSlider->blockSignals( true );
+        // tODO vielleicht vorher erst noch pausieren
+        m_sliderTimeLine.setCurrentTime( msElapsed );
+
+        ui->seekSlider->blockSignals( false );
+
+        if (qAbs( msElapsed - currentTime ) > 1200)
+            int i=0;
     }
-    else
+/*    else
     {
         //tDebug() << Q_FUNC_INFO << "Fallthrough";
         // If we're in here we're offset, so we need to do some munging around

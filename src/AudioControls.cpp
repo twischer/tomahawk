@@ -43,7 +43,7 @@
 #include <QDesktopServices>
 #include <QGraphicsDropShadowEffect>
 
-const static int ALLOWED_MAX_DIVERSION = 300;
+const int AudioControls::ALLOWED_MAX_DIVERSION = 300;
 
 using namespace Tomahawk;
 

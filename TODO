@@ -1,4 +1,5 @@
 - Vorschauplayer
+- Lautstärke wird immer vom zuletzt geladenen lied geregelt (also auch vom preview player wenn dort ein neueres lied ist)
 - Deaktiviere Lautstärkeregler wenn party modus aktiv
 
 - größe der queue begrenzen

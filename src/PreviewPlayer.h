@@ -5,6 +5,7 @@
 #include <QTimeLine>
 
 #include "Result.h"
+#include "AudioControls.h"
 
 
 namespace Ui {

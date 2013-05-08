@@ -43,6 +43,8 @@ class AudioControls : public QWidget
 Q_OBJECT
 
 public:
+    const static int ALLOWED_MAX_DIVERSION;
+
     AudioControls( QWidget* parent = 0 );
     ~AudioControls();
 
