@@ -51,6 +51,7 @@ private:
 
     void fullTextResolve( DatabaseImpl* lib );
     void resolve( DatabaseImpl* lib );
+    Tomahawk::result_ptr convertResult( DatabaseImpl* lib, const TomahawkSqlQuery& files_query );
 
     Tomahawk::query_ptr m_query;
 };
