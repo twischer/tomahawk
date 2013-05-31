@@ -113,8 +113,10 @@ PreviewPlayer::onPlaybackTimer( qint64 msElapsed )
     if ( qAbs( msElapsed - currentTime ) > AudioControls::ALLOWED_MAX_DIVERSION )
     {
         ui->seekSlider->blockSignals( true );
-        // tODO vielleicht vorher erst noch pausieren
+
+        m_sliderTimeLine.setPaused( true );
         m_sliderTimeLine.setCurrentTime( msElapsed );
+        m_sliderTimeLine.resume();
 
         ui->seekSlider->blockSignals( false );
 
