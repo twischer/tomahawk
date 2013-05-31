@@ -23,11 +23,9 @@ public:
 private slots:
     void onPlaybackStarted( const Tomahawk::result_ptr& result );
     void onPlaybackLoading( const Tomahawk::result_ptr& result );
-//    void onPlaybackSeeked( qint64 msec );
-//    void onPlaybackStopped();
 
     void onPlaybackTimer( qint64 msElapsed );
-//    void onVolumeChanged( int volume );
+    void onVolumeChanged( int volume );
 
 private:
     qint64 m_lastTextSecondShown;
