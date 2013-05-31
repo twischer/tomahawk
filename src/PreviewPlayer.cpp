@@ -129,3 +129,11 @@ PreviewPlayer::onPlaybackTimer( qint64 msElapsed )
         ui->seekSlider->blockSignals( false );
     }
 }
+
+
+bool
+PreviewPlayer::canGoNext()
+{
+    // disabling playing next song if the last one was played
+    return false;
+}

@@ -33,6 +33,8 @@ private:
     QTimeLine m_sliderTimeLine;
     Tomahawk::result_ptr m_currentTrack;
 
+    bool canGoNext();
+
 };
 
 #endif // PREVIEWPLAYER_H

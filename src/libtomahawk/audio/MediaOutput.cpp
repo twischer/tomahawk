@@ -14,7 +14,7 @@ MediaOutput::MediaOutput()
 
     fadingAvailable = path.insertEffect( &m_mediaFader );
 
-    tDebug() << "Connect media output " << m_audioOutput;
+    tDebug() << "Connect media output " << &m_audioOutput;
     connect( &m_audioOutput, SIGNAL( volumeChanged( qreal ) ), SLOT( onVolumeChanged( qreal ) ) );
     connect( this, SIGNAL( tick( qint64 ) ), SLOT( checkPrefinishMark( qint64 ) ) );
 
@@ -59,7 +59,7 @@ MediaOutput::volume()
 void
 MediaOutput::setVolume( qreal newVolume )
 {
-    tDebug() << "Set volume for media output " << m_audioOutput << " to " << newVolume;
+    tDebug() << "Set volume for media output " << &m_audioOutput << " to " << newVolume;
 
     m_audioOutput.setVolume( newVolume );
 }
