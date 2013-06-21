@@ -5,6 +5,7 @@
 MediaOutput::MediaOutput()
     : totalTimeInMSec(0)
     , prefinishMark( 0 )
+    , currentVolume( 1.0 )
     , m_audioOutput( Phonon::MusicCategory, this )
     , m_mediaFader()
 {
@@ -33,11 +34,11 @@ void
 MediaOutput::fadeIn( int fadeTime )
 {
     if (fadeTime <= 0)
-        m_mediaFader.setVolume( 1.0 );
+        m_mediaFader.setVolume( currentVolume );
     else
     {
         m_mediaFader.setVolume( 0.0 );
-        m_mediaFader.fadeIn( fadeTime );
+        m_mediaFader.fadeTo( currentVolume, fadeTime );
     }
 }
 
@@ -52,7 +53,10 @@ MediaOutput::fadeOut( int fadeTime )
 qreal
 MediaOutput::volume()
 {
-    return m_audioOutput.volume();
+    if (fadingAvailable)
+        return currentVolume;
+    else
+        return m_audioOutput.volume();
 }
 
 
@@ -61,14 +65,28 @@ MediaOutput::setVolume( qreal newVolume )
 {
     tDebug() << "Set volume for media output " << &m_audioOutput << " to " << newVolume;
 
-    m_audioOutput.setVolume( newVolume );
+    if (fadingAvailable)
+    {
+        // This is only a workaround because the gstreamer volume control
+        // changes sometimes the volume of the wrong output
+        // (if seek is used bevore on the next call the right volume will be changed)
+        m_mediaFader.setVolume( newVolume );
+        currentVolume = newVolume;
+
+        emit volumeChanged( newVolume );
+    }
+    else
+        m_audioOutput.setVolume( newVolume );
 }
 
 
 void
 MediaOutput::onVolumeChanged( qreal volume )
 {
-    emit volumeChanged( volume );
+    // Only update the volume slider
+    // if the fading is not used for volume control
+    if (!fadingAvailable)
+        emit volumeChanged( volume );
 }
 
 

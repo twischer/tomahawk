@@ -49,6 +49,7 @@ private:
     bool fadingAvailable;
     qint64 totalTimeInMSec;
     qint64 prefinishMark;
+    qreal currentVolume;
     Phonon::AudioOutput m_audioOutput;
     Phonon::VolumeFaderEffect m_mediaFader;
 };
