@@ -20,6 +20,7 @@
 #include "ui_QueueView.h"
 
 #include <QVBoxLayout>
+#include <QMessageBox>
 
 #include "widgets/HeaderLabel.h"
 #include "playlist/QueueProxyModel.h"
@@ -56,6 +57,7 @@ QueueView::QueueView( AnimatedSplitter* parent )
     ui->queue->setEmptyTip( QString() );
 
     connect( queueModel, SIGNAL( trackCountChanged( unsigned int ) ), SLOT( updateLabel() ) );
+    connect( queueModel, SIGNAL( playlistToFull() ), SLOT( onPlaylistToFull() ) );
     connect( ui->toggleButton, SIGNAL( clicked() ), SLOT( show() ) );
     connect( this, SIGNAL( animationFinished() ), SLOT( onAnimationFinished() ) );
 
@@ -191,4 +193,16 @@ QueueView::updateLabel()
     {
         ui->toggleButton->setText( tr( "Close Queue" ) );
     }
+}
+
+void
+QueueView::onPlaylistToFull()
+{
+    QMessageBox box;
+    box.setWindowTitle( tr( "Playlist is full" ) );
+    box.setTextFormat( Qt::RichText );
+    box.setIcon( QMessageBox::Information );
+    box.setText( tr( "The playlist is full. Please try it again later." ) );
+    box.setStandardButtons( QMessageBox::Ok );
+    box.exec();
 }
