@@ -152,6 +152,9 @@ AudioControls::AudioControls( QWidget* parent )
     ui->pauseButton->setContentsMargins( 0, 0, 0, 0 );
     ui->stackedLayout->setSizeConstraint( QLayout::SetFixedSize );
 
+    // disable all locked controls if the party mode is active
+    onPartyModeChanged();
+
     onPlaybackStopped(); // initial state
 }
 
@@ -725,4 +728,7 @@ AudioControls::onPartyModeChanged()
     ui->prevButton->setDisabled( isPartyMode );
     ui->nextButton->setDisabled( isPartyMode );
     ui->seekSlider->setDisabled( isPartyMode );
+    ui->volumeHighButton->setDisabled( isPartyMode );
+    ui->volumeLowButton->setDisabled( isPartyMode );
+    ui->volumeSlider->setDisabled( isPartyMode );
 }
