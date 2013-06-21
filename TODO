@@ -1,8 +1,5 @@
 - mit vlc lautstärkeregelung ausprobieren
-- möglicher workaround ist vielleicht seek zum auswählen der richtigen quelle
-- lautstärke wird nur vom mainaudioengine gesetzt
 - vielleicht identifikation über klassen name und somit vielleicht mediaoutput für preview player umbennenen
-- Lautstärke wird immer vom zuletzt geladenen lied geregelt (also auch vom preview player wenn dort ein neueres lied ist)
 - Deaktiviere Lautstärkeregler wenn party modus aktiv
 
 - größe der queue begrenzen
