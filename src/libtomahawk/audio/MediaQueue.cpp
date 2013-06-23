@@ -27,6 +27,9 @@ MediaQueue::MediaQueue()
 
         m_mediaOutputs[i] = mediaOutput;
     }
+
+    // 0 is first media output which will be used so disable other one
+    m_mediaOutputs[m_currentMediaObject]->blockSignals( false );
 }
 
 
@@ -76,14 +79,15 @@ void
 MediaQueue::setNextSource( const Phonon::MediaSource& source, const bool autoDelete, const bool doCrossfading, const qint64 totalTime )
 {
     if (doCrossfading)
+    {
         // fade out running source
         m_mediaOutputs[m_currentMediaObject]->fadeOut( CROSSFADING_TIME_IN_MS );
-    else
-        stop();
-    m_mediaOutputs[m_currentMediaObject]->blockSignals( true );
-    m_currentMediaObject = getNextMediaIndex( m_currentMediaObject );
 
-    m_mediaOutputs[m_currentMediaObject]->blockSignals( false );
+        m_mediaOutputs[m_currentMediaObject]->blockSignals( true );
+        m_currentMediaObject = getNextMediaIndex( m_currentMediaObject );
+
+        m_mediaOutputs[m_currentMediaObject]->blockSignals( false );
+    }
 
     // load next source
     const_cast<Phonon::MediaSource&>(source).setAutoDelete( autoDelete );
@@ -94,15 +98,10 @@ MediaQueue::setNextSource( const Phonon::MediaSource& source, const bool autoDel
     {
         // fade in next source
         m_mediaOutputs[m_currentMediaObject]->fadeIn( CROSSFADING_TIME_IN_MS );
-    }
-    else
-    {
-        // the volume has to be set to max always, otherwise the track will be played silent
-        m_mediaOutputs[m_currentMediaObject]->fadeIn( 0 );
-    }
 
-    // start next source
-    play();
+        // start next source
+        play();
+    }
 }
 
 

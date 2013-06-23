@@ -49,15 +49,6 @@ using namespace Tomahawk;
 
 static QString s_aeInfoIdentifier = QString( "AUDIOENGINE" );
 
-AudioEngine* AudioEngine::s_instance = 0;
-
-
-AudioEngine*
-AudioEngine::instance()
-{
-    return s_instance;
-}
-
 
 AudioEngine::AudioEngine()
     : QObject()
@@ -67,7 +58,6 @@ AudioEngine::AudioEngine()
     , m_waitingOnNewTrack( false )
     , m_state( Stopped )
 {
-    s_instance = this;
     tDebug() << "Init AudioEngine";
 
     qRegisterMetaType< AudioErrorCode >("AudioErrorCode");

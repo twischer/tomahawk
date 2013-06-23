@@ -27,7 +27,7 @@
 #include "playlist/dynamic/GeneratorFactory.h"
 #include "Pipeline.h"
 #include "Source.h"
-#include "audio/AudioEngine.h"
+#include "audio/MainAudioEngine.h"
 #include "ReadOrWriteWidget.h"
 #include "CollapsibleControls.h"
 #include "DynamicControlWrapper.h"
@@ -99,8 +99,8 @@ DynamicWidget::DynamicWidget( const Tomahawk::dynplaylist_ptr& playlist, QWidget
     connect( m_controls, SIGNAL( controlChanged( Tomahawk::dyncontrol_ptr ) ), this, SLOT( controlChanged( Tomahawk::dyncontrol_ptr ) ), Qt::QueuedConnection );
     connect( m_controls, SIGNAL( controlsChanged( bool ) ), this, SLOT( controlsChanged( bool ) ), Qt::QueuedConnection );
 
-    connect( AudioEngine::instance(), SIGNAL( started( Tomahawk::result_ptr ) ), this, SLOT( trackStarted() ) );
-    connect( AudioEngine::instance(), SIGNAL( playlistChanged( Tomahawk::playlistinterface_ptr ) ), this, SLOT( playlistChanged( Tomahawk::playlistinterface_ptr ) ) );
+    connect( MainAudioEngine::instance(), SIGNAL( started( Tomahawk::result_ptr ) ), this, SLOT( trackStarted() ) );
+    connect( MainAudioEngine::instance(), SIGNAL( playlistChanged( Tomahawk::playlistinterface_ptr ) ), this, SLOT( playlistChanged( Tomahawk::playlistinterface_ptr ) ) );
 }
 
 

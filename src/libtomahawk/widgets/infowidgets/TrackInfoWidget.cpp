@@ -27,7 +27,7 @@
 #include "ViewManager.h"
 #include "SourceList.h"
 #include "playlist/PlayableModel.h"
-#include "audio/AudioEngine.h"
+#include "audio/MainAudioEngine.h"
 
 #include "utils/TomahawkUtilsGui.h"
 #include "utils/Logger.h"
@@ -126,10 +126,10 @@ TrackInfoWidget::playlistInterface() const
 bool
 TrackInfoWidget::isBeingPlayed() const
 {
-    if ( ui->similarTracksView->playlistInterface() == AudioEngine::instance()->currentTrackPlaylist() )
+    if ( ui->similarTracksView->playlistInterface() == MainAudioEngine::instance()->currentTrackPlaylist() )
         return true;
 
-    if ( ui->similarTracksView->playlistInterface()->hasChildInterface( AudioEngine::instance()->currentTrackPlaylist() ) )
+    if ( ui->similarTracksView->playlistInterface()->hasChildInterface( MainAudioEngine::instance()->currentTrackPlaylist() ) )
         return true;
 
     return false;

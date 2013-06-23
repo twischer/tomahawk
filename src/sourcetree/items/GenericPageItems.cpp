@@ -21,7 +21,7 @@
 #include "utils/TomahawkUtils.h"
 #include "utils/Logger.h"
 #include "ViewManager.h"
-#include "audio/AudioEngine.h"
+#include "audio/MainAudioEngine.h"
 
 using namespace Tomahawk;
 
@@ -90,10 +90,10 @@ GenericPageItem::isBeingPlayed() const
         if ( m_get()->isBeingPlayed() )
             return true;
 
-        if ( !m_get()->playlistInterface().isNull() && m_get()->playlistInterface() == AudioEngine::instance()->currentTrackPlaylist() )
+        if ( !m_get()->playlistInterface().isNull() && m_get()->playlistInterface() == MainAudioEngine::instance()->currentTrackPlaylist() )
             return true;
 
-        if ( !m_get()->playlistInterface().isNull() && m_get()->playlistInterface()->hasChildInterface( AudioEngine::instance()->currentTrackPlaylist() ) )
+        if ( !m_get()->playlistInterface().isNull() && m_get()->playlistInterface()->hasChildInterface( MainAudioEngine::instance()->currentTrackPlaylist() ) )
             return true;
     }
 

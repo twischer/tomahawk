@@ -20,7 +20,7 @@
 
 #include "ViewManager.h"
 
-#include "audio/AudioEngine.h"
+#include "audio/MainAudioEngine.h"
 #include "context/ContextWidget.h"
 #include "infobar/InfoBar.h"
 
@@ -104,7 +104,7 @@ ViewManager::ViewManager( QObject* parent )
     m_widget->layout()->setMargin( 0 );
     m_widget->layout()->setSpacing( 0 );
 
-    connect( AudioEngine::instance(), SIGNAL( playlistChanged( Tomahawk::playlistinterface_ptr ) ), this, SLOT( playlistInterfaceChanged( Tomahawk::playlistinterface_ptr ) ) );
+    connect( MainAudioEngine::instance(), SIGNAL( playlistChanged( Tomahawk::playlistinterface_ptr ) ), this, SLOT( playlistInterfaceChanged( Tomahawk::playlistinterface_ptr ) ) );
 
     connect( &m_filterTimer, SIGNAL( timeout() ), SLOT( applyFilter() ) );
     connect( m_infobar, SIGNAL( filterTextChanged( QString ) ), SLOT( setFilter( QString ) ) );
@@ -545,8 +545,8 @@ ViewManager::setPage( ViewPage* page, bool trackHistory )
     if ( page->isTemporaryPage() )
         emit tempPageActivated( page );
 
-    if ( AudioEngine::instance()->state() == AudioEngine::Stopped )
-        AudioEngine::instance()->setPlaylist( page->playlistInterface() );
+    if ( MainAudioEngine::instance()->state() == AudioEngine::Stopped )
+        MainAudioEngine::instance()->setPlaylist( page->playlistInterface() );
 
     // UGH!
     if ( QObject* obj = dynamic_cast< QObject* >( currentPage() ) )
@@ -777,7 +777,7 @@ ViewManager::isSuperCollectionVisible() const
 void
 ViewManager::showCurrentTrack()
 {
-    ViewPage* page = pageForInterface( AudioEngine::instance()->currentTrackPlaylist() );
+    ViewPage* page = pageForInterface( MainAudioEngine::instance()->currentTrackPlaylist() );
 
     if ( page )
     {

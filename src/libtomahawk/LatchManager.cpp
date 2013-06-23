@@ -20,7 +20,7 @@
 #include "LatchManager.h"
 
 #include "ActionCollection.h"
-#include "audio/AudioEngine.h"
+#include "audio/MainAudioEngine.h"
 #include "database/Database.h"
 
 #include <QtGui/QAction>
@@ -34,7 +34,7 @@ LatchManager::LatchManager( QObject* parent )
     : QObject( parent )
     , m_state( NotLatched )
 {
-    connect( AudioEngine::instance(), SIGNAL( playlistChanged( Tomahawk::playlistinterface_ptr ) ), this, SLOT( playlistChanged( Tomahawk::playlistinterface_ptr ) ) );
+    connect( MainAudioEngine::instance(), SIGNAL( playlistChanged( Tomahawk::playlistinterface_ptr ) ), this, SLOT( playlistChanged( Tomahawk::playlistinterface_ptr ) ) );
 }
 
 LatchManager::~LatchManager()
@@ -59,7 +59,7 @@ LatchManager::latchRequest( const source_ptr& source )
 
     m_state = Latching;
     m_waitingForLatch = source;
-    AudioEngine::instance()->playItem( source->playlistInterface(), source->playlistInterface()->nextResult() );
+    MainAudioEngine::instance()->playItem( source->playlistInterface(), source->playlistInterface()->nextResult() );
 }
 
 
@@ -131,7 +131,7 @@ void
 LatchManager::catchUpRequest()
 {
     //it's a catch-up -- logic in audioengine should take care of it
-    AudioEngine::instance()->next();
+    MainAudioEngine::instance()->next();
 }
 
 
@@ -139,8 +139,8 @@ void
 LatchManager::unlatchRequest( const source_ptr& source )
 {
     Q_UNUSED( source );
-    AudioEngine::instance()->stop();
-    AudioEngine::instance()->setPlaylist( Tomahawk::playlistinterface_ptr() );
+    MainAudioEngine::instance()->stop();
+    MainAudioEngine::instance()->setPlaylist( Tomahawk::playlistinterface_ptr() );
 
     QAction *latchOnAction = ActionCollection::instance()->getAction( "latchOn" );
     latchOnAction->setText( tr( "&Listen Along" ) );

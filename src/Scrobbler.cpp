@@ -25,7 +25,7 @@
 #include "Typedefs.h"
 #include "TomahawkSettings.h"
 
-#include "audio/AudioEngine.h"
+#include "audio/MainAudioEngine.h"
 #include "infosystem/InfoSystem.h"
 
 #include "utils/Logger.h"
@@ -41,23 +41,23 @@ Scrobbler::Scrobbler( QObject* parent )
     : QObject( parent )
     , m_reachedScrobblePoint( false )
 {
-    connect( AudioEngine::instance(), SIGNAL( timerSeconds( unsigned int ) ),
+    connect( MainAudioEngine::instance(), SIGNAL( timerSeconds( unsigned int ) ),
                                         SLOT( engineTick( unsigned int ) ), Qt::QueuedConnection );
 
     connect( Tomahawk::InfoSystem::InfoSystem::instance(),
              SIGNAL( info( Tomahawk::InfoSystem::InfoRequestData, QVariant ) ),
              SLOT( infoSystemInfo( Tomahawk::InfoSystem::InfoRequestData, QVariant ) ) );
 
-    connect( AudioEngine::instance(), SIGNAL( started( const Tomahawk::result_ptr& ) ),
+    connect( MainAudioEngine::instance(), SIGNAL( started( const Tomahawk::result_ptr& ) ),
              SLOT( trackStarted( const Tomahawk::result_ptr& ) ), Qt::QueuedConnection );
 
-    connect( AudioEngine::instance(), SIGNAL( paused() ),
+    connect( MainAudioEngine::instance(), SIGNAL( paused() ),
              SLOT( trackPaused() ), Qt::QueuedConnection );
 
-    connect( AudioEngine::instance(), SIGNAL( resumed() ),
+    connect( MainAudioEngine::instance(), SIGNAL( resumed() ),
              SLOT( trackResumed() ), Qt::QueuedConnection );
 
-    connect( AudioEngine::instance(), SIGNAL( stopped() ),
+    connect( MainAudioEngine::instance(), SIGNAL( stopped() ),
              SLOT( trackStopped() ), Qt::QueuedConnection );
 
     connect( Tomahawk::InfoSystem::InfoSystem::instance(), SIGNAL( finished( QString ) ), SLOT( infoSystemFinished( QString ) ) );

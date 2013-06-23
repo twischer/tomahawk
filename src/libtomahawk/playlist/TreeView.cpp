@@ -24,7 +24,8 @@
 #include <QPainter>
 #include <QScrollBar>
 
-#include "audio/AudioEngine.h"
+#include "audio/MainAudioEngine.h"
+#include "audio/PreviewAudioEngine.h"
 #include "context/ContextWidget.h"
 #include "utils/AnimatedSpinner.h"
 #include "widgets/OverlayWidget.h"
@@ -81,6 +82,7 @@ TreeView::TreeView( QWidget* parent )
     connect( verticalScrollBar(), SIGNAL( valueChanged( int ) ), SLOT( onViewChanged() ) );
     connect( &m_timer, SIGNAL( timeout() ), SLOT( onScrollTimeout() ) );
 
+    connect( this, SIGNAL( clicked( QModelIndex ) ), SLOT( onItemClicked( QModelIndex ) ) );
     connect( this, SIGNAL( doubleClicked( QModelIndex ) ), SLOT( onItemActivated( QModelIndex ) ) );
     connect( this, SIGNAL( customContextMenuRequested( QPoint ) ), SLOT( onCustomContextMenu( QPoint ) ) );
     connect( m_contextMenu, SIGNAL( triggered( int ) ), SLOT( onMenuTriggered( int ) ) );
@@ -226,6 +228,31 @@ TreeView::currentChanged( const QModelIndex& current, const QModelIndex& previou
 
 
 void
+TreeView::onItemClicked( const QModelIndex& index )
+{
+    // only play the preview if it is activated
+    if (PreviewAudioEngine::instance() != NULL)
+    {
+        if ( !index.isValid() )
+            return;
+
+        PlayableItem* item = m_model->itemFromIndex( m_proxyModel->mapToSource( index ) );
+        if ( item )
+        {
+            if ( !item->result().isNull() && item->result()->isOnline() )
+            {
+                PreviewAudioEngine::instance()->playItem( m_proxyModel->playlistInterface(), item->result() );
+            }
+            else if ( !item->query().isNull() )
+            {
+                PreviewAudioEngine::instance()->playItem( m_proxyModel->playlistInterface(), item->query() );
+            }
+        }
+    }
+}
+
+
+void
 TreeView::onItemActivated( const QModelIndex& index )
 {
     PlayableItem* item = m_model->itemFromIndex( m_proxyModel->mapToSource( index ) );
@@ -250,11 +277,11 @@ TreeView::onItemActivated( const QModelIndex& index )
             }
             else if ( !item->result().isNull() && item->result()->isOnline() )
             {
-                AudioEngine::instance()->playItem( m_proxyModel->playlistInterface(), item->result() );
+                MainAudioEngine::instance()->playItem( m_proxyModel->playlistInterface(), item->result() );
             }
             else if ( !item->query().isNull() )
             {
-                AudioEngine::instance()->playItem( m_proxyModel->playlistInterface(), item->query() );
+                MainAudioEngine::instance()->playItem( m_proxyModel->playlistInterface(), item->query() );
             }
         }
     }

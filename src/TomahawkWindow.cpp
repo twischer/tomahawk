@@ -77,6 +77,7 @@
 #include "LoadXSPFDialog.h"
 #include "utils/ImageRegistry.h"
 #include "utils/Logger.h"
+#include "PreviewPlayer.h"
 
 #include "config.h"
 
@@ -110,6 +111,7 @@ TomahawkWindow::TomahawkWindow( QWidget* parent )
     , m_audioControls( new AudioControls( this ) )
     , m_trayIcon( new TomahawkTrayIcon( this ) )
     , m_settingsDialog( 0 )
+    , m_previewPlayer( TomahawkSettings::instance()->previewPlayerEnabled() ? new PreviewPlayer( this ) : NULL )
     , m_audioRetryCounter( 0 )
 {
     setWindowIcon( QIcon( RESPATH "icons/tomahawk-icon-128x128.png" ) );
@@ -120,7 +122,7 @@ TomahawkWindow::TomahawkWindow( QWidget* parent )
     connect( APP, SIGNAL( tomahawkLoaded() ), vm, SLOT( setTomahawkLoaded() ) ); // Pass loaded signal into libtomahawk so components in there can connect to ViewManager
 
 #ifdef Q_OS_WIN
-    connect( AudioEngine::instance(), SIGNAL( stateChanged( AudioState, AudioState) ), SLOT( audioStateChanged( AudioState, AudioState) ) );
+    connect( MainAudioEngine::instance(), SIGNAL( stateChanged( AudioState, AudioState) ), SLOT( audioStateChanged( AudioState, AudioState) ) );
 #endif
     ui->setupUi( this );
 
@@ -154,6 +156,9 @@ TomahawkWindow::TomahawkWindow( QWidget* parent )
         // Window must be fully constructed to toggle fullscreen mode. Queue it up.
         QTimer::singleShot( 0, this, SLOT( toggleFullscreen() ) );
     }
+
+    if ( TomahawkSettings::instance()->previewPlayerEnabled() )
+        m_previewPlayer->show();
 }
 
 
@@ -393,7 +398,7 @@ TomahawkWindow::setupSideBar()
     jobsView->setModel( m_jobsModel );
 
     m_queueView = new QueueView( m_sidebar );
-    AudioEngine::instance()->setQueue( m_queueView->queue()->proxyModel()->playlistInterface() );
+    MainAudioEngine::instance()->setQueue( m_queueView->queue()->proxyModel()->playlistInterface() );
 
     m_sidebar->addWidget( m_sourcetree );
     m_sidebar->addWidget( jobsView );
@@ -524,14 +529,14 @@ TomahawkWindow::thumbIcon(TomahawkUtils::ImageType type)
 void
 TomahawkWindow::setupSignals()
 {
-    // <From AudioEngine>
-    connect( AudioEngine::instance(), SIGNAL( error( AudioEngine::AudioErrorCode ) ), SLOT( onAudioEngineError( AudioEngine::AudioErrorCode ) ) );
-    connect( AudioEngine::instance(), SIGNAL( loading( const Tomahawk::result_ptr& ) ), SLOT( onPlaybackLoading( const Tomahawk::result_ptr& ) ) );
-    connect( AudioEngine::instance(), SIGNAL( started( Tomahawk::result_ptr ) ), SLOT( audioStarted() ) );
-    connect( AudioEngine::instance(), SIGNAL( finished( Tomahawk::result_ptr ) ), SLOT( audioFinished() ) );
-    connect( AudioEngine::instance(), SIGNAL( resumed() ), SLOT( audioStarted() ) );
-    connect( AudioEngine::instance(), SIGNAL( paused() ), SLOT( audioPaused() ) );
-    connect( AudioEngine::instance(), SIGNAL( stopped() ), SLOT( audioStopped() ) );
+    // <From MainAudioEngine>
+    connect( MainAudioEngine::instance(), SIGNAL( error( AudioEngine::AudioErrorCode ) ), SLOT( onAudioEngineError( AudioEngine::AudioErrorCode ) ) );
+    connect( MainAudioEngine::instance(), SIGNAL( loading( const Tomahawk::result_ptr& ) ), SLOT( onPlaybackLoading( const Tomahawk::result_ptr& ) ) );
+    connect( MainAudioEngine::instance(), SIGNAL( started( Tomahawk::result_ptr ) ), SLOT( audioStarted() ) );
+    connect( MainAudioEngine::instance(), SIGNAL( finished( Tomahawk::result_ptr ) ), SLOT( audioFinished() ) );
+    connect( MainAudioEngine::instance(), SIGNAL( resumed() ), SLOT( audioStarted() ) );
+    connect( MainAudioEngine::instance(), SIGNAL( paused() ), SLOT( audioPaused() ) );
+    connect( MainAudioEngine::instance(), SIGNAL( stopped() ), SLOT( audioStopped() ) );
 
     // <Menu Items>
     ActionCollection *ac = ActionCollection::instance();
@@ -647,27 +652,27 @@ TomahawkWindow::keyPressEvent( QKeyEvent* e )
     {
         case Qt::Key_MediaPlay:
             tLog() << KEY_PRESSED << "Play";
-            AudioEngine::instance()->playPause();
+            MainAudioEngine::instance()->playPause();
             break;
         case Qt::Key_MediaStop:
             tLog() << KEY_PRESSED << "Stop";
-            AudioEngine::instance()->stop();
+            MainAudioEngine::instance()->stop();
             break;
         case Qt::Key_MediaPrevious:
             tLog() << KEY_PRESSED << "Previous";
-            AudioEngine::instance()->previous();
+            MainAudioEngine::instance()->previous();
             break;
         case Qt::Key_MediaNext:
             tLog() << KEY_PRESSED << "Next";
-            AudioEngine::instance()->next();
+            MainAudioEngine::instance()->next();
             break;
         case Qt::Key_MediaPause:
             tLog() << KEY_PRESSED << "Pause";
-            AudioEngine::instance()->pause();
+            MainAudioEngine::instance()->pause();
             break;
         case Qt::Key_MediaTogglePlayPause:
             tLog() << KEY_PRESSED << "PlayPause";
-            AudioEngine::instance()->playPause();
+            MainAudioEngine::instance()->playPause();
             break;
         case Qt::Key_MediaRecord:
         default:
@@ -699,21 +704,21 @@ TomahawkWindow::winEvent( MSG* msg, long* result )
             {
             case TP_PREVIOUS:
                 tLog() << TB_PRESSED << "Previous";
-                AudioEngine::instance()->previous();
+                MainAudioEngine::instance()->previous();
                 break;
             case TP_PLAY_PAUSE:
                 tLog() << TB_PRESSED << "Play/Pause";
-                AudioEngine::instance()->playPause();
+                MainAudioEngine::instance()->playPause();
                 break;
             case TP_NEXT:
                 tLog() << TB_PRESSED << "Next";
-                AudioEngine::instance()->next();
+                MainAudioEngine::instance()->next();
                 break;
             case TP_LOVE:
                 tLog() << TB_PRESSED << "Love";
-                if ( !AudioEngine::instance()->currentTrack().isNull() )
+                if ( !MainAudioEngine::instance()->currentTrack().isNull() )
                 {
-                    AudioEngine::instance()->currentTrack()->toQuery()->setLoved( !AudioEngine::instance()->currentTrack()->toQuery()->loved() );
+                    MainAudioEngine::instance()->currentTrack()->toQuery()->setLoved( !MainAudioEngine::instance()->currentTrack()->toQuery()->loved() );
                     updateWindowsLoveButton();
                 }
                 break;
@@ -758,9 +763,9 @@ TomahawkWindow::audioStateChanged( AudioState newState, AudioState oldState )
 
     case AudioEngine::Stopped:
     {
-        if ( !AudioEngine::instance()->currentTrack().isNull() )
+        if ( !MainAudioEngine::instance()->currentTrack().isNull() )
         {
-            disconnect( AudioEngine::instance()->currentTrack()->toQuery().data(), SIGNAL( socialActionsLoaded() ), this, SLOT( updateWindowsLoveButton() ) );
+            disconnect( MainAudioEngine::instance()->currentTrack()->toQuery().data(), SIGNAL( socialActionsLoaded() ), this, SLOT( updateWindowsLoveButton() ) );
         }
 
         m_thumbButtons[TP_PLAY_PAUSE].hIcon = thumbIcon(TomahawkUtils::PlayButton);
@@ -789,7 +794,7 @@ TomahawkWindow::updateWindowsLoveButton()
 #ifdef HAVE_THUMBBUTTON
     if ( m_taskbarList == 0 )
         return;
-    if ( !AudioEngine::instance()->currentTrack().isNull() && AudioEngine::instance()->currentTrack()->toQuery()->loved() )
+    if ( !MainAudioEngine::instance()->currentTrack().isNull() && MainAudioEngine::instance()->currentTrack()->toQuery()->loved() )
     {
         m_thumbButtons[TP_LOVE].hIcon = thumbIcon(TomahawkUtils::Loved);
         m_thumbButtons[TP_LOVE].szTip[ tr( "Unlove" ).toWCharArray( m_thumbButtons[TP_LOVE].szTip ) ] = 0;
@@ -1019,7 +1024,7 @@ TomahawkWindow::onAudioEngineError( AudioEngine::AudioErrorCode /* error */ )
     JobStatusView::instance()->model()->addJob( new ErrorStatusMessage( msg, 15 ) );
 
     if ( m_audioRetryCounter < 3 )
-        AudioEngine::instance()->play();
+        MainAudioEngine::instance()->play();
     m_audioRetryCounter++;
 }
 
@@ -1159,7 +1164,7 @@ TomahawkWindow::audioStarted()
     ActionCollection::instance()->getAction( "stop" )->setEnabled( true );
 
 #ifdef Q_OS_WIN
-    connect( AudioEngine::instance()->currentTrack()->toQuery().data(), SIGNAL( socialActionsLoaded() ), SLOT( updateWindowsLoveButton() ) );
+    connect( MainAudioEngine::instance()->currentTrack()->toQuery().data(), SIGNAL( socialActionsLoaded() ), SLOT( updateWindowsLoveButton() ) );
 #endif
 }
 
@@ -1168,7 +1173,7 @@ void
 TomahawkWindow::audioFinished()
 {
 #ifdef Q_OS_WIN
-    disconnect( AudioEngine::instance()->currentTrack()->toQuery().data(), SIGNAL( socialActionsLoaded() ), this, SLOT( updateWindowsLoveButton() ) );
+    disconnect( MainAudioEngine::instance()->currentTrack()->toQuery().data(), SIGNAL( socialActionsLoaded() ), this, SLOT( updateWindowsLoveButton() ) );
 #endif
 }
 

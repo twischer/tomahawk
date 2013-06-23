@@ -25,7 +25,7 @@
 #include "Pipeline.h"
 #include "Source.h"
 #include "SourceList.h"
-#include "audio/AudioEngine.h"
+#include "audio/MainAudioEngine.h"
 #include "database/DatabaseCommand_AllAlbums.h"
 #include "database/DatabaseCommand_AllTracks.h"
 #include "database/Database.h"
@@ -43,8 +43,8 @@ TreeModel::TreeModel( QObject* parent )
 {
     setIcon( TomahawkUtils::defaultPixmap( TomahawkUtils::SuperCollection ) );
 
-    connect( AudioEngine::instance(), SIGNAL( started( Tomahawk::result_ptr ) ), SLOT( onPlaybackStarted( Tomahawk::result_ptr ) ), Qt::DirectConnection );
-    connect( AudioEngine::instance(), SIGNAL( stopped() ), SLOT( onPlaybackStopped() ), Qt::DirectConnection );
+    connect( MainAudioEngine::instance(), SIGNAL( started( Tomahawk::result_ptr ) ), SLOT( onPlaybackStarted( Tomahawk::result_ptr ) ), Qt::DirectConnection );
+    connect( MainAudioEngine::instance(), SIGNAL( stopped() ), SLOT( onPlaybackStopped() ), Qt::DirectConnection );
 }
 
 

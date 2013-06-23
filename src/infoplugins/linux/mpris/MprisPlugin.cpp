@@ -22,7 +22,7 @@
 #include <QtDBus/QtDBus>
 #include <QtPlugin>
 
-#include "audio/AudioEngine.h"
+#include "audio/MainAudioEngine.h"
 #include "infosystem/InfoSystemWorker.h"
 #include "Album.h"
 #include "Artist.h"
@@ -31,7 +31,6 @@
 #include "GlobalActionManager.h"
 #include "utils/Logger.h"
 #include "utils/TomahawkUtils.h"
-#include "audio/AudioEngine.h"
 #include "Source.h"
 
 #include "MprisPlugin.h"
@@ -73,23 +72,23 @@ MprisPlugin::init()
     dbus.registerService( "org.mpris.MediaPlayer2.tomahawk" );
 
     // Listen to volume changes
-    connect( AudioEngine::instance(), SIGNAL( volumeChanged( int ) ),
+    connect( MainAudioEngine::instance(), SIGNAL( volumeChanged( int ) ),
                                         SLOT( onVolumeChanged( int ) ) );
 
     // When the playlist changes, signals for several properties are sent
-    connect( AudioEngine::instance(), SIGNAL( playlistChanged( Tomahawk::playlistinterface_ptr ) ),
+    connect( MainAudioEngine::instance(), SIGNAL( playlistChanged( Tomahawk::playlistinterface_ptr ) ),
                                         SLOT( onPlaylistChanged( Tomahawk::playlistinterface_ptr ) ) );
 
     // When a track is added or removed, CanGoNext updated signal is sent
-    Tomahawk::playlistinterface_ptr playlist = AudioEngine::instance()->playlist();
+    Tomahawk::playlistinterface_ptr playlist = MainAudioEngine::instance()->playlist();
     if ( !playlist.isNull() )
     {
         connect( playlist.data(), SIGNAL( itemCountChanged( unsigned int ) ),
                                     SLOT( onTrackCountChanged( unsigned int ) ) );
     }
 
-    // Connect to AudioEngine's seeked signal
-    connect( AudioEngine::instance(), SIGNAL( seeked( qint64 ) ),
+    // Connect to MainAudioEngine's seeked signal
+    connect( MainAudioEngine::instance(), SIGNAL( seeked( qint64 ) ),
                                         SLOT( onSeeked( qint64 ) ) );
 }
 
@@ -172,21 +171,21 @@ MprisPlugin::canControl() const
 bool
 MprisPlugin::canGoNext() const
 {
-    return AudioEngine::instance()->canGoNext();
+    return MainAudioEngine::instance()->canGoNext();
 }
 
 
 bool
 MprisPlugin::canGoPrevious() const
 {
-    return AudioEngine::instance()->canGoPrevious();
+    return MainAudioEngine::instance()->canGoPrevious();
 }
 
 
 bool
 MprisPlugin::canPause() const
 {
-    return AudioEngine::instance()->currentTrack();
+    return MainAudioEngine::instance()->currentTrack();
 }
 
 
@@ -194,15 +193,15 @@ bool
 MprisPlugin::canPlay() const
 {
     // If there is a currently playing track, or if there is a playlist with at least 1 track, you can hit play
-    Tomahawk::playlistinterface_ptr p = AudioEngine::instance()->playlist();
-    return AudioEngine::instance()->currentTrack() || ( !p.isNull() && p->trackCount() );
+    Tomahawk::playlistinterface_ptr p = MainAudioEngine::instance()->playlist();
+    return MainAudioEngine::instance()->currentTrack() || ( !p.isNull() && p->trackCount() );
 }
 
 
 bool
 MprisPlugin::canSeek() const
 {
-    Tomahawk::playlistinterface_ptr p = AudioEngine::instance()->playlist();
+    Tomahawk::playlistinterface_ptr p = MainAudioEngine::instance()->playlist();
     if ( p.isNull() )
         return false;
     return p->seekRestrictions() != PlaylistModes::NoSeek;
@@ -213,7 +212,7 @@ MprisPlugin::canSeek() const
 QString
 MprisPlugin::loopStatus() const
 {
-    Tomahawk::playlistinterface_ptr p = AudioEngine::instance()->playlist();
+    Tomahawk::playlistinterface_ptr p = MainAudioEngine::instance()->playlist();
     if ( p.isNull() )
         return "None";
     PlaylistModes::RepeatMode mode = p->repeatMode();
@@ -240,7 +239,7 @@ MprisPlugin::loopStatus() const
 void
 MprisPlugin::setLoopStatus( const QString& value )
 {
-    Tomahawk::playlistinterface_ptr p = AudioEngine::instance()->playlist();
+    Tomahawk::playlistinterface_ptr p = MainAudioEngine::instance()->playlist();
     if ( p.isNull() )
         return;
     if ( value == "Track" )
@@ -263,7 +262,7 @@ QVariantMap
 MprisPlugin::metadata() const
 {
     QVariantMap metadataMap;
-    Tomahawk::result_ptr track = AudioEngine::instance()->currentTrack();
+    Tomahawk::result_ptr track = MainAudioEngine::instance()->currentTrack();
     if ( track )
     {
         metadataMap.insert( "mpris:trackid", QVariant::fromValue(QDBusObjectPath(QString( "/track/" ) + track->id().replace( "-", "" ))) );
@@ -303,7 +302,7 @@ qlonglong
 MprisPlugin::position() const
 {
     // Convert Tomahawk's milliseconds to microseconds
-    return (qlonglong) ( AudioEngine::instance()->currentTime() * 1000 );
+    return (qlonglong) ( MainAudioEngine::instance()->currentTime() * 1000 );
 }
 
 
@@ -324,7 +323,7 @@ MprisPlugin::setRate( double value )
 bool
 MprisPlugin::shuffle() const
 {
-    Tomahawk::playlistinterface_ptr p = AudioEngine::instance()->playlist();
+    Tomahawk::playlistinterface_ptr p = MainAudioEngine::instance()->playlist();
     if ( p.isNull() )
         return false;
     return p->shuffled();
@@ -334,7 +333,7 @@ MprisPlugin::shuffle() const
 void
 MprisPlugin::setShuffle( bool value )
 {
-    Tomahawk::playlistinterface_ptr p = AudioEngine::instance()->playlist();
+    Tomahawk::playlistinterface_ptr p = MainAudioEngine::instance()->playlist();
     if ( p.isNull() )
         return;
     return p->setShuffled( value );
@@ -344,21 +343,21 @@ MprisPlugin::setShuffle( bool value )
 double
 MprisPlugin::volume() const
 {
-    return static_cast<double>(AudioEngine::instance()->volume()) / 100.0;
+    return static_cast<double>(MainAudioEngine::instance()->volume()) / 100.0;
 }
 
 
 void
 MprisPlugin::setVolume( double value )
 {
-    AudioEngine::instance()->setVolume( value * 100 );
+    MainAudioEngine::instance()->setVolume( value * 100 );
 }
 
 
 void
 MprisPlugin::Next()
 {
-    AudioEngine::instance()->next();
+    MainAudioEngine::instance()->next();
 }
 
 
@@ -375,28 +374,28 @@ MprisPlugin::OpenUri( const QString& Uri )
 void
 MprisPlugin::Pause()
 {
-    AudioEngine::instance()->pause();
+    MainAudioEngine::instance()->pause();
 }
 
 
 void
 MprisPlugin::Play()
 {
-    AudioEngine::instance()->play();
+    MainAudioEngine::instance()->play();
 }
 
 
 void
 MprisPlugin::PlayPause()
 {
-    AudioEngine::instance()->playPause();
+    MainAudioEngine::instance()->playPause();
 }
 
 
 void
 MprisPlugin::Previous()
 {
-    AudioEngine::instance()->previous();
+    MainAudioEngine::instance()->previous();
 }
 
 
@@ -408,12 +407,12 @@ MprisPlugin::Seek( qlonglong Offset )
 
     qlonglong seekTime = position() + Offset;
     if ( seekTime < 0 )
-        AudioEngine::instance()->seek( 0 );
-    else if ( seekTime > AudioEngine::instance()->currentTrackTotalTime()*1000 )
+        MainAudioEngine::instance()->seek( 0 );
+    else if ( seekTime > MainAudioEngine::instance()->currentTrackTotalTime()*1000 )
         Next();
     // seekTime is in microseconds, but we work internally in milliseconds
     else
-        AudioEngine::instance()->seek( (qint64) ( seekTime / 1000 ) );
+        MainAudioEngine::instance()->seek( (qint64) ( seekTime / 1000 ) );
 
 }
 
@@ -424,13 +423,13 @@ MprisPlugin::SetPosition( const QDBusObjectPath& TrackId, qlonglong Position )
     if ( !canSeek() )
         return;
 
-    if ( TrackId.path() != QString( "/track/" ) + AudioEngine::instance()->currentTrack()->id().replace( "-", "" ) )
+    if ( TrackId.path() != QString( "/track/" ) + MainAudioEngine::instance()->currentTrack()->id().replace( "-", "" ) )
         return;
 
-    if ( ( Position < 0) || ( Position > AudioEngine::instance()->currentTrackTotalTime()*1000 )  )
+    if ( ( Position < 0) || ( Position > MainAudioEngine::instance()->currentTrackTotalTime()*1000 )  )
         return;
 
-    AudioEngine::instance()->seek( (qint64) (Position / 1000 ) );
+    MainAudioEngine::instance()->seek( (qint64) (Position / 1000 ) );
 
 }
 
@@ -438,7 +437,7 @@ MprisPlugin::SetPosition( const QDBusObjectPath& TrackId, qlonglong Position )
 void
 MprisPlugin::Stop()
 {
-    AudioEngine::instance()->stop();
+    MainAudioEngine::instance()->stop();
 }
 
 

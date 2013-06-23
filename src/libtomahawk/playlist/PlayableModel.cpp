@@ -31,7 +31,7 @@
 #include "PlayableProxyModel.h"
 #include "Source.h"
 #include "Typedefs.h"
-#include "audio/AudioEngine.h"
+#include "audio/MainAudioEngine.h"
 #include "utils/TomahawkUtils.h"
 #include "utils/Logger.h"
 
@@ -44,8 +44,8 @@ PlayableModel::PlayableModel( QObject* parent, bool loading )
     , m_readOnly( true )
     , m_loading( loading )
 {
-    connect( AudioEngine::instance(), SIGNAL( started( Tomahawk::result_ptr ) ), SLOT( onPlaybackStarted( Tomahawk::result_ptr ) ), Qt::DirectConnection );
-    connect( AudioEngine::instance(), SIGNAL( stopped() ), SLOT( onPlaybackStopped() ), Qt::DirectConnection );
+    connect( MainAudioEngine::instance(), SIGNAL( started( Tomahawk::result_ptr ) ), SLOT( onPlaybackStarted( Tomahawk::result_ptr ) ), Qt::DirectConnection );
+    connect( MainAudioEngine::instance(), SIGNAL( stopped() ), SLOT( onPlaybackStopped() ), Qt::DirectConnection );
 
     m_header << tr( "Artist" ) << tr( "Title" ) << tr( "Composer" ) << tr( "Album" ) << tr( "Track" ) << tr( "Duration" )
              << tr( "Bitrate" ) << tr( "Age" ) << tr( "Year" ) << tr( "Size" ) << tr( "Origin" ) << tr( "Accuracy" ) << tr( "Name" );

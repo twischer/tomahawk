@@ -219,9 +219,11 @@ set( libSources
     sip/SipHandler.cpp
     sip/SipInfo.cpp
 
+    audio/MainAudioEngine.cpp
     audio/AudioEngine.cpp
     audio/MediaQueue.cpp
     audio/MediaOutput.cpp
+    audio/PreviewAudioEngine.cpp
 
     database/Database.cpp
     database/FuzzyIndex.cpp

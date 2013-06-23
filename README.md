@@ -29,7 +29,7 @@ Install dependencies for building on Debian 7.0
 
 	$ sudo apt-get install cmake libphonon-dev libqjson-dev libtag1-dev libboost-dev libqca2-dev
 
-The following packages have to be installed manually, because the versions of the package managment are to old:
+The following packages have to be installed manually, because the versions of the package managment are too old:
 
 * libechonest-dev 
 * libclucene-dev

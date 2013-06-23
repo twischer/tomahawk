@@ -21,7 +21,7 @@
 #include "RecentlyPlayedPlaylistsModel.h"
 
 #include "TomahawkSettings.h"
-#include "audio/AudioEngine.h"
+#include "audio/MainAudioEngine.h"
 #include "SourceList.h"
 #include "utils/Logger.h"
 #include "playlist/dynamic/DynamicPlaylist.h"
@@ -39,7 +39,7 @@ RecentlyPlayedPlaylistsModel::RecentlyPlayedPlaylistsModel( QObject* parent )
 
     connect( SourceList::instance(), SIGNAL( sourceAdded( Tomahawk::source_ptr ) ), this, SLOT( onSourceAdded( Tomahawk::source_ptr ) ), Qt::QueuedConnection );
     connect( TomahawkSettings::instance(), SIGNAL( recentlyPlayedPlaylistAdded( QString, int ) ), this, SLOT( plAdded( QString, int ) ) );
-    connect( AudioEngine::instance(),SIGNAL( playlistChanged( Tomahawk::playlistinterface_ptr ) ), this, SLOT( playlistChanged( Tomahawk::playlistinterface_ptr ) ), Qt::QueuedConnection );
+    connect( MainAudioEngine::instance(),SIGNAL( playlistChanged( Tomahawk::playlistinterface_ptr ) ), this, SLOT( playlistChanged( Tomahawk::playlistinterface_ptr ) ), Qt::QueuedConnection );
 
     emit emptinessChanged( m_recplaylists.isEmpty() );
 }

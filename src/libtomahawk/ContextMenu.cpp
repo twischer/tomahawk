@@ -18,7 +18,7 @@
 
 #include "ContextMenu.h"
 
-#include "audio/AudioEngine.h"
+#include "audio/MainAudioEngine.h"
 #include "playlist/PlaylistView.h"
 #include "filemetadata/MetadataEditor.h"
 #include "GlobalActionManager.h"
@@ -95,7 +95,7 @@ ContextMenu::setQueries( const QList<Tomahawk::query_ptr>& queries )
     {
         if ( m_supportedActions & ActionStopAfter && itemCount() == 1 )
         {
-            if ( AudioEngine::instance()->stopAfterTrack() == queries.first() )
+            if ( MainAudioEngine::instance()->stopAfterTrack() == queries.first() )
                 m_sigmap->setMapping( addAction( tr( "Continue Playback after this &Track" ) ), ActionStopAfter );
             else
                 m_sigmap->setMapping( addAction( tr( "Stop Playback after this &Track" ) ), ActionStopAfter );
@@ -276,10 +276,10 @@ ContextMenu::onTriggered( int action )
             break;
 
         case ActionStopAfter:
-            if ( m_queries.first()->equals( AudioEngine::instance()->stopAfterTrack() ) )
-                AudioEngine::instance()->setStopAfterTrack( query_ptr() );
+            if ( m_queries.first()->equals( MainAudioEngine::instance()->stopAfterTrack() ) )
+                MainAudioEngine::instance()->setStopAfterTrack( query_ptr() );
             else
-                AudioEngine::instance()->setStopAfterTrack( m_queries.first() );
+                MainAudioEngine::instance()->setStopAfterTrack( m_queries.first() );
             break;
 
         case ActionEditMetadata:

@@ -27,7 +27,7 @@
 #include "RecentPlaylistsModel.h"
 #include "MetaPlaylistInterface.h"
 
-#include "audio/AudioEngine.h"
+#include "audio/MainAudioEngine.h"
 #include "playlist/AlbumModel.h"
 #include "playlist/RecentlyPlayedModel.h"
 #include "widgets/OverlayWidget.h"
@@ -139,7 +139,7 @@ WelcomeWidget::isBeingPlayed() const
     if ( ui->additionsView->isBeingPlayed() )
         return true;
 
-    return AudioEngine::instance()->currentTrackPlaylist() == ui->tracksView->playlistInterface();
+    return MainAudioEngine::instance()->currentTrackPlaylist() == ui->tracksView->playlistInterface();
 }
 
 

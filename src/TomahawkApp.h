@@ -41,6 +41,7 @@
 #include <QPersistentModelIndex>
 
 class AudioEngine;
+class PreviewAudioEngine;
 class Database;
 class ScanManager;
 class Servent;
@@ -127,6 +128,7 @@ private:
     QWeakPointer<Database> m_database;
     QWeakPointer<ScanManager> m_scanManager;
     QWeakPointer<AudioEngine> m_audioEngine;
+    QWeakPointer<PreviewAudioEngine> m_previewEngine;
     QWeakPointer<Servent> m_servent;
     QWeakPointer<Tomahawk::InfoSystem::InfoSystem> m_infoSystem;
     QWeakPointer<Tomahawk::ShortcutHandler> m_shortcutHandler;
