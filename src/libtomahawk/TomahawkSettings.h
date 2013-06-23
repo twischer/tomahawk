@@ -213,6 +213,9 @@ public:
     const bool partyModeEnabled() const;
     void setPartyModeEnabled( const bool enable );
 
+    const bool previewPlayerEnabled() const;
+    void setPreviewPlayerEnabled( const bool enable );
+
     void setImportXspfPath( const QString& path );
     QString importXspfPath() const;
 

@@ -230,19 +230,23 @@ TreeView::currentChanged( const QModelIndex& current, const QModelIndex& previou
 void
 TreeView::onItemClicked( const QModelIndex& index )
 {
-    if ( !index.isValid() )
-        return;
-
-    PlayableItem* item = m_model->itemFromIndex( m_proxyModel->mapToSource( index ) );
-    if ( item )
+    // only play the preview if it is activated
+    if (PreviewAudioEngine::instance() != NULL)
     {
-        if ( !item->result().isNull() && item->result()->isOnline() )
+        if ( !index.isValid() )
+            return;
+
+        PlayableItem* item = m_model->itemFromIndex( m_proxyModel->mapToSource( index ) );
+        if ( item )
         {
-            PreviewAudioEngine::instance()->playItem( m_proxyModel->playlistInterface(), item->result() );
-        }
-        else if ( !item->query().isNull() )
-        {
-            PreviewAudioEngine::instance()->playItem( m_proxyModel->playlistInterface(), item->query() );
+            if ( !item->result().isNull() && item->result()->isOnline() )
+            {
+                PreviewAudioEngine::instance()->playItem( m_proxyModel->playlistInterface(), item->result() );
+            }
+            else if ( !item->query().isNull() )
+            {
+                PreviewAudioEngine::instance()->playItem( m_proxyModel->playlistInterface(), item->query() );
+            }
         }
     }
 }

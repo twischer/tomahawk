@@ -187,7 +187,9 @@ TomahawkApp::init()
     Q_UNUSED( TomahawkUtils::nam() );
 
     m_audioEngine = QWeakPointer<MainAudioEngine>( new MainAudioEngine );
-    m_previewEngine = QWeakPointer<PreviewAudioEngine>( new PreviewAudioEngine );
+
+    if ( TomahawkSettings::instance()->previewPlayerEnabled() )
+        m_previewEngine = QWeakPointer<PreviewAudioEngine>( new PreviewAudioEngine );
 
     // init pipeline and resolver factories
     new Pipeline();

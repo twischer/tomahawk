@@ -89,6 +89,7 @@ SettingsDialog::SettingsDialog(QObject *parent )
     TomahawkSettings* s = TomahawkSettings::instance();
 
     m_advancedWidgetUi->checkBoxReporter->setChecked( s->crashReporterEnabled() );
+    m_advancedWidgetUi->checkBoxPreview->setChecked( s->previewPlayerEnabled() );
     m_advancedWidgetUi->checkBoxHttp->setChecked( s->httpEnabled() );
     m_advancedWidgetUi->checkBoxSongChangeNotifications->setChecked( s->songChangeNotificationEnabled() );
     #ifndef Q_OS_LINUX // no backends on OSX or Win so far
@@ -260,6 +261,7 @@ SettingsDialog::saveSettings()
     TomahawkSettings* s = TomahawkSettings::instance();
 
     s->setCrashReporterEnabled( m_advancedWidgetUi->checkBoxReporter->checkState() == Qt::Checked );
+    s->setPreviewPlayerEnabled( m_advancedWidgetUi->checkBoxPreview->checkState() == Qt::Checked );
     s->setHttpEnabled( m_advancedWidgetUi->checkBoxHttp->checkState() == Qt::Checked );
     s->setSongChangeNotificationEnabled( m_advancedWidgetUi->checkBoxSongChangeNotifications->checkState() == Qt::Checked );
     s->setProxyType( m_advancedWidgetUi->enableProxyCheckBox->isChecked() ? QNetworkProxy::Socks5Proxy : QNetworkProxy::NoProxy );

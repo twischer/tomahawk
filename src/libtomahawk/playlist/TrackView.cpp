@@ -325,12 +325,16 @@ TrackView::currentChanged( const QModelIndex& current, const QModelIndex& previo
 void
 TrackView::onItemClicked( const QModelIndex& index )
 {
-    if ( !index.isValid() )
-        return;
+    // only play the preview if it is activated
+    if (PreviewAudioEngine::instance() != NULL)
+    {
+        if ( !index.isValid() )
+            return;
 
-    PlayableItem* item = m_model->itemFromIndex( m_proxyModel->mapToSource( index ) );
-    if ( item && !item->query().isNull() )
-        PreviewAudioEngine::instance()->playItem( playlistInterface(), item->query() );
+        PlayableItem* item = m_model->itemFromIndex( m_proxyModel->mapToSource( index ) );
+        if ( item && !item->query().isNull() )
+            PreviewAudioEngine::instance()->playItem( playlistInterface(), item->query() );
+    }
 }
 
 

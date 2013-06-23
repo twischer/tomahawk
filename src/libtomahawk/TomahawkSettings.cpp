@@ -1376,6 +1376,20 @@ TomahawkSettings::setPartyModeEnabled( const bool enable )
 }
 
 
+const bool
+TomahawkSettings::previewPlayerEnabled() const
+{
+    return value( "previewplayer", false ).toBool();
+}
+
+
+void
+TomahawkSettings::setPreviewPlayerEnabled( const bool enable )
+{
+    setValue( "previewplayer", enable );
+}
+
+
 void
 TomahawkSettings::updateIndex()
 {
