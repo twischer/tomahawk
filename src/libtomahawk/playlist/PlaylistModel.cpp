@@ -36,6 +36,7 @@
 #include "utils/TomahawkUtils.h"
 #include "utils/Logger.h"
 #include <utils/WebResultHintChecker.h>
+#include "TomahawkSettings.h"
 
 using namespace Tomahawk;
 
@@ -249,6 +250,18 @@ PlaylistModel::insertEntries( const QList< Tomahawk::plentry_ptr >& entries, int
         emit itemCountChanged( rowCount( QModelIndex() ) );
         finishLoading();
         return;
+    }
+
+    // return false if the element could not be added
+    // because the playlist is locked for 20 elements
+    if ( TomahawkSettings::instance()->partyModeEnabled() )
+    {
+        const int trackCount = rowCount( QModelIndex() );
+        if (trackCount > 20)
+        {
+            emit playlistToFull();
+            return;
+        }
     }
 
     int c = row;

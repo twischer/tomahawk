@@ -60,6 +60,7 @@ protected:
 private slots:
     void updateLabel();
     void onAnimationFinished();
+    void onPlaylistToFull();
 
 private:
     Ui::QueueView* ui;

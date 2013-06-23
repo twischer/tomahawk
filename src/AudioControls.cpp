@@ -166,6 +166,9 @@ AudioControls::AudioControls( QWidget* parent )
              this, SLOT( onInfoSystemPushTypesUpdated( Tomahawk::InfoSystem::InfoTypeSet ) ) );
     onInfoSystemPushTypesUpdated( InfoSystem::InfoSystem::instance()->supportedPushTypes() );
 
+    // disable all locked controls if the party mode is active
+    onPartyModeChanged();
+
     onPlaybackStopped(); // initial state
 }
 
@@ -255,6 +258,8 @@ AudioControls::onPlaybackStarted( const Tomahawk::result_ptr& result )
     m_sliderTimeLine.setCurveShape( QTimeLine::LinearCurve );
     m_sliderTimeLine.setCurrentTime( 0 );
     m_seeked = false;
+
+    ui->seekSlider->setVisible( true );
 
     int updateRate = (double)1000 / ( (double)ui->seekSlider->contentsRect().width() / (double)( duration / 1000 ) );
     m_sliderTimeLine.setUpdateInterval( qBound( 40, updateRate, 500 ) );
@@ -796,4 +801,7 @@ AudioControls::onPartyModeChanged()
     ui->prevButton->setDisabled( isPartyMode );
     ui->nextButton->setDisabled( isPartyMode );
     ui->seekSlider->setDisabled( isPartyMode );
+    ui->volumeHighButton->setDisabled( isPartyMode );
+    ui->volumeLowButton->setDisabled( isPartyMode );
+    ui->volumeSlider->setDisabled( isPartyMode );
 }

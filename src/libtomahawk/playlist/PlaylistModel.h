@@ -77,6 +77,7 @@ signals:
     void shuffleModeChanged( bool enabled );
     void playlistDeleted();
     void playlistChanged();
+    void playlistToFull();
 
 protected:
     bool waitForRevision( const QString& revisionguid ) const { return m_waitForRevision.contains( revisionguid ); }
