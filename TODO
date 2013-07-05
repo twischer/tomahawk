@@ -1,6 +1,5 @@
 - mit vlc lautstärkeregelung ausprobieren
 - vielleicht identifikation über klassen name und somit vielleicht mediaoutput für preview player umbennenen
-- Deaktiviere Lautstärkeregler wenn party modus aktiv
 
 - HTTP Server für smartphones (siehe TomahawkApp::initHTTP())
 
