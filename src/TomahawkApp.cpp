@@ -40,7 +40,7 @@
 #include "playlist/dynamic/database/DatabaseGenerator.h"
 #include "playlist/XspfUpdater.h"
 #include "network/Servent.h"
-#include "web/Api_v1.h"
+#include "web/WebInterface.h"
 #include "SourceList.h"
 #include "ShortcutHandler.h"
 #include "libtomahawk/filemetadata/ScanManager.h"
@@ -561,10 +561,10 @@ TomahawkApp::initHTTP()
     }
 
     m_session.data()->setPort( 60210 ); //TODO config
-    m_session.data()->setListenInterface( QHostAddress::LocalHost );
+    m_session.data()->setListenInterface( QHostAddress::Any );
     m_session.data()->setConnector( m_connector.data() );
 
-    Api_v1* api = new Api_v1( m_session.data() );
+    WebInterface* api = new WebInterface( m_session.data() );
     m_session.data()->setStaticContentService( api );
 
     tLog() << "Starting HTTPd on" << m_session.data()->listenInterface().toString() << m_session.data()->port();

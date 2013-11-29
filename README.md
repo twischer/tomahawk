@@ -24,17 +24,29 @@ To compile for debugging:
 	$ cmake -DCMAKE_BUILD_TYPE=Debug ..
 
 
-Install dependencies for building on Debian 7.0
+
+Install dependencies for running on Debian 8.0
 -----------------------------------------
 
-	$ sudo apt-get install cmake libphonon-dev libqjson-dev libtag1-dev libboost-dev libqca2-dev
+	$ sudo apt-get install phonon phonon-backend-gstreamer libqjson0 libtag1c2a libqca2 libquazip0
+	$ sudo apt-get install libqt4-dbus libqt4-network libqt4-script libqt4-sql libqt4-sql-sqlite libqt4-svg libqt4-test libqt4-xml libqt4-xmlpatterns libqtcore4 libqtgui4 libqtwebkit4
+	$ libechonest libattica liblastfm
+
 
 The following packages have to be installed manually, because the versions of the package managment are too old:
 
-* libechonest-dev 
+* libclucene-core1
+* libclucene-shared1
+
+
+Install dependencies for building on Debian 8.0
+-----------------------------------------
+
+	$ sudo apt-get install cmake libphonon-dev phonon-backend-gstreamer gstreamer0.10-packagekit libqjson-dev libtag1-dev libboost-dev libqca2-dev libechonest-dev libattica-dev liblastfm-dev libquazip0
+
+The following packages have to be installed manually, because the versions of the package managment are too old:
+
 * libclucene-dev
-* libattica-dev
-* liblastfm-dev
 
 
 Detailed building instructions for Ubuntu

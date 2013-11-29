@@ -184,6 +184,7 @@ signals:
     void solvedStateChanged( bool state );
     void playableStateChanged( bool state );
     void resolvingFinished( bool hasResults );
+    void resolvingFinished( QList<Tomahawk::result_ptr> results );
 
     void coverChanged();
 
@@ -212,11 +213,12 @@ private slots:
     void onResultStatusChanged();
     void refreshResults();
 
-private:
+protected:
     Query();
     explicit Query( const QString& artist, const QString& track, const QString& album, const QID& qid, bool autoResolve );
     explicit Query( const QString& query, const QID& qid );
 
+private:
     void init();
 
     void setCurrentResolver( Tomahawk::Resolver* resolver );

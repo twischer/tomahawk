@@ -67,7 +67,7 @@ public slots:
     // then serve
     void sendWebpageWithArgs( QxtWebRequestEvent* event, const QString& filenameSource, const QHash< QString, QString >& args );
 
-    void index( QxtWebRequestEvent* event );
+    virtual void index( QxtWebRequestEvent* event );
 
 private:
     QxtWebRequestEvent* m_storedEvent;

@@ -308,6 +308,9 @@ Query::onResolvingFinished()
         m_resolvers.clear();
 
         emit resolvingFinished( m_solved );
+
+        QMutexLocker lock( &m_mutex );
+        emit resolvingFinished( m_results );
     }
 }
 

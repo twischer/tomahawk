@@ -1,0 +1,30 @@
+HOW TO USE SIGNALS
+- Be carful with shared pointers.
+- Possible the receiving object was already desttried
+
+
+#include <QtCore/QObject>
+
+class CLASS : public QObject
+{
+    Q_OBJECT					// <-- IMPORTANT
+
+private slots:
+    void onEvent();
+
+};
+
+CLASS::CLASS() : QObject()		// <-- IMPORTANT
+{
+    const bool successful = connect( eventObject, SIGNAL( event() ), SLOT( onEvent() ) );
+}
+
+void
+CLASS::onEvent()
+{
+}
+
+
+
+
+

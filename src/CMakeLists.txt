@@ -36,6 +36,8 @@ ENDIF()
 
 SET( tomahawkSources ${tomahawkSources}
      web/Api_v1.cpp
+     web/WebSearchQuery.cpp
+     web/WebInterface.cpp
 
      AclRegistryImpl.cpp
      ShortcutHandler.cpp
