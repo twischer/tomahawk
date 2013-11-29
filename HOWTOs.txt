@@ -27,4 +27,12 @@ CLASS::onEvent()
 
 
 
+HOWTO DECODE A HTTP POST REQUEST
 
+if (event->method.compare("POST") == 0)
+{
+	QxtWebContent* content = event->content;
+	content->waitForAllContent();
+	QString requestContent = QUrl::fromPercentEncoding( content->readAll() );
+	const QHash<QString,QString> postValues = QxtWebContent::parseUrlEncodedQuery(requestContent);
+}

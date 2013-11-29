@@ -16,13 +16,16 @@ public:
 
 
 public slots:
-    virtual void index( QxtWebRequestEvent* event );
-    virtual void search( QxtWebRequestEvent* event );
+    void index( QxtWebRequestEvent* event );
+    void search( QxtWebRequestEvent* event );
+    void add( QxtWebRequestEvent* event );
 
 private slots:
     void onSearchFinished( const QString query, const QList<Tomahawk::result_ptr> results, const QxtWebRequestEvent* event );
 
 private:
+    const QString getDecodedURLAttribute(const QUrl& url, const QString& key);
+
     const QString m_htmlHeader;
     const QString m_htmlStates;
     const QString m_htmlSearch;
