@@ -5,42 +5,28 @@
 
 WebInterface::WebInterface(QxtAbstractWebSessionManager* sm)
     : Api_v1(sm),
-      m_htmlHeader("<html>\n"
-                   "<head>\n"
-                   "<title>Tomahawk-Player</title>\n"
-                   "</head>\n"
-                   "<body>"
-                   "<form action=\"search\" method=\"get\">\n"
-                   "<input type=\"text\" name=\"query\" value=\"<%QUERY%>\"/>\n"
-                   "<input type=\"submit\" value=\"Search\"/>\n"
-                   "</form>\n"
-                   "<%BODY%>\n"
-                   "</body>\n"
-                   "</html>\n"),
-      m_htmlStates("<h2>Current playing song</h2>\n"
-                   "<%ARTIST%> - <%TRACK%>\n"
-                   "<h2>Next songs</h2>\n"
-                   "<table>"
-                   "<%QUEUE%>\n"
-                   "</table>"),
-      m_htmlQueue("<tr>\n"
-                   "<td><%ARTIST%></td>\n"
-                   "<td>- <%TRACK%></td>\n"
-                   "<td><%ALBUM%></td>\n"
-                   "</tr>\n"),
-      m_htmlSearch("<h1>Found Songs</h1>\n"
-                   "<table>"
-                   "<%RESULT%>"
-                   "</table>"),
-      m_htmlResult("<tr>\n"
-                   "<form action=\"add\" method=\"get\">\n"
-                   "<td><input type=\"text\" name=\"artist\" value=\"<%ARTIST%>\" readonly/></td>\n"
-                   "<td><input type=\"text\" name=\"track\" value=\"<%TRACK%>\" readonly/></td>\n"
-                   "<td><input type=\"text\" name=\"album\" value=\"<%ALBUM%>\" readonly/></td>\n"
-                   "<td><input type=submit value=\"Add\"/></td>\n"
-                   "</form>\n"
-                   "</tr>\n")
+      m_htmlHeader( getFileContent("header.html") ),
+      m_htmlState( getFileContent("state.html") ),
+      m_htmlQueue( getFileContent("queue.html") ),
+      m_htmlSearch( getFileContent("search.html") ),
+      m_htmlResult( getFileContent("result.html") )
 {
+}
+
+
+const QString
+WebInterface::getFileContent(const QString& filename)
+{
+    const QString filenameSource = QString(RESPATH "www/") + filename;
+
+    if ( !QFile::exists( filenameSource ) )
+        qWarning() << "Passed invalid file for html source:" << filenameSource;
+
+    QFile f( filenameSource );
+    f.open( QIODevice::ReadOnly );
+    const QString data = f.readAll();
+
+    return data;
 }
 
 
@@ -49,7 +35,7 @@ WebInterface::index( QxtWebRequestEvent* event )
 {
     QString page = m_htmlHeader;
     page.replace("<%QUERY%>", "");
-    page.replace("<%BODY%>", m_htmlStates);
+    page.replace("<%BODY%>", m_htmlState);
 
     const Tomahawk::result_ptr currentTrack = MainAudioEngine::instance()->currentTrack();
     if (currentTrack)

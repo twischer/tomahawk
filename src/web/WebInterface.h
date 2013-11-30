@@ -24,11 +24,12 @@ private slots:
     void onSearchFinished( const QString query, const QList<Tomahawk::result_ptr> results, const QxtWebRequestEvent* event );
 
 private:
+    const QString getFileContent(const QString& filename);
     const QString getDecodedURLAttribute(const QUrl& url, const QString& key);
     void replaceTrackInformation(const Tomahawk::result_ptr& track, QString& toReplace);
 
     const QString m_htmlHeader;
-    const QString m_htmlStates;
+    const QString m_htmlState;
     const QString m_htmlQueue;
     const QString m_htmlSearch;
     const QString m_htmlResult;
