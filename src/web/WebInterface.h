@@ -25,9 +25,11 @@ private slots:
 
 private:
     const QString getDecodedURLAttribute(const QUrl& url, const QString& key);
+    void replaceTrackInformation(const Tomahawk::result_ptr& track, QString& toReplace);
 
     const QString m_htmlHeader;
     const QString m_htmlStates;
+    const QString m_htmlQueue;
     const QString m_htmlSearch;
     const QString m_htmlResult;
 };

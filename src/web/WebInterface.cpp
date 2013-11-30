@@ -1,6 +1,7 @@
 #include "web/WebInterface.h"
 #include "ViewManager.h"
 #include "playlist/PlaylistView.h"
+#include "audio/MainAudioEngine.h"
 
 WebInterface::WebInterface(QxtAbstractWebSessionManager* sm)
     : Api_v1(sm),
@@ -17,9 +18,16 @@ WebInterface::WebInterface(QxtAbstractWebSessionManager* sm)
                    "</body>\n"
                    "</html>\n"),
       m_htmlStates("<h2>Current playing song</h2>\n"
-                   "<%CURRENT%>\n"
+                   "<%ARTIST%> - <%TRACK%>\n"
                    "<h2>Next songs</h2>\n"
-                   "<%QUEUE%>\n"),
+                   "<table>"
+                   "<%QUEUE%>\n"
+                   "</table>"),
+      m_htmlQueue("<tr>\n"
+                   "<td><%ARTIST%></td>\n"
+                   "<td>- <%TRACK%></td>\n"
+                   "<td><%ALBUM%></td>\n"
+                   "</tr>\n"),
       m_htmlSearch("<h1>Found Songs</h1>\n"
                    "<table>"
                    "<%RESULT%>"
@@ -42,6 +50,28 @@ WebInterface::index( QxtWebRequestEvent* event )
     QString page = m_htmlHeader;
     page.replace("<%QUERY%>", "");
     page.replace("<%BODY%>", m_htmlStates);
+
+    const Tomahawk::result_ptr currentTrack = MainAudioEngine::instance()->currentTrack();
+    if (currentTrack)
+    {
+        replaceTrackInformation(currentTrack, page);
+    }
+
+
+    QString queueString;
+    const QList<Tomahawk::query_ptr> queries = ViewManager::instance()->queue()->model()->queries();
+    foreach( const Tomahawk::query_ptr& query, queries )
+    {
+
+        foreach( const Tomahawk::result_ptr& rp, query->results() )
+        {
+            QString queueLine = m_htmlQueue;
+            replaceTrackInformation(rp, queueLine);
+            queueString += queueLine;
+        }
+    }
+    page.replace("<%QUEUE%>", queueString);
+
 
     QxtWebPageEvent* wpe = new QxtWebPageEvent( event->sessionID, event->requestID, page.toAscii() );
     postEvent( wpe );
@@ -74,11 +104,13 @@ WebInterface::onSearchFinished( const QString query, const QList<Tomahawk::resul
     {
         if ( rp->isOnline() )
         {
+            // TODDO use one base64 string for idenfikation
+            // und damit keine text boxen verwenden
+            // zusätzlich mit einem href arbeiten
+            // spart übertragungsraum und ist beim rendern aud smartphones weniger aufwendig
+
             QString resultLine = m_htmlResult;
-            resultLine.replace( "<%ARTIST%>", rp->artist()->name() );
-            QString track = rp->track();
-            resultLine.replace( "<%TRACK%>", rp->track() );
-            resultLine.replace( "<%ALBUM%>", rp->album()->name() );
+            replaceTrackInformation(rp, resultLine);
 
             resultString += resultLine;
         }
@@ -126,4 +158,13 @@ WebInterface::getDecodedURLAttribute(const QUrl& url, const QString& key)
     value.replace("+", " ");
 
     return value;
+}
+
+
+void
+WebInterface::replaceTrackInformation(const Tomahawk::result_ptr& track, QString& toReplace)
+{
+    toReplace.replace( "<%ARTIST%>", track->artist()->name() );
+    toReplace.replace( "<%TRACK%>", track->track() );
+    toReplace.replace( "<%ALBUM%>", track->album()->name() );
 }
