@@ -33,6 +33,22 @@ WebInterface::getFileContent(const QString& filename)
 void
 WebInterface::index( QxtWebRequestEvent* event )
 {
+    if ( event->url.hasQueryItem("action") )
+    {
+        const QString action = getDecodedURLAttribute(event->url, "action");
+
+        if (action.compare("toggle") == 0)
+            MainAudioEngine::instance()->playPause();
+        else if (action.compare("next") == 0)
+            // TODO ask for authentification before playing the next song
+            MainAudioEngine::instance()->next();
+        else if (action.compare("lower") == 0)
+            MainAudioEngine::instance()->lowerVolume();
+        else if (action.compare("higher") == 0)
+            MainAudioEngine::instance()->raiseVolume();
+    }
+
+
     QString page = m_htmlHeader;
     page.replace("<%QUERY%>", "");
     page.replace("<%BODY%>", m_htmlState);
