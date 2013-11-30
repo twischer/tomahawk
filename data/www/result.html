@@ -1,9 +1,8 @@
 <tr>
-	<form action="add" method="get">
-	<td><input type="text" name="artist" value="<%ARTIST%>" readonly/></td>
-	<td><input type="text" name="track" value="<%TRACK%>" readonly/></td>
-	<td><input type="text" name="album" value="<%ALBUM%>" readonly/></td>
-	<td><input type=submit value="Add"/></td>
-	</form>
+	<th rowspan="2"><a href="add?trackid=<%TRACKID%>">Add</a></th>
+	<td><b><%TRACK%></b></td>
+</tr>
+<tr>
+	<td><%ARTIST%> <%ALBUM%></td>
 </tr>
 

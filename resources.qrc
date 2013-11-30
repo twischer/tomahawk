@@ -154,5 +154,6 @@
         <file>data/www/state.html</file>
         <file>data/www/search.html</file>
         <file>data/www/result.html</file>
+        <file>data/www/message.html</file>
     </qresource>
 </RCC>

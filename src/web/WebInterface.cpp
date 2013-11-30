@@ -70,10 +70,16 @@ WebInterface::search( QxtWebRequestEvent* event )
     if ( event->url.hasQueryItem( "query" ) )
     {
         const QString query = getDecodedURLAttribute(event->url, "query");
-
-        const Tomahawk::WebSearchQuery* qry = new Tomahawk::WebSearchQuery(query, event);
-        connect( qry, SIGNAL( searchFinished( const QString, const QList<Tomahawk::result_ptr>, const QxtWebRequestEvent* ) ),
-                 SLOT( onSearchFinished( const QString, const QList<Tomahawk::result_ptr>, const QxtWebRequestEvent* ) ) );
+        if (query.trimmed().isEmpty())
+        {
+            index(event);
+        }
+        else
+        {
+            const Tomahawk::WebSearchQuery* qry = new Tomahawk::WebSearchQuery(query, event);
+            connect( qry, SIGNAL( searchFinished( const QString, const QList<Tomahawk::result_ptr>, const QxtWebRequestEvent* ) ),
+                     SLOT( onSearchFinished( const QString, const QList<Tomahawk::result_ptr>, const QxtWebRequestEvent* ) ) );
+        }
     }
     else
     {
@@ -90,13 +96,15 @@ WebInterface::onSearchFinished( const QString query, const QList<Tomahawk::resul
     {
         if ( rp->isOnline() )
         {
-            // TODDO use one base64 string for idenfikation
-            // und damit keine text boxen verwenden
-            // zusätzlich mit einem href arbeiten
-            // spart übertragungsraum und ist beim rendern aud smartphones weniger aufwendig
-
             QString resultLine = m_htmlResult;
             replaceTrackInformation(rp, resultLine);
+
+            const QString trackID = rp->artist()->name() + QString("|")
+                    + rp->track() + QString("|")
+                    + rp->album()->name();
+
+            const QString base64TrackID = trackID.toAscii().toBase64();
+            resultLine.replace("<%TRACKID%>", base64TrackID);
 
             resultString += resultLine;
         }
@@ -117,12 +125,18 @@ WebInterface::onSearchFinished( const QString query, const QList<Tomahawk::resul
 void
 WebInterface::add( QxtWebRequestEvent* event )
 {
+    QString message = "<font color=red>Track could not be added!</font>";
+
     const QUrl& url = event->url;
-    if ( url.hasQueryItem("artist") && url.hasQueryItem("track") && url.hasQueryItem("album") )
+    if ( url.hasQueryItem("trackid") )
     {
-        const QString artist = getDecodedURLAttribute(url, "artist");
-        const QString track = getDecodedURLAttribute(url, "track");
-        const QString album = getDecodedURLAttribute(url, "album");
+        const QString base64TrackID = getDecodedURLAttribute(url, "trackid");
+        const QString trackID = QByteArray::fromBase64( base64TrackID.toAscii() );
+        const QStringList trackInfo = trackID.split("|");
+
+        const QString artist = trackInfo[0];
+        const QString track = trackInfo[1];
+        const QString album = trackInfo[2];
 
         // add track to the queue
         const Tomahawk::query_ptr query = Tomahawk::Query::get(artist, track, album);
@@ -130,9 +144,15 @@ WebInterface::add( QxtWebRequestEvent* event )
 
         // TODO PlaylistModel::playlistToFull abfangen und
         // nachricht an benutzer weiter geben
+
+        message = QString("Track %1 - %2 successfully added to queue.").arg(artist, track);
     }
 
-    index(event);
+    QString page = getFileContent("message.html");
+    page.replace("<%MESSAGE%>", message);
+
+    QxtWebPageEvent* wpe = new QxtWebPageEvent( event->sessionID, event->requestID, page.toAscii() );
+    postEvent( wpe );
 }
 
 
@@ -152,5 +172,9 @@ WebInterface::replaceTrackInformation(const Tomahawk::result_ptr& track, QString
 {
     toReplace.replace( "<%ARTIST%>", track->artist()->name() );
     toReplace.replace( "<%TRACK%>", track->track() );
-    toReplace.replace( "<%ALBUM%>", track->album()->name() );
+
+    // Add seperator "- " if the album is not empty
+    const QString album = track->album()->name();
+    const QString albumWithSeperator = album.trimmed().isEmpty() ? "" : QString("- %1").arg(album);
+    toReplace.replace("<%ALBUM%>", albumWithSeperator);
 }
