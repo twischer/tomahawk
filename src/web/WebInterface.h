@@ -6,6 +6,8 @@
 #include "Artist.h"
 #include "WebSearchQuery.h"
 
+typedef QHash<QString, QString> QStringMap;
+
 
 class WebInterface : public Api_v1
 {
@@ -19,17 +21,20 @@ public slots:
     void index( QxtWebRequestEvent* event );
     void search( QxtWebRequestEvent* event );
     void add( QxtWebRequestEvent* event );
+    void playlists( QxtWebRequestEvent* event );
+    void playlist( QxtWebRequestEvent* event, QString guid );
 
 private slots:
     void onSearchFinished( const QString query, const QList<Tomahawk::result_ptr> results, const QxtWebRequestEvent* event );
 
 private:
-    const QString getFileContent(const QString& filename);
-    const QString getDecodedURLAttribute(const QUrl& url, const QString& key);
-    void replaceTrackInformation(const Tomahawk::result_ptr& track, QString& toReplace);
+    const QString getFileContent(const QString& filename) const;
+    void sendMultiFilePage(const QxtWebRequestEvent* event, const QString& bodyFile, const QStringMap& bodyArgs,
+                           const QString& entryFile, const QList<QStringMap>& entryArgs);
+    void sendPage(const QxtWebRequestEvent* event, const QString& page);
+    const QString getDecodedURLAttribute(const QUrl& url, const QString& key) const;
 
     const QString m_htmlHeader;
-    const QString m_htmlState;
     const QString m_htmlQueue;
     const QString m_htmlSearch;
     const QString m_htmlResult;

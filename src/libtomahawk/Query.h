@@ -125,6 +125,7 @@ public:
     bool equals( const Tomahawk::query_ptr& other, bool ignoreCase = false ) const;
 
     QVariant toVariant() const;
+    QHash<QString, QString> toHashMap() const;
     QString toString() const;
 
     QString resultHint() const { return m_resultHint; }

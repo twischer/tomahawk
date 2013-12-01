@@ -58,6 +58,7 @@ public:
     virtual ~Result();
 
     QVariant toVariant() const;
+    QHash<QString, QString> toHashMap() const;
     QString toString() const;
     Tomahawk::query_ptr toQuery();
 

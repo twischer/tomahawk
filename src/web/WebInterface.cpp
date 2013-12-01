@@ -2,20 +2,20 @@
 #include "ViewManager.h"
 #include "playlist/PlaylistView.h"
 #include "audio/MainAudioEngine.h"
+#include "SourceList.h"
 
 WebInterface::WebInterface(QxtAbstractWebSessionManager* sm)
     : Api_v1(sm),
       m_htmlHeader( getFileContent("header.html") ),
-      m_htmlState( getFileContent("state.html") ),
-      m_htmlQueue( getFileContent("queue.html") ),
-      m_htmlSearch( getFileContent("search.html") ),
-      m_htmlResult( getFileContent("result.html") )
+      m_htmlQueue( getFileContent("entry_queue.html") ),
+      m_htmlSearch( getFileContent("body_search.html") ),
+      m_htmlResult( getFileContent("entry_result.html") )
 {
 }
 
 
 const QString
-WebInterface::getFileContent(const QString& filename)
+WebInterface::getFileContent(const QString& filename) const
 {
     const QString filenameSource = QString(RESPATH "www/") + filename;
 
@@ -49,34 +49,24 @@ WebInterface::index( QxtWebRequestEvent* event )
     }
 
 
-    QString page = m_htmlHeader;
-    page.replace("<%QUERY%>", "");
-    page.replace("<%BODY%>", m_htmlState);
+    QStringMap bodyArgs;
+    bodyArgs["query"] = QString();
 
     const Tomahawk::result_ptr currentTrack = MainAudioEngine::instance()->currentTrack();
     if (currentTrack)
-    {
-        replaceTrackInformation(currentTrack, page);
-    }
+        bodyArgs.unite( currentTrack->toHashMap() );
 
 
-    QString queueString;
     const QList<Tomahawk::query_ptr> queries = ViewManager::instance()->queue()->model()->queries();
+
+    QList< QStringMap > entries;
     foreach( const Tomahawk::query_ptr& query, queries )
     {
-
-        foreach( const Tomahawk::result_ptr& rp, query->results() )
-        {
-            QString queueLine = m_htmlQueue;
-            replaceTrackInformation(rp, queueLine);
-            queueString += queueLine;
-        }
+        const QStringMap entry = query->toHashMap();
+        entries << entry;
     }
-    page.replace("<%QUEUE%>", queueString);
 
-
-    QxtWebPageEvent* wpe = new QxtWebPageEvent( event->sessionID, event->requestID, page.toAscii() );
-    postEvent( wpe );
+    sendMultiFilePage(event, "body_state.html", bodyArgs, "entry_queue.html", entries);
 }
 
 
@@ -107,34 +97,19 @@ WebInterface::search( QxtWebRequestEvent* event )
 void
 WebInterface::onSearchFinished( const QString query, const QList<Tomahawk::result_ptr> results, const QxtWebRequestEvent* event )
 {
-    QString resultString;
+    QList< QStringMap > entries;
     foreach( const Tomahawk::result_ptr& rp, results )
     {
         if ( rp->isOnline() )
         {
-            QString resultLine = m_htmlResult;
-            replaceTrackInformation(rp, resultLine);
-
-            const QString trackID = rp->artist()->name() + QString("|")
-                    + rp->track() + QString("|")
-                    + rp->album()->name();
-
-            const QString base64TrackID = trackID.toAscii().toBase64();
-            resultLine.replace("<%TRACKID%>", base64TrackID);
-
-            resultString += resultLine;
+            const QStringMap entry = rp->toHashMap();
+            entries << entry;
         }
     }
 
-
-    QString page = m_htmlHeader;
-    page.replace("<%QUERY%>", query);
-
-    page.replace( "<%BODY%>", m_htmlSearch );
-    page.replace( "<%RESULT%>", resultString );
-
-    QxtWebPageEvent* wpe = new QxtWebPageEvent( event->sessionID, event->requestID, page.toAscii() );
-    postEvent( wpe );
+    QStringMap bodyArgs;
+    bodyArgs["query"] = query;
+    sendMultiFilePage(event, "body_search.html", bodyArgs, "entry_result.html", entries);
 }
 
 
@@ -167,13 +142,120 @@ WebInterface::add( QxtWebRequestEvent* event )
     QString page = getFileContent("message.html");
     page.replace("<%MESSAGE%>", message);
 
+    sendPage(event, page);
+}
+
+void
+WebInterface::playlists( QxtWebRequestEvent* event )
+{
+    const QList<Tomahawk::playlist_ptr> pls = SourceList::instance()->getLocal()->collection()->playlists();
+
+    QList< QStringMap > entries;
+    foreach (const Tomahawk::playlist_ptr& pl, pls)
+    {
+        QStringMap entry;
+        entry["playlist"] = pl->title();
+        entry["guid"] = pl->guid();
+        entries << entry;
+    }
+
+    QStringMap bodyArgs;
+    bodyArgs["query"] = QString();
+    sendMultiFilePage(event, "body_playlists.html", bodyArgs, "entry_playlist.html", entries);
+}
+
+
+void
+WebInterface::playlist( QxtWebRequestEvent* event, QString guid )
+{
+    const Tomahawk::playlist_ptr pls = Tomahawk::Playlist::load(guid);
+    if ( pls.isNull() )
+    {
+        send404(event);
+        return;
+    }
+
+
+
+    // TODO MainAudioEngine::instance()->setPlaylist();
+
+
+    QList<QStringMap> entries;
+    foreach (const Tomahawk::plentry_ptr& plEntry, pls->entries())
+    {
+        const QStringMap entry = plEntry->query()->toHashMap();
+        entries << entry;
+    }
+
+    QStringMap bodyArgs;
+    bodyArgs["query"] = QString();
+    bodyArgs["playlist"] = pls->title();
+    sendMultiFilePage(event, "body_playlist.html", bodyArgs, "entry_result.html", entries);
+}
+
+
+void
+WebInterface::sendMultiFilePage(const QxtWebRequestEvent* event, const QString& bodyFile, const QStringMap& bodyArgs,
+                                const QString& entryFile, const QList<QStringMap>& entryArgs)
+{
+    QString page = m_htmlHeader;
+
+    const QString body = getFileContent(bodyFile);
+    page.replace("<%BODY%>", body);
+
+    foreach( const QString& param, bodyArgs.keys() )
+    {
+        page.replace( QString( "<%%1%>" ).arg( param.toUpper() ), bodyArgs.value( param ).toUtf8() );
+    }
+
+
+    const QString entryTemplate = getFileContent(entryFile);
+
+    QString entries;
+    foreach (QStringMap args, entryArgs)
+    {
+        QString entry = entryTemplate;
+
+        if ( args.contains("album") )
+        {
+            // Add a seperator to the between artist and album if album is available
+            const QString album = args["album"];
+            const QString albumWithSeperator = album.trimmed().isEmpty() ? "" : QString("- %1").arg(album);
+            args["album"] = albumWithSeperator;
+
+            // Replace all track id fields if artist, track and album is set
+            if (args.contains("artist") && args.contains("track"))
+            {
+                const QString trackID = QString("%1|%2|%3").arg( args["artist"], args["track"], album );
+
+                const QString base64TrackID = trackID.toAscii().toBase64();
+                entry.replace("<%TRACKID%>", base64TrackID);
+            }
+        }
+
+        foreach( const QString& param, args.keys() )
+        {
+            entry.replace( QString( "<%%1%>" ).arg( param.toUpper() ), args.value( param ).toUtf8() );
+        }
+        entries += entry;
+    }
+    page.replace("<%ENTRIES%>", entries);
+
+
+    sendPage(event, page);
+}
+
+
+void
+WebInterface::sendPage(const QxtWebRequestEvent* event, const QString& page)
+{
     QxtWebPageEvent* wpe = new QxtWebPageEvent( event->sessionID, event->requestID, page.toAscii() );
     postEvent( wpe );
 }
 
 
 const QString
-WebInterface::getDecodedURLAttribute(const QUrl& url, const QString& key)
+WebInterface::getDecodedURLAttribute(const QUrl& url, const QString& key) const
 {
     const QString encodedValue = url.queryItemValue(key);
     QString value = QUrl::fromPercentEncoding( encodedValue.toAscii() );
@@ -182,15 +264,3 @@ WebInterface::getDecodedURLAttribute(const QUrl& url, const QString& key)
     return value;
 }
 
-
-void
-WebInterface::replaceTrackInformation(const Tomahawk::result_ptr& track, QString& toReplace)
-{
-    toReplace.replace( "<%ARTIST%>", track->artist()->name() );
-    toReplace.replace( "<%TRACK%>", track->track() );
-
-    // Add seperator "- " if the album is not empty
-    const QString album = track->album()->name();
-    const QString albumWithSeperator = album.trimmed().isEmpty() ? "" : QString("- %1").arg(album);
-    toReplace.replace("<%ALBUM%>", albumWithSeperator);
-}

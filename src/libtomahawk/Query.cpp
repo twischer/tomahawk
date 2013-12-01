@@ -493,6 +493,21 @@ Query::toVariant() const
 }
 
 
+QHash<QString, QString>
+Query::toHashMap() const
+{
+    QHash<QString, QString> m;
+    m.insert( "artist", artist() );
+    m.insert( "album", album() );
+    m.insert( "track", track() );
+/*  TODO convert integer to string
+    m.insert( "duration", duration() );
+    m.insert( "qid", id() );
+*/
+    return m;
+}
+
+
 QString
 Query::toString() const
 {

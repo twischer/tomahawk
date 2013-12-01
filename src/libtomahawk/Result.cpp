@@ -209,6 +209,31 @@ Result::toVariant() const
 }
 
 
+QHash<QString, QString>
+Result::toHashMap() const
+{
+    QHash<QString, QString> m;
+    m.insert( "artist", artist()->name() );
+    m.insert( "album", album()->name() );
+    m.insert( "track", track() );
+    m.insert( "source", friendlySource() );
+    m.insert( "mimetype", mimetype() );
+/*  TODO convert the integer values to strings
+    m.insert( "size", size() );
+    m.insert( "bitrate", bitrate() );
+    m.insert( "duration", duration() );
+    m.insert( "score", score() );
+    m.insert( "sid", id() );
+    m.insert( "discnumber", discnumber() );
+    m.insert( "albumpos", albumpos() );
+*/
+    if ( !composer().isNull() )
+        m.insert( "composer", composer()->name() );
+
+    return m;
+}
+
+
 QString
 Result::toString() const
 {

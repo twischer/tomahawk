@@ -150,10 +150,13 @@
         <file>data/images/tweet.svg</file>
         <file>data/images/widget-border.png</file>
         <file>data/www/header.html</file>
-        <file>data/www/queue.html</file>
-        <file>data/www/state.html</file>
-        <file>data/www/search.html</file>
-        <file>data/www/result.html</file>
         <file>data/www/message.html</file>
+        <file>data/www/body_playlist.html</file>
+        <file>data/www/body_playlists.html</file>
+        <file>data/www/body_search.html</file>
+        <file>data/www/body_state.html</file>
+        <file>data/www/entry_playlist.html</file>
+        <file>data/www/entry_queue.html</file>
+        <file>data/www/entry_result.html</file>
     </qresource>
 </RCC>
