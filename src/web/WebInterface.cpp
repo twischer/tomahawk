@@ -51,6 +51,29 @@ WebInterface::index( QxtWebRequestEvent* event )
 
     QStringMap bodyArgs;
     bodyArgs["query"] = QString();
+    bodyArgs["playlist"] = "Noname";
+
+
+    // TODO ab SourceItem::onPlaylistsAdded überprüfen wo sich die Daten für MainAudioEngine::instance()->playlist() ändern
+
+    // TODO vielleicht vorher page anlegen udn dann PlaylistItem::isBeingPlayed() benutzten
+
+    // find the name of the currently used playlist
+    const Tomahawk::playlistinterface_ptr currentPlInterface = MainAudioEngine::instance()->playlist();
+    const Tomahawk::playlistinterface_ptr currentPlInterface2 = MainAudioEngine::instance()->currentTrackPlaylist();
+
+    const bool equal = (currentPlInterface == currentPlInterface2);
+
+    const QList<Tomahawk::playlist_ptr> pls = SourceList::instance()->getLocal()->collection()->playlists();
+    foreach (const Tomahawk::playlist_ptr& pl, pls)
+    {
+        if (  pl->playlistInterface()->id().compare( currentPlInterface->id() ) == 0  )
+            bodyArgs["playlist"] = pl->title();
+
+        if (  pl->playlistInterface()->id().compare( currentPlInterface2->id() ) == 0  )
+            bodyArgs["playlist"] = pl->title();
+    }
+
 
     const Tomahawk::result_ptr currentTrack = MainAudioEngine::instance()->currentTrack();
     if (currentTrack)
@@ -176,8 +199,15 @@ WebInterface::playlist( QxtWebRequestEvent* event, QString guid )
     }
 
 
+    const QUrl& url = event->url;
+    if ( url.hasQueryItem("action") )
+    {
+        const QString action = url.queryItemValue("action");
+        /* TODO Stops sometimes with a segfault
+        if (action.compare("use") == 0)
+            MainAudioEngine::instance()->setPlaylist( pls->playlistInterface() );*/
 
-    // TODO MainAudioEngine::instance()->setPlaylist();
+    }
 
 
     QList<QStringMap> entries;
