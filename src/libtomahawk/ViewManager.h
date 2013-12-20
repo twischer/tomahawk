@@ -94,7 +94,7 @@ public:
     TreeView* superCollectionView() const;
 
     /// Get the view page for the given item. Not pretty...
-    Tomahawk::ViewPage* pageForPlaylist( const Tomahawk::playlist_ptr& pl ) const;
+    Tomahawk::ViewPage* pageForPlaylist( const Tomahawk::playlist_ptr& pl );
     Tomahawk::ViewPage* pageForDynPlaylist( const Tomahawk::dynplaylist_ptr& pl ) const;
 
     /// Get a playlist (or dynamic playlist ) from a ViewPage* if the page is PlaylistView or DynamicWidget.

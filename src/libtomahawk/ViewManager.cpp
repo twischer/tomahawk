@@ -171,17 +171,7 @@ ViewManager::playlistForPage( ViewPage* page ) const
 Tomahawk::ViewPage*
 ViewManager::show( const Tomahawk::playlist_ptr& playlist )
 {
-    FlexibleView* view;
-
-    if ( !m_playlistViews.contains( playlist ) || m_playlistViews.value( playlist ).isNull() )
-    {
-        view = createPageForPlaylist( playlist );
-        m_playlistViews.insert( playlist, view );
-    }
-    else
-    {
-        view = m_playlistViews.value( playlist ).data();
-    }
+    Tomahawk::ViewPage* view = pageForPlaylist( playlist );
 
     setPage( view );
     return view;
@@ -695,9 +685,19 @@ ViewManager::pageForDynPlaylist(const dynplaylist_ptr& pl) const
 
 
 ViewPage*
-ViewManager::pageForPlaylist(const playlist_ptr& pl) const
+ViewManager::pageForPlaylist(const playlist_ptr& playlist)
 {
-    return m_playlistViews.value( pl ).data();
+    if ( !m_playlistViews.contains( playlist ) || m_playlistViews.value( playlist ).isNull() )
+    {
+        FlexibleView* view = createPageForPlaylist( playlist );
+        m_playlistViews.insert( playlist, view );
+
+        return view;
+    }
+    else
+    {
+        return m_playlistViews.value( playlist ).data();
+    }
 }
 
 
