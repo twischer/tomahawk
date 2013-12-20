@@ -1,4 +1,5 @@
 #include "web/WebInterface.h"
+#include "TomahawkSettings.h"
 #include "ViewManager.h"
 #include "playlist/PlaylistView.h"
 #include "audio/MainAudioEngine.h"
@@ -40,8 +41,16 @@ WebInterface::index( QxtWebRequestEvent* event )
         if (action.compare("toggle") == 0)
             MainAudioEngine::instance()->playPause();
         else if (action.compare("next") == 0)
-            // TODO ask for authentification before playing the next song
-            MainAudioEngine::instance()->next();
+        {
+            if ( TomahawkSettings::instance()->partyModeEnabled() )
+            {
+                // TODO ask for authentification before playing the next song
+                sendMessagePage( event, "<font color=red>Access denied!</font>" );
+                return;
+            }
+            else
+                MainAudioEngine::instance()->next();
+        }
         else if (action.compare("lower") == 0)
             MainAudioEngine::instance()->lowerVolume();
         else if (action.compare("higher") == 0)
@@ -157,6 +166,13 @@ WebInterface::add( QxtWebRequestEvent* event )
         message = QString("Track %1 - %2 successfully added to queue.").arg(artist, track);
     }
 
+    sendMessagePage( event, message );
+}
+
+
+void
+WebInterface::sendMessagePage( QxtWebRequestEvent* event, const QString message )
+{
     QString page = getFileContent("message.html");
     page.replace("<%MESSAGE%>", message);
 
@@ -200,10 +216,23 @@ WebInterface::playlist( QxtWebRequestEvent* event, QString guid )
         const QString action = url.queryItemValue("action");
         if (action.compare("use") == 0)
         {
-            // TODO only use the playlist and not play a song of this list
-            Tomahawk::playlistinterface_ptr interface = ViewManager::instance()->pageForPlaylist( pls )->playlistInterface();
+            if ( TomahawkSettings::instance()->partyModeEnabled() )
+            {
+                // TODO ask for authentification before playing the next song
+                sendMessagePage( event, "<font color=red>Access denied!</font>" );
+                return;
+            }
+            else
+            {
+                Tomahawk::playlistinterface_ptr interface = ViewManager::instance()->pageForPlaylist( pls )->playlistInterface();
 
-            MainAudioEngine::instance()->playItem( interface, interface->nextResult() );
+                // start playback with first song of the selected playlist if not playing
+                // otherwise only change the playlist (the next track will be used from the new playlist)
+                if ( MainAudioEngine::instance()->state() == AudioEngine::Stopped )
+                    MainAudioEngine::instance()->playItem( interface, interface->nextResult() );
+                else
+                    MainAudioEngine::instance()->setPlaylist( interface );
+            }
         }
 
     }

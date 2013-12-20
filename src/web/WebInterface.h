@@ -29,6 +29,7 @@ private slots:
 
 private:
     const QString getFileContent(const QString& filename) const;
+    void sendMessagePage( QxtWebRequestEvent *event, const QString message );
     void sendMultiFilePage(const QxtWebRequestEvent* event, const QString& bodyFile, const QStringMap& bodyArgs,
                            const QString& entryFile, const QList<QStringMap>& entryArgs);
     void sendPage(const QxtWebRequestEvent* event, const QString& page);
