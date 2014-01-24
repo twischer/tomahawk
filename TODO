@@ -1,8 +1,30 @@
-- mit vlc lautstärkeregelung ausprobieren
-- vielleicht identifikation über klassen name und somit vielleicht mediaoutput für preview player umbennenen
+- Web interface wird auf smartphones nach laden sehr klein dargestellt
 
-- HTTP Server für smartphones (siehe TomahawkApp::initHTTP())
+
+-dada life happy violence kann nicht hinzugefügt werden
+- vllt beste match (score vergleichen) hinzufügen
+- oder eindeutigere identifikation als nur über album title artist
+- Happy Violence (Vocal Extended) Dada Life wird wohl nicht gefunden und über web nicht hinzugefügt
+
+- PlayPause im party mode auch sperren
+
+
+- Party modus mit passwort schutz ausstatten
+- party mode von web aus de/aktivieren können
+
+- Balken zum spulen hat nicht immer richtige länge, aber restdauer wird anscheinend richtig angezeigt
+
+
+- Crossfading funktioniert nur mit Gstreamer, resolver können aber nru mit vlc abgespielt werden
 
 
 - Beim verlassen des Party modes player maximieren und nicht minimieren
-- Party modus mit passwort schutz ausstatten
+
+
+- mit vlc lautstärkeregelung ausprobieren
+- vielleicht identifikation über klassen name und somit vielleicht mediaoutput für preview player umbennenen
+
+
+
+
+

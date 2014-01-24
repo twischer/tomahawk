@@ -560,7 +560,7 @@ TomahawkApp::initHTTP()
         return;
     }
 
-    m_session.data()->setPort( 60210 ); //TODO config
+    m_session.data()->setPort( 8080 ); //TODO config
     m_session.data()->setListenInterface( QHostAddress::Any );
     m_session.data()->setConnector( m_connector.data() );
 

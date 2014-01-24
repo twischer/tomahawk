@@ -36,25 +36,25 @@ WebInterface::index( QxtWebRequestEvent* event )
 {
     if ( event->url.hasQueryItem("action") )
     {
-        const QString action = getDecodedURLAttribute(event->url, "action");
-
-        if (action.compare("toggle") == 0)
-            MainAudioEngine::instance()->playPause();
-        else if (action.compare("next") == 0)
+        if ( TomahawkSettings::instance()->partyModeEnabled() )
         {
-            if ( TomahawkSettings::instance()->partyModeEnabled() )
-            {
-                // TODO ask for authentification before playing the next song
-                sendMessagePage( event, "<font color=red>Access denied!</font>" );
-                return;
-            }
-            else
-                MainAudioEngine::instance()->next();
+            // TODO ask for authentification before playing the next song
+            sendMessagePage( event, "<font color=red>Access denied!</font>" );
+            return;
         }
-        else if (action.compare("lower") == 0)
-            MainAudioEngine::instance()->lowerVolume();
-        else if (action.compare("higher") == 0)
-            MainAudioEngine::instance()->raiseVolume();
+        else
+        {
+            const QString action = getDecodedURLAttribute(event->url, "action");
+
+            if (action.compare("toggle") == 0)
+                MainAudioEngine::instance()->playPause();
+            else if (action.compare("next") == 0)
+                MainAudioEngine::instance()->next();
+            else if (action.compare("lower") == 0)
+                MainAudioEngine::instance()->lowerVolume();
+            else if (action.compare("higher") == 0)
+                MainAudioEngine::instance()->raiseVolume();
+        }
     }
 
 
