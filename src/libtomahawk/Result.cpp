@@ -225,8 +225,9 @@ Result::toHashMap() const
     m.insert( "score", score() );
     m.insert( "sid", id() );
     m.insert( "discnumber", discnumber() );
-    m.insert( "albumpos", albumpos() );
-*/
+    m.insert( "albumpos", albumpos() );*/
+    m.insert( "url", url() );
+
     if ( !composer().isNull() )
         m.insert( "composer", composer()->name() );
 

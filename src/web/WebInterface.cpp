@@ -121,9 +121,8 @@ WebInterface::search( QxtWebRequestEvent* event )
 
 
 void
-WebInterface::onSearchFinished( const QString query, const QList<Tomahawk::result_ptr> results, const QxtWebRequestEvent* event )
+WebInterface::addResultsToMap(const QList<Tomahawk::result_ptr> results, QList<QStringMap>& entries)
 {
-    QList< QStringMap > entries;
     foreach( const Tomahawk::result_ptr& rp, results )
     {
         if ( rp->isOnline() )
@@ -132,6 +131,13 @@ WebInterface::onSearchFinished( const QString query, const QList<Tomahawk::resul
             entries << entry;
         }
     }
+}
+
+void
+WebInterface::onSearchFinished( const QString query, const QList<Tomahawk::result_ptr> results, const QxtWebRequestEvent* event )
+{
+    QList< QStringMap > entries;
+    addResultsToMap(results, entries);
 
     QStringMap bodyArgs;
     bodyArgs["query"] = query;
@@ -149,20 +155,16 @@ WebInterface::add( QxtWebRequestEvent* event )
     {
         const QString base64TrackID = getDecodedURLAttribute(url, "trackid");
         const QString trackID = QByteArray::fromBase64( base64TrackID.toAscii() );
-        const QStringList trackInfo = trackID.split("|");
-
-        const QString artist = trackInfo[0];
-        const QString track = trackInfo[1];
-        const QString album = trackInfo[2];
 
         // add track to the queue
-        const Tomahawk::query_ptr query = Tomahawk::Query::get(artist, track, album);
+        const Tomahawk::result_ptr result = Tomahawk::Result::get(trackID);
+        const Tomahawk::query_ptr query = result->toQuery();
         ViewManager::instance()->queue()->model()->appendQuery(query);
 
         // TODO PlaylistModel::playlistToFull abfangen und
         // nachricht an benutzer weiter geben
 
-        message = QString("Track %1 - %2 successfully added to queue.").arg(artist, track);
+        message = QString("Track %1 successfully added to queue.").arg(trackID);
     }
 
     sendMessagePage( event, message );
@@ -238,8 +240,7 @@ WebInterface::playlist( QxtWebRequestEvent* event, QString guid )
     QList<QStringMap> entries;
     foreach (const Tomahawk::plentry_ptr& plEntry, pls->entries())
     {
-        const QStringMap entry = plEntry->query()->toHashMap();
-        entries << entry;
+        addResultsToMap(plEntry->query()->results(), entries);
     }
 
     QStringMap bodyArgs;
@@ -315,15 +316,13 @@ WebInterface::sendMultiFilePage(const QxtWebRequestEvent* event, const QString& 
             const QString album = args["album"];
             const QString albumWithSeperator = album.trimmed().isEmpty() ? "" : QString("- %1").arg(album);
             args["album"] = albumWithSeperator;
+        }
 
-            // Replace all track id fields if artist, track and album is set
-            if (args.contains("artist") && args.contains("track"))
-            {
-                const QString trackID = QString("%1|%2|%3").arg( args["artist"], args["track"], album );
-
-                const QString base64TrackID = trackID.toAscii().toBase64();
-                entry.replace("<%TRACKID%>", base64TrackID);
-            }
+        if (args.contains("url"))
+        {
+            const QString url = args.value("url");
+            const QString base64URL = url.toAscii().toBase64();
+            args["trackid"] = base64URL;
         }
 
         foreach( const QString& param, args.keys() )

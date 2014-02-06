@@ -18,6 +18,7 @@ public:
 
 
     QString getPageWithBody(const QStringMap& bodyArgs, const QString& bodyFile);
+    void addResultsToMap(const QList<Tomahawk::result_ptr> results, QList< QStringMap >& entries);
 public slots:
     void index( QxtWebRequestEvent* event );
     void search( QxtWebRequestEvent* event );
