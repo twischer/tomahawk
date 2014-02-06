@@ -28,25 +28,58 @@ To compile for debugging:
 Install dependencies for running on Debian 8.0
 -----------------------------------------
 
-	$ sudo apt-get install phonon phonon-backend-gstreamer libqjson0 libtag1c2a libqca2 libquazip0
-	$ sudo apt-get install libqt4-dbus libqt4-network libqt4-script libqt4-sql libqt4-sql-sqlite libqt4-svg libqt4-test libqt4-xml libqt4-xmlpatterns libqtcore4 libqtgui4 libqtwebkit4
-	$ libechonest libattica liblastfm
+	$ sudo apt-get install phonon phonon-backend-gstreamer gstreamer0.10-packagekit libqjson0 libtag1c2a libqca2 libquazip0 libqt4-dbus libqt4-network libqt4-script libqt4-sql libqt4-sql-sqlite libqt4-svg libqt4-test libqt4-xml libqt4-xmlpatterns libqtcore4 libqtgui4 libqtwebkit4 libechonest2.1 libattica0.4 liblastfm1 libclucene-core1
 
 
-The following packages have to be installed manually, because the versions of the package managment are too old:
-
-* libclucene-core1
-* libclucene-shared1
-
-
-Install dependencies for building on Debian 8.0
+Install dependencies for building & running on Debian 8.0
 -----------------------------------------
 
-	$ sudo apt-get install cmake libphonon-dev phonon-backend-gstreamer gstreamer0.10-packagekit libqjson-dev libtag1-dev libboost-dev libqca2-dev libechonest-dev libattica-dev liblastfm-dev libquazip0
+	$ sudo apt-get install build-essential cmake pkg-config libphonon-dev phonon-backend-gstreamer gstreamer0.10-packagekit libqjson-dev libtag1-dev libboost-dev libqca2-dev libechonest-dev libattica-dev liblastfm-dev libquazip-dev libclucene-dev
+
+
+
+Install dependencies for running on Raspbian 7.0
+-----------------------------------------
+
+	$ sudo apt-get install phonon phonon-backend-gstreamer gstreamer0.10-fluendo-mp3 libqjson0 libtag1c2a libqca2
+	$ sudo apt-get install libqt4-dbus libqt4-network libqt4-script libqt4-sql libqt4-sql-sqlite libqt4-svg libqt4-test libqt4-xml libqt4-xmlpatterns libqtcore4 libqtgui4 libqtwebkit4
+
 
 The following packages have to be installed manually, because the versions of the package managment are too old:
 
+* libattica0.4
+* liblastfm1
+* libquazip0
+* libclucene-contribs1
+* libclucene-core1
+* libechonest2.1
+
+
+
+Install dependencies for building & running on Raspbian 7.0
+-----------------------------------------
+
+	$ sudo apt-get install build-essential cmake libphonon-dev phonon-backend-gstreamer gstreamer0.10-fluendo-mp3
+	$ sudo apt-get install libqjson-dev libtag1-dev libboost-dev libqca2-dev
+	$ libqca2-plugin-ossl ???
+
+The following packages have to be installed manually, because the versions of the package managment are too old:
+
+* libattica0.4
+* liblastfm1
+* libquazip0
+* libclucene-contribs1
+* libclucene-core1
+* libechonest2.1
+
+* libattica-dev
+* libfftw3-single3
+* liblastfm-dev
+* liblastfm-fingerprint1
+* libquazip0-dev
 * libclucene-dev
+* libechonest-dev
+
 
 
 Detailed building instructions for Ubuntu

@@ -17,6 +17,7 @@ public:
     WebInterface(QxtAbstractWebSessionManager* sm);
 
 
+    QString getPageWithBody(const QStringMap& bodyArgs, const QString& bodyFile);
 public slots:
     void index( QxtWebRequestEvent* event );
     void search( QxtWebRequestEvent* event );
@@ -30,6 +31,8 @@ private slots:
 private:
     const QString getFileContent(const QString& filename) const;
     void sendMessagePage( QxtWebRequestEvent *event, const QString message );
+    const bool checkAuthorization(const QxtWebRequestEvent* event);
+    const QString getPageWithBody(const QString& bodyFile, const QStringMap& bodyArgs) const;
     void sendMultiFilePage(const QxtWebRequestEvent* event, const QString& bodyFile, const QStringMap& bodyArgs,
                            const QString& entryFile, const QList<QStringMap>& entryArgs);
     void sendPage(const QxtWebRequestEvent* event, const QString& page);

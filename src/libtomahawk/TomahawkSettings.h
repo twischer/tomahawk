@@ -213,6 +213,9 @@ public:
     const bool partyModeEnabled() const;
     void setPartyModeEnabled( const bool enable );
 
+    const QString password() const;
+    void setPassword( const QString password );
+
     const bool previewPlayerEnabled() const;
     void setPreviewPlayerEnabled( const bool enable );
 

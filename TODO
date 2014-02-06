@@ -1,21 +1,25 @@
-- Web interface wird auf smartphones nach laden sehr klein dargestellt
-
-
 -dada life happy violence kann nicht hinzugefügt werden
 - vllt beste match (score vergleichen) hinzufügen
 - oder eindeutigere identifikation als nur über album title artist
 - Happy Violence (Vocal Extended) Dada Life wird wohl nicht gefunden und über web nicht hinzugefügt
 
-- PlayPause im party mode auch sperren
+
+- fullscreen wenn party mode bei start up aktiv ist (vllt fullscreen als gesonderte option, dann im party mode auch mit locken)
 
 
-- Party modus mit passwort schutz ausstatten
 - party mode von web aus de/aktivieren können
 
-- Balken zum spulen hat nicht immer richtige länge, aber restdauer wird anscheinend richtig angezeigt
+
+- Playlisten aus Inhalten von Ordnern im Dateisystem erstellen
+
+- Datei-Upload ermöglichen um lieder vom eigenen Smarthphone sich wünschen zu können
 
 
-- Crossfading funktioniert nur mit Gstreamer, resolver können aber nru mit vlc abgespielt werden
+
+- Balken zum spulen hat nicht immer richtige länge, aber restdauer wird anscheinend richtig angezeigt (mit gstreamer anscheinend schon)
+
+
+- Crossfading funktioniert nur mit Gstreamer, resolver können aber nur mit vlc abgespielt werden
 
 
 - Beim verlassen des Party modes player maximieren und nicht minimieren

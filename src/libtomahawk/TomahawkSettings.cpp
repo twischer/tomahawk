@@ -1375,6 +1375,22 @@ TomahawkSettings::setPartyModeEnabled( const bool enable )
     setValue( "partymode", enable );
 }
 
+const QString
+TomahawkSettings::password() const
+{
+    // TODO make the password configureable in the gui
+    // return value( "password", false ).toBool();
+
+    return "party";
+}
+
+
+void
+TomahawkSettings::setPassword( const QString password )
+{
+    setValue( "password", password );
+}
+
 
 const bool
 TomahawkSettings::previewPlayerEnabled() const

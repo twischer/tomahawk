@@ -38,23 +38,20 @@ WebInterface::index( QxtWebRequestEvent* event )
     {
         if ( TomahawkSettings::instance()->partyModeEnabled() )
         {
-            // TODO ask for authentification before playing the next song
-            sendMessagePage( event, "<font color=red>Access denied!</font>" );
-            return;
+            if ( !checkAuthorization(event) )
+                return;
         }
-        else
-        {
-            const QString action = getDecodedURLAttribute(event->url, "action");
 
-            if (action.compare("toggle") == 0)
-                MainAudioEngine::instance()->playPause();
-            else if (action.compare("next") == 0)
-                MainAudioEngine::instance()->next();
-            else if (action.compare("lower") == 0)
-                MainAudioEngine::instance()->lowerVolume();
-            else if (action.compare("higher") == 0)
-                MainAudioEngine::instance()->raiseVolume();
-        }
+        const QString action = getDecodedURLAttribute(event->url, "action");
+
+        if (action.compare("toggle") == 0)
+            MainAudioEngine::instance()->playPause();
+        else if (action.compare("next") == 0)
+            MainAudioEngine::instance()->next();
+        else if (action.compare("lower") == 0)
+            MainAudioEngine::instance()->lowerVolume();
+        else if (action.compare("higher") == 0)
+            MainAudioEngine::instance()->raiseVolume();
     }
 
 
@@ -218,21 +215,19 @@ WebInterface::playlist( QxtWebRequestEvent* event, QString guid )
         {
             if ( TomahawkSettings::instance()->partyModeEnabled() )
             {
-                // TODO ask for authentification before playing the next song
-                sendMessagePage( event, "<font color=red>Access denied!</font>" );
-                return;
+                if ( !checkAuthorization(event) )
+                    return;
             }
-            else
-            {
-                Tomahawk::playlistinterface_ptr interface = ViewManager::instance()->pageForPlaylist( pls )->playlistInterface();
 
-                // start playback with first song of the selected playlist if not playing
-                // otherwise only change the playlist (the next track will be used from the new playlist)
-                if ( MainAudioEngine::instance()->state() == AudioEngine::Stopped )
-                    MainAudioEngine::instance()->playItem( interface, interface->nextResult() );
-                else
-                    MainAudioEngine::instance()->setPlaylist( interface );
-            }
+
+            Tomahawk::playlistinterface_ptr interface = ViewManager::instance()->pageForPlaylist( pls )->playlistInterface();
+
+            // start playback with first song of the selected playlist if not playing
+            // otherwise only change the playlist (the next track will be used from the new playlist)
+            if ( MainAudioEngine::instance()->state() == AudioEngine::Stopped )
+                MainAudioEngine::instance()->playItem( interface, interface->nextResult() );
+            else
+                MainAudioEngine::instance()->setPlaylist( interface );
         }
 
     }
@@ -246,15 +241,41 @@ WebInterface::playlist( QxtWebRequestEvent* event, QString guid )
     }
 
     QStringMap bodyArgs;
-    bodyArgs["query"] = QString();
+    bodyArgs["query"] = QString();  // TODO remember the last search query
     bodyArgs["playlist"] = pls->title();
     sendMultiFilePage(event, "body_playlist.html", bodyArgs, "entry_result.html", entries);
 }
 
 
-void
-WebInterface::sendMultiFilePage(const QxtWebRequestEvent* event, const QString& bodyFile, const QStringMap& bodyArgs,
-                                const QString& entryFile, const QList<QStringMap>& entryArgs)
+const bool
+WebInterface::checkAuthorization(const QxtWebRequestEvent* event)
+{
+    const QString authString = event->headers.value("Authorization");
+    const QStringList authValues = authString.split(" ");
+    if (!authString.isEmpty() && authValues.count() == 2)
+    {
+        const QString userPasswordValue = QByteArray::fromBase64( authValues[1].toAscii() );
+        const QStringList userPasswordValues = userPasswordValue.split(":");
+
+        // Check if the password is the right one
+        const QString password = userPasswordValues[1];
+        if (  password.compare( TomahawkSettings::instance()->password() ) == 0  )
+            return true;
+    }
+
+
+    QxtWebPageEvent* wpe = new QxtWebPageEvent( event->sessionID, event->requestID, QByteArray() );
+    wpe->status = 401;
+    wpe->statusMessage = "Authorization Required";
+    wpe->headers.insert("WWW-Authenticate", "Basic realm=\"Tomahawk\"");
+    postEvent( wpe );
+
+    return false;
+}
+
+
+const QString
+WebInterface::getPageWithBody(const QString& bodyFile, const QStringMap& bodyArgs) const
 {
     QString page = m_htmlHeader;
 
@@ -265,6 +286,15 @@ WebInterface::sendMultiFilePage(const QxtWebRequestEvent* event, const QString& 
     {
         page.replace( QString( "<%%1%>" ).arg( param.toUpper() ), bodyArgs.value( param ).toUtf8() );
     }
+
+    return page;
+}
+
+void
+WebInterface::sendMultiFilePage(const QxtWebRequestEvent* event, const QString& bodyFile, const QStringMap& bodyArgs,
+                                const QString& entryFile, const QList<QStringMap>& entryArgs)
+{
+    QString page = getPageWithBody(bodyFile, bodyArgs);
 
 
     const QString entryTemplate = getFileContent(entryFile);
