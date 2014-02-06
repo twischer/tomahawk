@@ -52,6 +52,8 @@ WebInterface::index( QxtWebRequestEvent* event )
             MainAudioEngine::instance()->lowerVolume();
         else if (action.compare("higher") == 0)
             MainAudioEngine::instance()->raiseVolume();
+        else if (action.compare("partymode") == 0)
+            TomahawkSettings::instance()->setPartyModeEnabled( !TomahawkSettings::instance()->partyModeEnabled() );
     }
 
 
@@ -60,7 +62,7 @@ WebInterface::index( QxtWebRequestEvent* event )
     bodyArgs["playlist"] = "Noname";
 
 
-    // TODO possible save the title oder the guid of the playlist in the interface
+    // TODO possible save the title or the guid of the playlist in the interface
     const Tomahawk::playlistinterface_ptr currentPlInterface = MainAudioEngine::instance()->playlist();
 
     const QList<Tomahawk::playlist_ptr> pls = SourceList::instance()->getLocal()->collection()->playlists();
@@ -279,12 +281,15 @@ WebInterface::getPageWithBody(const QString& bodyFile, const QStringMap& bodyArg
 {
     QString page = m_htmlHeader;
 
+    const QString invertedPartyModeState = TomahawkSettings::instance()->partyModeEnabled() ? tr("Unlock") : tr("Lock");
+    page.replace("<%PARTYMODE%>", invertedPartyModeState);
+
     const QString body = getFileContent(bodyFile);
     page.replace("<%BODY%>", body);
 
     foreach( const QString& param, bodyArgs.keys() )
     {
-        page.replace( QString( "<%%1%>" ).arg( param.toUpper() ), bodyArgs.value( param ).toUtf8() );
+        page.replace( QString( "<%%1%>" ).arg( param.toUpper() ), bodyArgs.value( param ).toAscii() );
     }
 
     return page;
@@ -323,7 +328,7 @@ WebInterface::sendMultiFilePage(const QxtWebRequestEvent* event, const QString& 
 
         foreach( const QString& param, args.keys() )
         {
-            entry.replace( QString( "<%%1%>" ).arg( param.toUpper() ), args.value( param ).toUtf8() );
+            entry.replace( QString( "<%%1%>" ).arg( param.toUpper() ), args.value( param ).toAscii() );
         }
         entries += entry;
     }

@@ -1,7 +1,7 @@
 <html>
 
 <head>
-<meta name="viewport" content="width=400, initial-scale=1" />
+<meta name="viewport" content="initial-scale=0.8" />
 <title>Tomahawk-Player Webfrontend</title>
 </head>
 
@@ -11,10 +11,11 @@
 <a href="/index?action=lower"><b>&nbsp;-&nbsp;</b></a>Volume
 <a href="/index?action=higher"><b>&nbsp;+&nbsp;</b></a> |
 <a href="/index">Home</a> |
-<a href="/playlists">Playlists</a></font></p>
+<a href="/playlists">Playlists</a> | 
+<a href="/index?action=partymode"><%PARTYMODE%></a></font></p>
 
 <form action="/search" method="get">
-<input type="text" name="query" value="<%QUERY%>"/>
+<input type="text" name="query" size="25" value="<%QUERY%>"/>
 <input type="submit" value="Search"/>
 </form>
 
