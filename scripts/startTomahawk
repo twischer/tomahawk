@@ -1,0 +1,4 @@
+#! /bin/bash
+sudo -u pi startx /usr/local/bin/runTomahawk
+
+halt
