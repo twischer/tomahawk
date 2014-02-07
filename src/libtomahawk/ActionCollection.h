@@ -89,11 +89,9 @@ public:
 
 public slots:
     void togglePrivateListeningMode();
-    void togglePartyMode();
 
 signals:
     void privacyModeChanged();
-    void partyModeChanged();
 
 private:
     static ActionCollection* s_instance;
@@ -101,6 +99,11 @@ private:
     QHash< QString, QAction* > m_actionCollection;
     QHash< ActionDestination, QList< QAction* > > m_categoryActions;
     QHash< QAction*, QObject* > m_actionNotifiers;
+
+private slots:
+    void togglePartyMode();
+    void toggleFullscreen();
+    void onPartyModeChanged();
 };
 
 #endif

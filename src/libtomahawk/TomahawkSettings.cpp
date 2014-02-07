@@ -961,6 +961,8 @@ void
 TomahawkSettings::setFullscreenEnabled( bool enabled )
 {
     setValue( "ui/mainwindow/fullscreenEnabled", enabled );
+
+    emit fullscreenChanged();
 }
 
 
@@ -1373,21 +1375,21 @@ void
 TomahawkSettings::setPartyModeEnabled( const bool enable )
 {
     setValue( "partymode", enable );
+
+    emit partyModeChanged();
 }
 
 const QString
-TomahawkSettings::password() const
+TomahawkSettings::partyModePassword() const
 {
-    // TODO make the password configureable in the gui
-    // return value( "password", false ).toBool();
-
-    return "party";
+    return value( "password", "party" ).toString();
 }
 
 
 void
-TomahawkSettings::setPassword( const QString password )
+TomahawkSettings::setPartyModePassword( const QString password )
 {
+    // TODO make the password configureable in the gui
     setValue( "password", password );
 }
 

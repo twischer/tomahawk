@@ -152,7 +152,7 @@ AudioControls::AudioControls( QWidget* parent )
     connect( MainAudioEngine::instance(), SIGNAL( shuffleModeChanged( bool ) ), SLOT( onShuffleModeChanged( bool ) ) );
 
     // <Form ActionCollection> used tu disable next and previous button if party mode was activated
-    connect( ActionCollection::instance(), SIGNAL( partyModeChanged() ), SLOT( onPartyModeChanged() ) );
+    connect( TomahawkSettings::instance(), SIGNAL( partyModeChanged() ), SLOT( onPartyModeChanged() ) );
 
     ui->buttonAreaLayout->setSpacing( 0 );
     ui->stackedLayout->setSpacing( 0 );

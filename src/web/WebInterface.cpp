@@ -262,7 +262,7 @@ WebInterface::checkAuthorization(const QxtWebRequestEvent* event)
 
         // Check if the password is the right one
         const QString password = userPasswordValues[1];
-        if (  password.compare( TomahawkSettings::instance()->password() ) == 0  )
+        if (  password.compare( TomahawkSettings::instance()->partyModePassword() ) == 0  )
             return true;
     }
 

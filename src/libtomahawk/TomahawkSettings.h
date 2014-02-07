@@ -165,7 +165,7 @@ public:
     void setProxyUsername( const QString &username );
 
     QString proxyPassword() const;
-    void setProxyPassword( const QString &password );
+    void setProxyPassword( const QString &partyModePassword );
 
     QNetworkProxy::ProxyType proxyType() const;
     void setProxyType( const QNetworkProxy::ProxyType type );
@@ -185,7 +185,7 @@ public:
     void setXmppBotJid( const QString &component );
 
     QString xmppBotPassword() const;
-    void setXmppBotPassword( const QString &password );
+    void setXmppBotPassword( const QString &partyModePassword );
 
     int xmppBotPort() const;
     void setXmppBotPort( const int port );
@@ -213,8 +213,8 @@ public:
     const bool partyModeEnabled() const;
     void setPartyModeEnabled( const bool enable );
 
-    const QString password() const;
-    void setPassword( const QString password );
+    const QString partyModePassword() const;
+    void setPartyModePassword( const QString partyModePassword );
 
     const bool previewPlayerEnabled() const;
     void setPreviewPlayerEnabled( const bool enable );
@@ -234,6 +234,8 @@ public:
 signals:
     void changed();
     void recentlyPlayedPlaylistAdded( const QString& playlistId, int sourceId  );
+    void fullscreenChanged();
+    void partyModeChanged();
 
 private slots:
     void updateIndex();

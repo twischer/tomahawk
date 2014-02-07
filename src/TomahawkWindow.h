@@ -151,8 +151,6 @@ private slots:
     void toggleMenuBar();
     void balanceToolbar();
 
-    void onPartyModeChanged();
-
     void audioStateChanged( AudioState newState, AudioState oldState );
     void updateWindowsLoveButton();
 

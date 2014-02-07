@@ -552,7 +552,7 @@ TomahawkWindow::setupSignals()
     connect( ac->getAction( "quit" ), SIGNAL( triggered() ), qApp, SLOT( quit() ) );
     connect( ac->getAction( "showOfflineSources" ), SIGNAL( triggered() ), SLOT( showOfflineSources() ) );
 
-    connect( ac, SIGNAL( partyModeChanged() ), SLOT( onPartyModeChanged() ) );
+    connect( TomahawkSettings::instance(), SIGNAL( fullscreenChanged() ), SLOT( toggleFullscreen() ) );
 
 #if defined( Q_OS_MAC )
     connect( ac->getAction( "minimize" ), SIGNAL( triggered() ), SLOT( minimize() ) );
@@ -1348,7 +1348,13 @@ TomahawkWindow::toggleFullscreen()
 
 #if defined( Q_WS_MAC )
    Tomahawk::toggleFullscreen();
+#else
+    if ( TomahawkSettings::instance()->fullscreenEnabled() )
+        showFullScreen();
+    else
+        maximize();
 #endif
+
 }
 
 
@@ -1378,19 +1384,6 @@ TomahawkWindow::toggleMenuBar() //SLOT
     balanceToolbar();
     saveSettings();
 #endif
-}
-
-
-void
-TomahawkWindow::onPartyModeChanged()
-{
-    const bool isPartyMode = TomahawkSettings::instance()->partyModeEnabled();
-
-    if ( isPartyMode )
-        showFullScreen();
-    else
-        showNormal();
-    // TODO maximaize the window on exit party mode
 }
 
 

@@ -117,13 +117,17 @@ ActionCollection::initActions()
     m_actionCollection[ "minimize" ]->setShortcut( QKeySequence( "Ctrl+M" ) );
     m_actionCollection[ "zoom" ] = new QAction( tr( "Zoom" ), this );
     m_actionCollection[ "zoom" ]->setShortcut( QKeySequence( "Meta+Ctrl+Z" ) );
-    m_actionCollection[ "fullscreen" ] = new QAction( tr( "Enter Full Screen" ), this );
-    m_actionCollection[ "fullscreen" ]->setShortcut( QKeySequence( "Meta+Ctrl+F" ) );
 #else
     m_actionCollection[ "toggleMenuBar" ] = new QAction( tr( "Hide Menu Bar" ), this );
     m_actionCollection[ "toggleMenuBar" ]->setShortcut( QKeySequence( "Ctrl+M" ) );
     m_actionCollection[ "toggleMenuBar" ]->setShortcutContext( Qt::ApplicationShortcut );
 #endif
+    m_actionCollection[ "fullscreen" ] = new QAction( tr( "Enter Full Screen" ), this );
+    m_actionCollection[ "fullscreen" ]->setShortcut( QKeySequence( "Meta+Ctrl+F" ) );
+    m_actionCollection[ "fullscreen" ]->setCheckable( true );
+    m_actionCollection[ "fullscreen" ]->setChecked( TomahawkSettings::instance()->fullscreenEnabled() );
+    connect( m_actionCollection[ "fullscreen" ], SIGNAL( triggered() ), SLOT( toggleFullscreen() ), Qt::UniqueConnection );
+
     m_actionCollection[ "diagnostics" ] = new QAction( tr( "Diagnostics..." ), this );
     m_actionCollection[ "diagnostics" ]->setMenuRole( QAction::ApplicationSpecificRole );
     m_actionCollection[ "aboutTomahawk" ] = new QAction( tr( "About &Tomahawk..." ), this );
@@ -138,6 +142,12 @@ ActionCollection::initActions()
     m_actionCollection[ "checkForUpdates" ]->setMenuRole( QAction::ApplicationSpecificRole );
 #endif
     m_actionCollection[ "crashNow" ] = new QAction( "Crash now...", this );
+
+
+    connect( TomahawkSettings::instance(), SIGNAL( partyModeChanged() ), SLOT( onPartyModeChanged() ) );
+
+
+    onPartyModeChanged();
 }
 
 
@@ -152,6 +162,7 @@ ActionCollection::createMenuBar( QWidget *parent )
     controlsMenu->addAction( m_actionCollection[ "nextTrack" ] );
     controlsMenu->addSeparator();
     controlsMenu->addAction( m_actionCollection[ "togglePrivacy" ] );
+    controlsMenu->addAction( m_actionCollection[ "fullscreen" ] );
     controlsMenu->addAction( m_actionCollection[ "partyMode" ] );
     controlsMenu->addAction( m_actionCollection[ "showOfflineSources" ] );
     controlsMenu->addSeparator();
@@ -217,6 +228,7 @@ ActionCollection::createCompactMenu( QWidget *parent )
     compactMenu->addAction( m_actionCollection[ "nextTrack" ] );
     compactMenu->addSeparator();
     compactMenu->addAction( m_actionCollection[ "togglePrivacy" ] );
+    compactMenu->addAction( m_actionCollection[ "fullscreen" ] );
     compactMenu->addAction( m_actionCollection[ "partyMode" ] );
     compactMenu->addAction( m_actionCollection[ "showOfflineSources" ] );
     compactMenu->addSeparator();
@@ -336,16 +348,29 @@ ActionCollection::togglePartyMode()
     tDebug() << Q_FUNC_INFO;
     const bool isPartyMode = m_actionCollection[ "partyMode" ]->isChecked();
     TomahawkSettings::instance()->setPartyModeEnabled( isPartyMode );
+}
 
-    // Disable/Enable menu elements if party mode was activated
+void
+ActionCollection::toggleFullscreen()
+{
+    tDebug() << Q_FUNC_INFO;
+    const bool isFullScreen = m_actionCollection[ "fullscreen" ]->isChecked();
+    TomahawkSettings::instance()->setFullscreenEnabled( isFullScreen );
+}
+
+
+void
+ActionCollection::onPartyModeChanged()
+{
     QStringList lockedActions;
-    lockedActions << "loadPlaylist" << "renamePlaylist" << "copyPlaylist" << "stop";
+    lockedActions << "loadPlaylist" << "renamePlaylist" << "copyPlaylist" << "stop" << "fullscreen";
     lockedActions << "previousTrack" << "nextTrack" << "quit" << "loadXSPF" << "preferences";
+
+    const bool isPartyMode = TomahawkSettings::instance()->partyModeEnabled();
     foreach (const QString &str, lockedActions)
     {
         m_actionCollection[ str ]->setDisabled( isPartyMode );
     }
 
-
-    emit partyModeChanged();
+    m_actionCollection[ "partyMode" ]->setChecked( isPartyMode );
 }
