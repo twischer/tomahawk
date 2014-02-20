@@ -22,6 +22,13 @@ Start the application on OS X:
 To compile for debugging:
 
 	$ cmake -DCMAKE_BUILD_TYPE=Debug ..
+    
+    
+Cross-Compile:
+
+	$ mkdir build-armhf && cd build-armhf
+	$ cmake -DCMAKE_TOOLCHAIN_FILE=../Toolchain-armhf.cmake ..
+    $ make
 
 
 
@@ -36,6 +43,17 @@ Install dependencies for building & running on Debian 8.0
 
 	$ sudo apt-get install build-essential cmake pkg-config libphonon-dev phonon-backend-gstreamer gstreamer0.10-packagekit libqjson-dev libtag1-dev libboost-dev libqca2-dev libechonest-dev libattica-dev liblastfm-dev libquazip-dev libclucene-dev
 
+
+Install dependencies for cross compiling on Debian 8.0
+-----------------------------------------
+
+	The package g++-4.7-arm-linux-gnueabihf and all needed dependencies could be found on http://www.emdebian.org/debian.
+	
+	$ sudo apt-get install xapt g++-4.7-arm-linux-gnueabihf
+	$ sudo xapt -a armhf -m libxext-dev libqt4-dev libqtwebkit-dev libphonon-dev libqjson-dev libtag1-dev libboost-dev libqca2-dev libechonest-dev libattica-dev liblastfm-dev libquazip-dev libclucene-dev
+	
+	$ sudo cp /usr/lib/x86_64-linux-gnu/CLucene/CLuceneConfig.cmake /usr/arm-linux-gnueabihf/lib/CLucene/
+	$ sudo cp libpulse0_4.0-6+b1_armhf.deb:/usr/lib/arm-linux-gnueabihf/pulseaudio/libpulsecommon-4.0.so /usr/arm-linux-gnueabihf/lib
 
 
 Install dependencies for running on Raspbian 7.0
