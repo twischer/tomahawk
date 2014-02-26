@@ -252,10 +252,11 @@ PlaylistModel::insertEntries( const QList< Tomahawk::plentry_ptr >& entries, int
         return;
     }
 
-    // return false if the element could not be added
-    // because the playlist is locked for 20 elements
-    if ( TomahawkSettings::instance()->partyModeEnabled() )
+    const bool isPartyMode = TomahawkSettings::instance()->partyModeEnabled();
+    if (isPartyMode)
     {
+        // return false if the element could not be added
+        // because the playlist is locked for 20 elements
         const int trackCount = rowCount( QModelIndex() );
         if (trackCount > 20)
         {
@@ -264,15 +265,43 @@ PlaylistModel::insertEntries( const QList< Tomahawk::plentry_ptr >& entries, int
         }
     }
 
+
+    // cancle if a track with the same title is already in the queue
+    QList< Tomahawk::plentry_ptr > cleanedEntries = entries;
+    const QList< Tomahawk::query_ptr > currentQueue = queries();
+    foreach ( const plentry_ptr& entry, entries )
+    {
+        const Tomahawk::query_ptr& queryToAdd = entry->query();
+        const QString& titleToAdd = queryToAdd->track();
+        foreach ( const query_ptr& queueElement, currentQueue )
+        {
+            const QString& titleInQueue = queueElement->track();
+            // remove all new tracks if they already in the queue
+            // remove in party mode if the title is the same
+            // remove in normal mode if it exactly the same track
+            if (  (isPartyMode && titleToAdd.compare(titleInQueue) == 0) || queryToAdd->equals(queueElement, true)  )
+            {
+                cleanedEntries.removeAll( const_cast<plentry_ptr&>(entry) );
+
+                emit alreadyInList(entry);
+            }
+        }
+    }
+
+    // no elements left to add
+    if ( !cleanedEntries.count() )
+        return;
+
+
     int c = row;
     QPair< int, int > crows;
     crows.first = c;
-    crows.second = c + entries.count() - 1;
+    crows.second = c + cleanedEntries.count() - 1;
 
     if ( !m_isLoading )
     {
         m_savedInsertPos = row;
-        m_savedInsertTracks = entries;
+        m_savedInsertTracks = cleanedEntries;
     }
 
     emit beginInsertRows( QModelIndex(), crows.first, crows.second );
@@ -280,7 +309,7 @@ PlaylistModel::insertEntries( const QList< Tomahawk::plentry_ptr >& entries, int
     QList< Tomahawk::query_ptr > queries;
     int i = 0;
     PlayableItem* plitem;
-    foreach( const plentry_ptr& entry, entries )
+    foreach( const plentry_ptr& entry, cleanedEntries )
     {
         plitem = new PlayableItem( entry, rootItem(), row + i );
         plitem->index = createIndex( row + i, 0, plitem );

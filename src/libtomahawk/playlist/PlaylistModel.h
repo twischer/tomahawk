@@ -78,6 +78,7 @@ signals:
     void playlistDeleted();
     void playlistChanged();
     void playlistToFull();
+    void alreadyInList(const Tomahawk::plentry_ptr& entry);
 
 protected:
     bool waitForRevision( const QString& revisionguid ) const { return m_waitForRevision.contains( revisionguid ); }
