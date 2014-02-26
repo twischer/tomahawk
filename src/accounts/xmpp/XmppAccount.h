@@ -50,7 +50,7 @@ public:
     QString prettyName() const { return "Jabber (XMPP)"; }
     QString description() const { return tr( "Log on to your Jabber/XMPP account to connect to your friends" ); }
     QString factoryId() const { return "xmppaccount"; }
-    QPixmap icon() const { return QPixmap( ":/xmpp-icon.png" ); }
+    QPixmap icon() const { return QPixmap( ":/xmpp-account/xmpp-icon.png" ); }
     AccountTypes types() const { return AccountTypes( SipType | StatusPushType ); };
     Account* createAccount( const QString& pluginId = QString() );
 };
@@ -73,16 +73,16 @@ public:
 
     SipPlugin* sipPlugin();
 
-    QWidget* configurationWidget() { return m_configWidget.data(); }
+    AccountConfigWidget* configurationWidget() { return m_configWidget.data(); }
     QWidget* aclWidget() { return 0; }
     void saveConfig();
 
     virtual Tomahawk::Accounts::Account::ConnectionState connectionState() const;
 
 protected:
-    QWeakPointer< QWidget > m_configWidget; // so the google wrapper can change the config dialog a bit
-    QWeakPointer< XmppSipPlugin > m_xmppSipPlugin;
-    QWeakPointer< Tomahawk::InfoSystem::XmppInfoPlugin > m_xmppInfoPlugin;
+    QPointer< AccountConfigWidget > m_configWidget; // so the google wrapper can change the config dialog a bit
+    QPointer< XmppSipPlugin > m_xmppSipPlugin;
+    QPointer< Tomahawk::InfoSystem::XmppInfoPlugin > m_xmppInfoPlugin;
 
     QPixmap m_onlinePixmap;
     QPixmap m_offlinePixmap;

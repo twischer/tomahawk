@@ -19,8 +19,8 @@
 #include "Result.h"
 
 #include "Album.h"
-#include "Collection.h"
-#include "Resolver.h"
+#include "collection/Collection.h"
+#include "resolvers/Resolver.h"
 #include "Source.h"
 #include "Pipeline.h"
 #include "database/Database.h"
@@ -31,7 +31,7 @@
 
 #include "utils/TomahawkUtilsGui.h"
 #include "utils/Logger.h"
-#include "ExternalResolverGui.h"
+#include "resolvers/ExternalResolverGui.h"
 
 using namespace Tomahawk;
 
@@ -117,7 +117,7 @@ Result::onResolverRemoved( Tomahawk::Resolver* resolver )
 {
     if ( m_resolvedBy.data() == resolver )
     {
-        m_resolvedBy.clear();
+        m_resolvedBy = 0;
         emit statusChanged();
     }
 }
@@ -410,7 +410,7 @@ Result::resolvedBy() const
 void
 Result::setResolvedBy( Tomahawk::Resolver* resolver )
 {
-    m_resolvedBy = QWeakPointer< Tomahawk::Resolver >( resolver );
+    m_resolvedBy = QPointer< Tomahawk::Resolver >( resolver );
 }
 
 

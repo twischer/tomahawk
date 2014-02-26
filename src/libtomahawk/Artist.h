@@ -20,8 +20,6 @@
 #ifndef TOMAHAWKARTIST_H
 #define TOMAHAWKARTIST_H
 
-#include "config.h"
-
 #include <QtCore/QObject>
 #ifndef ENABLE_HEADLESS
     #include <QtGui/QPixmap>
@@ -79,6 +77,10 @@ public:
     void setWeakRef( QWeakPointer< Tomahawk::Artist > weakRef ) { m_ownRef = weakRef; }
 
     void loadId( bool autoCreate );
+
+public slots:
+    void deleteLater();
+
 signals:
     void tracksAdded( const QList<Tomahawk::query_ptr>& tracks, Tomahawk::ModelMode mode, const Tomahawk::collection_ptr& collection );
     void albumsAdded( const QList<Tomahawk::album_ptr>& albums, Tomahawk::ModelMode mode );
@@ -90,8 +92,8 @@ signals:
     void statsLoaded();
 
 private slots:
-    void onTracksLoaded(Tomahawk::ModelMode mode, const Tomahawk::collection_ptr& collection );
-    void onAlbumsFound( const QList<Tomahawk::album_ptr>& albums, const QVariant& data );
+    void onTracksLoaded( Tomahawk::ModelMode mode, const Tomahawk::collection_ptr& collection );
+    void onAlbumsFound( const QList<Tomahawk::album_ptr>& albums, const QVariant& collectionIsNull = QVariant( false ) );
 
     void infoSystemInfo( Tomahawk::InfoSystem::InfoRequestData requestData, QVariant output );
     void infoSystemFinished( QString target );
@@ -136,8 +138,8 @@ private:
 
     QWeakPointer< Tomahawk::Artist > m_ownRef;
 
-    static QHash< QString, artist_ptr > s_artistsByName;
-    static QHash< unsigned int, artist_ptr > s_artistsById;
+    static QHash< QString, artist_wptr > s_artistsByName;
+    static QHash< unsigned int, artist_wptr > s_artistsById;
 
     friend class ::IdThreadWorker;
 };

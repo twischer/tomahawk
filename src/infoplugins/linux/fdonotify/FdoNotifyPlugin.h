@@ -23,6 +23,8 @@
 #include "infoplugins/InfoPluginDllMacro.h"
 #include "infosystem/InfoSystem.h"
 
+#include <QDBusMessage>
+
 namespace Tomahawk
 {
 
@@ -31,6 +33,7 @@ namespace InfoSystem
 
 class INFOPLUGINDLLEXPORT FdoNotifyPlugin : public InfoPlugin
 {
+    Q_PLUGIN_METADATA( IID "org.tomahawk-player.Player.InfoPlugin" )
     Q_OBJECT
     Q_INTERFACES( Tomahawk::InfoSystem::InfoPlugin )
 
@@ -40,7 +43,10 @@ public:
 
 protected slots:
     virtual void init() {}
-    
+
+    virtual void dbusPlayingReplyReceived( const QDBusMessage& reply );
+    virtual void dbusCapabiltiesReplyReceived( const QDBusMessage& reply );
+
     virtual void getInfo( Tomahawk::InfoSystem::InfoRequestData requestData )
     {
         Q_UNUSED( requestData );
@@ -55,11 +61,15 @@ protected slots:
     }
 
 private:
-    void notifyUser( const QString &messageText );
+    int getNotificationIconHeight();
 
-    void nowPlaying( const QVariant &input );
+    void notifyUser( const QString& messageText );
+    void nowPlaying( const QVariant& input );
 
     quint32 m_nowPlayingId;
+
+    // Does the window manger support basic XML-based markup (a small HTML subset), see Desktop Notifications specification
+    bool m_wmSupportsBodyMarkup;
 };
 
 }

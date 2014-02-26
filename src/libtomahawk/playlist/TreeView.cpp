@@ -19,11 +19,6 @@
 
 #include "TreeView.h"
 
-#include <QHeaderView>
-#include <QKeyEvent>
-#include <QPainter>
-#include <QScrollBar>
-
 #include "audio/MainAudioEngine.h"
 #include "audio/PreviewAudioEngine.h"
 #include "context/ContextWidget.h"
@@ -41,6 +36,13 @@
 #include "utils/TomahawkUtilsGui.h"
 #include "utils/Logger.h"
 
+#include <QHeaderView>
+#include <QKeyEvent>
+#include <QPainter>
+#include <QScrollBar>
+#include <QDrag>
+#include <QMimeData>
+
 #define SCROLL_TIMEOUT 280
 
 using namespace Tomahawk;
@@ -52,6 +54,7 @@ TreeView::TreeView( QWidget* parent )
     , m_overlay( new OverlayWidget( this ) )
     , m_model( 0 )
     , m_proxyModel( 0 )
+    , m_delegate( 0 )
     , m_loadingSpinner( new LoadingSpinner( this ) )
     , m_updateContextView( true )
     , m_contextMenu( new ContextMenu( this ) )
@@ -99,9 +102,9 @@ void
 TreeView::setProxyModel( TreeProxyModel* model )
 {
     m_proxyModel = model;
-    TreeItemDelegate* del = new TreeItemDelegate( this, m_proxyModel );
-    connect( del, SIGNAL( updateIndex( QModelIndex ) ), this, SLOT( update( QModelIndex ) ) );
-    setItemDelegate( del );
+    m_delegate = new TreeItemDelegate( this, m_proxyModel );
+    connect( m_delegate, SIGNAL( updateIndex( QModelIndex ) ), SLOT( update( QModelIndex ) ) );
+    setItemDelegate( m_delegate );
 
     QTreeView::setModel( m_proxyModel );
 }
@@ -111,7 +114,7 @@ void
 TreeView::setModel( QAbstractItemModel* model )
 {
     Q_UNUSED( model );
-    qDebug() << "Explicitly use setPlaylistModel instead";
+    tDebug() << "Explicitly use setPlaylistModel instead";
     Q_ASSERT( false );
 }
 
@@ -147,6 +150,7 @@ TreeView::setTreeModel( TreeModel* model )
         setHorizontalScrollBarPolicy( Qt::ScrollBarAsNeeded );
     }
 
+    connect( model, SIGNAL( changed() ), this, SIGNAL( modelChanged() ) );
     emit modelChanged();
 
 /*    setColumnHidden( PlayableModel::Score, true ); // Hide score column per default
@@ -258,7 +262,7 @@ TreeView::onItemActivated( const QModelIndex& index )
     PlayableItem* item = m_model->itemFromIndex( m_proxyModel->mapToSource( index ) );
     if ( item )
     {
-        if ( !item->artist().isNull() )
+/*        if ( !item->artist().isNull() )
         {
             ViewManager::instance()->show( item->artist() );
         }
@@ -266,7 +270,7 @@ TreeView::onItemActivated( const QModelIndex& index )
         {
             ViewManager::instance()->show( item->album() );
         }
-        else
+        else */
         {
             // if party mode is activated add the track to the queue and not play it now
             const bool isPartyMode = TomahawkSettings::instance()->partyModeEnabled();
@@ -320,14 +324,24 @@ TreeView::resizeEvent( QResizeEvent* event )
 
 
 void
+TreeView::wheelEvent( QWheelEvent* event )
+{
+    QTreeView::wheelEvent( event );
+
+    m_delegate->resetHoverIndex();
+    repaint();
+}
+
+
+void
 TreeView::onFilterChangeFinished()
 {
     if ( selectedIndexes().count() )
         scrollTo( selectedIndexes().at( 0 ), QAbstractItemView::PositionAtCenter );
 
-    if ( !filter().isEmpty() && !proxyModel()->playlistInterface()->trackCount() && model()->trackCount() )
+    if ( !proxyModel()->filter().isEmpty() && !proxyModel()->playlistInterface()->trackCount() && model()->trackCount() )
     {
-        m_overlay->setText( tr( "Sorry, your filter '%1' did not match any results." ).arg( filter() ) );
+        m_overlay->setText( tr( "Sorry, your filter '%1' did not match any results." ).arg( proxyModel()->filter() ) );
         m_overlay->show();
     }
     else
@@ -370,7 +384,7 @@ TreeView::startDrag( Qt::DropActions supportedActions )
     if ( indexes.count() == 0 )
         return;
 
-    qDebug() << "Dragging" << indexes.count() << "indexes";
+    tDebug( LOGVERBOSE ) << "Dragging" << indexes.count() << "indexes";
     QMimeData* data = m_proxyModel->mimeData( indexes );
     if ( !data )
         return;
@@ -403,7 +417,7 @@ TreeView::onCustomContextMenu( const QPoint& pos )
 
     setCustomContextMenuQueries( idx );
 
-    m_contextMenu->setPlaylistInterface( playlistInterface() );
+    m_contextMenu->setPlaylistInterface( proxyModel()->playlistInterface() );
 
     m_contextMenu->exec( viewport()->mapToGlobal( pos ) );
 }
@@ -470,96 +484,6 @@ TreeView::jumpToCurrentTrack()
 }
 
 
-void
-TreeView::updateHoverIndex( const QPoint& pos )
-{
-    QModelIndex idx = indexAt( pos );
-
-    if ( idx != m_hoveredIndex )
-    {
-        m_hoveredIndex = idx;
-        repaint();
-    }
-
-    if ( !m_model || m_proxyModel->style() != PlayableProxyModel::Collection )
-        return;
-
-    PlayableItem* item = proxyModel()->itemFromIndex( proxyModel()->mapToSource( idx ) );
-    if ( idx.column() == 0 && !item->query().isNull() )
-    {
-        if ( pos.x() > header()->sectionViewportPosition( idx.column() ) + header()->sectionSize( idx.column() ) - 16 &&
-             pos.x() < header()->sectionViewportPosition( idx.column() ) + header()->sectionSize( idx.column() ) )
-        {
-            setCursor( Qt::PointingHandCursor );
-            return;
-        }
-    }
-
-    if ( cursor().shape() != Qt::ArrowCursor )
-        setCursor( Qt::ArrowCursor );
-}
-
-
-void
-TreeView::wheelEvent( QWheelEvent* event )
-{
-    QTreeView::wheelEvent( event );
-
-    if ( m_hoveredIndex.isValid() )
-    {
-        m_hoveredIndex = QModelIndex();
-        repaint();
-    }
-}
-
-
-void
-TreeView::leaveEvent( QEvent* event )
-{
-    QTreeView::leaveEvent( event );
-    updateHoverIndex( QPoint( -1, -1 ) );
-}
-
-
-void
-TreeView::mouseMoveEvent( QMouseEvent* event )
-{
-    QTreeView::mouseMoveEvent( event );
-    updateHoverIndex( event->pos() );
-}
-
-
-void
-TreeView::mousePressEvent( QMouseEvent* event )
-{
-    QTreeView::mousePressEvent( event );
-
-    if ( !m_model || m_proxyModel->style() != PlayableProxyModel::Collection )
-        return;
-
-    QModelIndex idx = indexAt( event->pos() );
-    if ( event->pos().x() > header()->sectionViewportPosition( idx.column() ) + header()->sectionSize( idx.column() ) - 16 &&
-         event->pos().x() < header()->sectionViewportPosition( idx.column() ) + header()->sectionSize( idx.column() ) )
-    {
-        PlayableItem* item = proxyModel()->itemFromIndex( proxyModel()->mapToSource( idx ) );
-        if ( item->query().isNull() )
-            return;
-
-        switch ( idx.column() )
-        {
-            case 0:
-            {
-                ViewManager::instance()->show( item->query()->displayQuery() );
-                break;
-            }
-
-            default:
-                break;
-        }
-    }
-}
-
-
 QString
 TreeView::guid() const
 {
@@ -570,13 +494,4 @@ TreeView::guid() const
     }
 
     return m_guid;
-}
-
-
-bool
-TreeView::setFilter( const QString& filter )
-{
-    ViewPage::setFilter( filter );
-    m_proxyModel->setFilter( filter );
-    return true;
 }

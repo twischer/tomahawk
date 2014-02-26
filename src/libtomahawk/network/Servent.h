@@ -2,6 +2,7 @@
  *
  *   Copyright 2010-2011, Christian Muehlhaeuser <muesli@tomahawk-player.org>
  *   Copyright 2010-2012, Jeff Mitchell <jeff@tomahawk-player.org>
+ *   Copyright 2013,      Teo Mrnjavac <teo@kde.org>
  *
  *   Tomahawk is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -51,6 +52,11 @@ class StreamConnection;
 class ProxyConnection;
 class RemoteCollectionConnection;
 class PortFwdThread;
+class PeerInfo;
+class SipInfo;
+
+typedef boost::function< void( const Tomahawk::result_ptr&,
+                               boost::function< void( QSharedPointer< QIODevice >& ) > )> IODeviceFactoryFunc;
 
 // this is used to hold a bit of state, so when a connected signal is emitted
 // from a socket, we can associate it with a Connection object etc.
@@ -64,7 +70,7 @@ public:
         QTimer::singleShot( AUTH_TIMEOUT, this, SLOT( authTimeout() ) ) ;
     }
 
-    QWeakPointer<Connection> _conn;
+    QPointer<Connection> _conn;
     bool _outbound;
     bool _disowned;
     msg_ptr _msg;
@@ -101,17 +107,24 @@ public:
 
     void registerControlConnection( ControlConnection* conn );
     void unregisterControlConnection( ControlConnection* conn );
-    ControlConnection* lookupControlConnection( const QString& name );
+    ControlConnection* lookupControlConnection( const SipInfo& sipInfo );
 
-    void connectToPeer( const QString& ha, int port, const QString &key, const QString& name = "", const QString& id = "" );
-    void connectToPeer( const QString& ha, int port, const QString &key, Connection* conn );
-    void reverseOfferRequest( ControlConnection* orig_conn, const QString &theirdbid, const QString& key, const QString& theirkey );
+    // you may call this method as often as you like for the same peerInfo, dupe checking is done inside
+    void registerPeer( const Tomahawk::peerinfo_ptr& peerInfo );
+    void handleSipInfo( const Tomahawk::peerinfo_ptr& peerInfo );
+
+public slots:
+    void onSipInfoChanged();
+
+public:
+    void connectToPeer( const Tomahawk::peerinfo_ptr& ha );
+    void connectToPeer( const QString& ha, int port, const QString& key, Connection* conn );
+    void reverseOfferRequest( ControlConnection* orig_conn, const QString& theirdbid, const QString& key, const QString& theirkey );
 
     bool visibleExternally() const { return !m_externalHostname.isNull() || (m_externalPort > 0 && !m_externalAddress.isNull()); }
     QString externalAddress() const { return !m_externalHostname.isNull() ? m_externalHostname : m_externalAddress.toString(); }
     int externalPort() const { return m_externalPort; }
 
-    QSharedPointer< QIODevice > remoteIODeviceFactory( const Tomahawk::result_ptr& );
     static bool isIPWhitelisted( QHostAddress ip );
 
     bool connectedToSession( const QString& session );
@@ -119,14 +132,16 @@ public:
 
     QList< StreamConnection* > streams() const { return m_scsessions; }
 
-    QSharedPointer< QIODevice > getIODeviceForUrl( const Tomahawk::result_ptr& result );
-    void registerIODeviceFactory( const QString &proto, boost::function< QSharedPointer< QIODevice >(Tomahawk::result_ptr) > fac );
-    QSharedPointer< QIODevice > localFileIODeviceFactory( const Tomahawk::result_ptr& result );
-    QSharedPointer< QIODevice > httpIODeviceFactory( const Tomahawk::result_ptr& result );
+    void getIODeviceForUrl( const Tomahawk::result_ptr& result, boost::function< void ( QSharedPointer< QIODevice >& ) > callback );
+    void registerIODeviceFactory( const QString &proto, IODeviceFactoryFunc fac );
+    void remoteIODeviceFactory( const Tomahawk::result_ptr& result, boost::function< void ( QSharedPointer< QIODevice >& ) > callback );
+    void localFileIODeviceFactory( const Tomahawk::result_ptr& result, boost::function< void ( QSharedPointer< QIODevice >& ) > callback );
+    void httpIODeviceFactory( const Tomahawk::result_ptr& result, boost::function< void ( QSharedPointer< QIODevice >& ) > callback );
 
     bool isReady() const { return m_ready; };
 
 signals:
+    void dbSyncTriggered();
     void streamStarted( StreamConnection* );
     void streamFinished( StreamConnection* );
     void ready();
@@ -159,7 +174,7 @@ private:
 
     QJson::Parser parser;
     QList< ControlConnection* > m_controlconnections; // canonical list of authed peers
-    QMap< QString, QWeakPointer< Connection > > m_offers;
+    QMap< QString, QPointer< Connection > > m_offers;
     QStringList m_connectedNodes;
 
     int m_port, m_externalPort;
@@ -167,14 +182,15 @@ private:
     QString m_externalHostname;
     bool m_ready;
     bool m_lanHack;
+    bool m_noAuth;
 
     // currently active file transfers:
     QList< StreamConnection* > m_scsessions;
     QMutex m_ftsession_mut;
 
-    QMap< QString,boost::function< QSharedPointer< QIODevice >(Tomahawk::result_ptr) > > m_iofactories;
+    QMap< QString, IODeviceFactoryFunc > m_iofactories;
 
-    QWeakPointer< PortFwdThread > m_portfwd;
+    QPointer< PortFwdThread > m_portfwd;
     static Servent* s_instance;
 };
 

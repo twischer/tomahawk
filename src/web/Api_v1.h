@@ -2,6 +2,7 @@
  *
  *   Copyright 2010-2011, Christian Muehlhaeuser <muesli@tomahawk-player.org>
  *   Copyright 2010-2011, Leo Franchi <lfranchi@kde.org>
+ *   Copyright 2013,      Teo Mrnjavac <teo@kde.org>
  *
  *   Tomahawk is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -22,11 +23,11 @@
 
 // See: http://doc.libqxt.org/tip/qxtweb.html
 
-#include "QxtHttpServerConnector"
-#include "QxtHttpSessionManager"
-#include "QxtWebContent"
-#include "QxtWebSlotService"
-#include "QxtWebPageEvent"
+#include <QxtWeb/QxtHttpServerConnector>
+#include <QxtWeb/QxtHttpSessionManager>
+#include <QxtWeb/QxtWebContent>
+#include <QxtWeb/QxtWebSlotService>
+#include <QxtWeb/QxtWebPageEvent>
 
 #include <qjson/parser.h>
 #include <qjson/serializer.h>
@@ -35,6 +36,12 @@
 #include <QFile>
 #include <QSharedPointer>
 #include <QStringList>
+
+namespace Tomahawk
+{
+    class Result;
+    typedef QSharedPointer< Result > result_ptr;
+}
 
 class Api_v1 : public QxtWebSlotService
 {
@@ -70,7 +77,10 @@ public slots:
     virtual void index( QxtWebRequestEvent* event );
 
 private:
+    void processSid( QxtWebRequestEvent* event, Tomahawk::result_ptr&, QSharedPointer< QIODevice >& );
+
     QxtWebRequestEvent* m_storedEvent;
+    QSharedPointer< QIODevice > m_ioDevice;
 };
 
 #endif

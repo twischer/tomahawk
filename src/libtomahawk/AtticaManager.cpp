@@ -24,6 +24,12 @@
 #include "Source.h"
 #include "config.h"
 
+#include "utils/Logger.h"
+#include "accounts/ResolverAccount.h"
+#include "accounts/AccountManager.h"
+#include "utils/BinaryInstallerHelper.h"
+#include "utils/Closure.h"
+
 #include <attica/downloaditem.h>
 
 #include <QCoreApplication>
@@ -34,12 +40,6 @@
 #include <QDomDocument>
 #include <QDomElement>
 #include <QDomNode>
-
-#include "utils/Logger.h"
-#include "accounts/ResolverAccount.h"
-#include "accounts/AccountManager.h"
-#include "utils/BinaryInstallerHelper.h"
-#include "utils/Closure.h"
 
 using namespace Attica;
 
@@ -503,6 +503,7 @@ AtticaManager::syncServerData()
             }
 
             // DO we need to upgrade?
+            tDebug( LOGVERBOSE ) << "Upgrade check for" << upstream.id() << "local is" << r.version << "upstream is" << upstream.version() << "and state is: " << r.state;
             if ( ( r.state == Installed || r.state == NeedsUpgrade ) &&
                  !upstream.version().isEmpty() )
             {
@@ -547,7 +548,8 @@ void AtticaManager::doInstallResolver( const Content& resolver, bool autoCreate,
 
 //    ItemJob< DownloadItem >* job = m_resolverProvider.downloadLink( resolver.id() );
     QUrl url( QString( "%1/resolvers/v1/content/download/%2/1" ).arg( hostname() ).arg( resolver.id() ) );
-    url.addQueryItem( "tomahawkversion", TomahawkUtils::appFriendlyVersion() );
+
+    TomahawkUtils::urlAddQueryItem( url, "tomahawkversion", TomahawkUtils::appFriendlyVersion() );
     QNetworkReply* r = TomahawkUtils::nam()->get( QNetworkRequest( url ) );
     NewClosure( r, SIGNAL( finished() ), this, SLOT( resolverDownloadFinished( QNetworkReply* ) ), r );
     r->setProperty( "resolverId", resolver.id() );
@@ -703,6 +705,7 @@ AtticaManager::payloadFetched()
 
     if ( installedSuccessfully )
     {
+        tDebug( LOGVERBOSE ) << "Setting installed state to resolver:" << resolverId;
         m_resolverStates[ resolverId ].state = Installed;
         TomahawkSettingsGui::instanceGui()->setAtticaResolverStates( m_resolverStates );
         emit resolverInstalled( resolverId );

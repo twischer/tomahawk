@@ -120,6 +120,7 @@ namespace TomahawkUtils
         StarHovered,
         SipPluginOnline,
         SipPluginOffline,
+        ResolverBundle,
         Invalid
     };
 
@@ -189,8 +190,11 @@ namespace TomahawkUtils
     DLLEXPORT QString md5( const QByteArray& data );
     DLLEXPORT bool removeDirectory( const QString& dir );
 
+    DLLEXPORT bool isHttpResult( const QString& url );
+    DLLEXPORT bool isLocalResult( const QString& url );
+
     DLLEXPORT bool verifyFile( const QString& filePath, const QString& signature );
-    DLLEXPORT QString extractScriptPayload( const QString& filename, const QString& resolverId );
+    DLLEXPORT QString extractScriptPayload( const QString& filename, const QString& resolverId, const QString& dirName = "atticaresolvers" );
     DLLEXPORT bool unzipFileInFolder( const QString& zipFileName, const QDir& folder );
 
     // Extracting may be asynchronous, pass in a receiver object with the following slots:
@@ -201,6 +205,8 @@ namespace TomahawkUtils
     void copyWithAuthentication( const QString& srcFile, const QDir dest, QObject* receiver );
 
     DLLEXPORT bool whitelistedHttpResultHint( const QString& url );
+
+    DLLEXPORT int compareVersionStrings( const QString& first, const QString& second );
 
     /**
      * This helper is designed to help "update" an existing playlist with a newer revision of itself.
@@ -214,6 +220,19 @@ namespace TomahawkUtils
     DLLEXPORT QList< Tomahawk::query_ptr > mergePlaylistChanges( const QList< Tomahawk::query_ptr >& orig, const QList< Tomahawk::query_ptr >& newTracks, bool& changed );
 
     DLLEXPORT void crash();
+
+
+    /**
+     * Qt4 / Qt5 compatibility layer
+     */
+
+    /* QUrl */
+    DLLEXPORT void urlAddQueryItem( QUrl& url, const QString& key, const QString& value );
+    DLLEXPORT QString urlQueryItemValue( const QUrl& url, const QString& key );
+    DLLEXPORT bool urlHasQueryItem( const QUrl& url, const QString& key );
+    DLLEXPORT QList<QPair<QString, QString> > urlQueryItems( const QUrl& url );
+    DLLEXPORT void urlSetQuery( QUrl& url, const QString& query );
+
 }
 
 #endif // TOMAHAWKUTILS_H

@@ -23,12 +23,15 @@
 #include "utils/Logger.h"
 #include "ZeroconfAccount.h"
 #include "Source.h"
+#include "sip/PeerInfo.h"
+#include "network/ControlConnection.h"
 
 #include <QtPlugin>
 #include <QTimer>
 
 using namespace Tomahawk;
 using namespace Accounts;
+
 
 ZeroconfPlugin::ZeroconfPlugin ( ZeroconfAccount* parent )
     : SipPlugin( parent )
@@ -42,7 +45,11 @@ ZeroconfPlugin::ZeroconfPlugin ( ZeroconfAccount* parent )
     connect( &m_advertisementTimer, SIGNAL( timeout() ), this, SLOT( advertise() ) );
 }
 
-ZeroconfPlugin::~ZeroconfPlugin() {}
+
+ZeroconfPlugin::~ZeroconfPlugin()
+{
+}
+
 
 const QString
 ZeroconfPlugin::name() const
@@ -50,17 +57,27 @@ ZeroconfPlugin::name() const
     return QString( MYNAME );
 }
 
+
 const QString
 ZeroconfPlugin::accountName() const
 {
     return QString( MYNAME );
 }
 
+
+const QString
+ZeroconfPlugin::serviceName() const
+{
+    return QString( MYNAME );
+}
+
+
 const QString
 ZeroconfPlugin::friendlyName() const
 {
     return QString( MYNAME );
 }
+
 
 Account::ConnectionState
 ZeroconfPlugin::connectionState() const
@@ -82,8 +99,7 @@ ZeroconfPlugin::connectPlugin()
 
     foreach( const QStringList& nodeSet, m_cachedNodes )
     {
-        if ( !Servent::instance()->connectedToSession( nodeSet[3] ) )
-            Servent::instance()->connectToPeer( nodeSet[0], nodeSet[1].toInt(), "whitelist", nodeSet[2], nodeSet[3] );
+        lanHostFound( nodeSet[0], nodeSet[1].toInt(), nodeSet[2], nodeSet[3]);
     }
     m_cachedNodes.clear();
 
@@ -99,6 +115,8 @@ ZeroconfPlugin::disconnectPlugin()
 
     delete m_zeroconf;
     m_zeroconf = 0;
+
+    setAllPeersOffline();
 }
 
 
@@ -135,9 +153,19 @@ ZeroconfPlugin::lanHostFound( const QString& host, int port, const QString& name
         return;
     }
 
-    if ( !Servent::instance()->connectedToSession( nodeid ) )
-        Servent::instance()->connectToPeer( host, port, "whitelist", name, nodeid );
-    else
-        qDebug() << "Already connected to" << host;
+    SipInfo sipInfo;
+    sipInfo.setHost( host );
+    sipInfo.setPort( port );
+    sipInfo.setNodeId( nodeid );
+    sipInfo.setKey( "whitelist" );
+    sipInfo.setVisible( true );
+
+    Tomahawk::peerinfo_ptr peerInfo = Tomahawk::PeerInfo::get( this, host, Tomahawk::PeerInfo::AutoCreate );
+    peerInfo->setSipInfo( sipInfo );
+    peerInfo->setContactId( host );
+    peerInfo->setFriendlyName( name );
+    peerInfo->setType( PeerInfo::Local );
+    peerInfo->setStatus( PeerInfo::Online );
 }
+
 

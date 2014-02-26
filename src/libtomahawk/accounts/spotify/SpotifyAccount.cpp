@@ -31,6 +31,7 @@
 #include "utils/Closure.h"
 #include "SpotifyInfoPlugin.h"
 #include "infosystem/InfoSystem.h"
+#include "utils/Logger.h"
 
 #ifndef ENABLE_HEADLESS
 #include "jobview/JobStatusView.h"
@@ -38,12 +39,13 @@
 #include "jobview/ErrorStatusMessage.h"
 #endif
 
-#include <QPixmap>
 #include <QAction>
+#include <QCoreApplication>
+#include <QDir>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMessageBox>
-#include <QCoreApplication>
+#include <QPixmap>
 
 using namespace Tomahawk;
 using namespace Accounts;
@@ -217,7 +219,7 @@ SpotifyAccount::hookupResolver()
     // Since the resolver in 0.4.x used an incompatible version of kdsingleappguard, we can't auto-kill old resolvers on the
     // 0.4.x->0.5.x upgrade. So we do it manually for a while
     killExistingResolvers();
-    m_spotifyResolver = QWeakPointer< ScriptResolver >( qobject_cast< ScriptResolver* >( Pipeline::instance()->addScriptResolver( path ) ) );
+    m_spotifyResolver = QPointer< ScriptResolver >( qobject_cast< ScriptResolver* >( Pipeline::instance()->addScriptResolver( path ) ) );
     m_spotifyResolver.data()->setIcon( TomahawkUtils::defaultPixmap( TomahawkUtils::SpotifyIcon ) );
 
     connect( m_spotifyResolver.data(), SIGNAL( changed() ), this, SLOT( resolverChanged() ) );
@@ -352,7 +354,7 @@ SpotifyAccount::infoPlugin()
 {
     if ( m_infoPlugin.isNull() )
     {
-        m_infoPlugin = QWeakPointer< InfoSystem::SpotifyInfoPlugin >( new InfoSystem::SpotifyInfoPlugin( this ) );
+        m_infoPlugin = QPointer< InfoSystem::SpotifyInfoPlugin >( new InfoSystem::SpotifyInfoPlugin( this ) );
     }
 
     return InfoSystem::InfoPluginPtr( m_infoPlugin.data() );
@@ -1003,8 +1005,10 @@ SpotifyAccount::resolverMessage( const QString &msgType, const QVariantMap &msg 
 
         if ( msg.value( "isDebugMsg" ).toBool() )
             tDebug( LOGVERBOSE ) << "SpotifyResolverError: " << error;
+#ifndef ENABLE_HEADLESS
         else
             JobStatusView::instance()->model()->addJob( new ErrorStatusMessage( QString( "Spotify: %1" ).arg( error ) ) );
+#endif
     }
     else if ( msgType == "userChanged" )
     {
@@ -1107,12 +1111,12 @@ SpotifyAccount::icon() const
 }
 
 
-QWidget*
+AccountConfigWidget*
 SpotifyAccount::configurationWidget()
 {
     if ( m_configWidget.isNull() )
     {
-        m_configWidget = QWeakPointer< SpotifyAccountConfig >( new SpotifyAccountConfig( this ) );
+        m_configWidget = QPointer< SpotifyAccountConfig >( new SpotifyAccountConfig( this ) );
         connect( m_configWidget.data(), SIGNAL( login( QString,QString ) ), this, SLOT( login( QString,QString ) ) );
         connect( m_configWidget.data(), SIGNAL( logout() ), this, SLOT( logout() ) );
         m_configWidget.data()->setPlaylists( m_allSpotifyPlaylists.values() );
@@ -1121,7 +1125,7 @@ SpotifyAccount::configurationWidget()
     if ( m_spotifyResolver.isNull() || !m_spotifyResolver.data()->running() )
         return 0;
 
-    return static_cast< QWidget* >( m_configWidget.data() );
+    return static_cast< AccountConfigWidget* >( m_configWidget.data() );
 }
 
 
@@ -1141,7 +1145,7 @@ SpotifyAccount::aboutWidget()
         l->addWidget( pm );
         l->addWidget( text );
         w->setLayout( l );
-        m_aboutWidget = QWeakPointer< QWidget >( w );
+        m_aboutWidget = QPointer< QWidget >( w );
     }
 
     return m_aboutWidget.data();
@@ -1390,6 +1394,18 @@ SpotifyAccount::sendMessage( const QVariantMap &m, QObject* obj, const QString& 
     m_spotifyResolver.data()->sendMessage( msg );
 
     return qid;
+}
+
+bool
+SpotifyAccount::hasPlaylist(const QString& plId)
+{
+    return m_updaters.contains( plId );
+}
+
+Tomahawk::playlist_ptr
+SpotifyAccount::playlistForURI(const QString& plId)
+{
+    return m_updaters[ plId ]->playlist();
 }
 
 

@@ -2,6 +2,7 @@
  *
  *   Copyright 2010-2011, Christian Muehlhaeuser <muesli@tomahawk-player.org>
  *   Copyright 2010-2011, Leo Franchi <lfranchi@kde.org>
+ *   Copyright 2013,      Teo Mrnjavac <teo@kde.org>
  *
  *   Tomahawk is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -19,19 +20,14 @@
 
 #include "QtScriptResolver.h"
 
-#include <QtGui/QMessageBox>
-#include <QtNetwork/QNetworkRequest>
-#include <QtNetwork/QNetworkReply>
-#include <QtCore/QMetaProperty>
-#include <QtCore/QCryptographicHash>
-
-#include <boost/bind.hpp>
-
 #include "Artist.h"
 #include "Album.h"
 #include "config.h"
 #include "Pipeline.h"
+#include "ScriptCollection.h"
 #include "SourceList.h"
+
+#include "accounts/AccountConfigWidget.h"
 
 #include "network/Servent.h"
 
@@ -40,9 +36,17 @@
 #include "jobview/ErrorStatusMessage.h"
 
 #include "utils/TomahawkUtilsGui.h"
-#include "utils/Logger.h"
 
 #include "config.h"
+
+#include <QImageReader>
+#include <QMessageBox>
+#include <QNetworkRequest>
+#include <QNetworkReply>
+#include <QMetaProperty>
+#include <QCryptographicHash>
+
+#include <boost/bind.hpp>
 
 // FIXME: bloody hack, remove this for 0.3
 // this one adds new functionality to old resolvers
@@ -53,6 +57,7 @@
 
 QtScriptResolverHelper::QtScriptResolverHelper( const QString& scriptPath, QtScriptResolver* parent )
     : QObject( parent )
+    , m_urlCallbackIsAsync( false )
 {
     m_scriptPath = scriptPath;
     m_resolver = parent;
@@ -131,6 +136,121 @@ QtScriptResolverHelper::addTrackResults( const QVariantMap& results )
 
 
 void
+QtScriptResolverHelper::addArtistResults( const QVariantMap& results )
+{
+    qDebug() << "Resolver reporting artists:" << results;
+    QList< Tomahawk::artist_ptr > artists = m_resolver->parseArtistVariantList( results.value( "artists" ).toList() );
+
+    QString qid = results.value("qid").toString();
+
+    Tomahawk::collection_ptr collection = Tomahawk::collection_ptr();
+    foreach ( const Tomahawk::collection_ptr& coll, m_resolver->collections() )
+    {
+        if ( coll->name() == qid )
+        {
+            collection = coll;
+        }
+    }
+    if ( collection.isNull() )
+        return;
+
+    tDebug() << Q_FUNC_INFO << "about to push" << artists.count() << "artists";
+    foreach( const Tomahawk::artist_ptr& artist, artists)
+        tDebug() << artist->name();
+
+    emit m_resolver->artistsFound( artists );
+}
+
+
+void
+QtScriptResolverHelper::addAlbumResults( const QVariantMap& results )
+{
+    qDebug() << "Resolver reporting albums:" << results;
+    QString artistName = results.value( "artist" ).toString();
+    if ( artistName.trimmed().isEmpty() )
+        return;
+    Tomahawk::artist_ptr artist = Tomahawk::Artist::get( artistName, false );
+    QList< Tomahawk::album_ptr > albums = m_resolver->parseAlbumVariantList( artist, results.value( "albums" ).toList() );
+
+    QString qid = results.value("qid").toString();
+
+    Tomahawk::collection_ptr collection = Tomahawk::collection_ptr();
+    foreach ( const Tomahawk::collection_ptr& coll, m_resolver->collections() )
+    {
+        if ( coll->name() == qid )
+        {
+            collection = coll;
+        }
+    }
+    if ( collection.isNull() )
+        return;
+
+    tDebug() << Q_FUNC_INFO << "about to push" << albums.count() << "albums";
+    foreach( const Tomahawk::album_ptr& album, albums)
+        tDebug() << album->name();
+
+    emit m_resolver->albumsFound( albums );
+}
+
+
+void
+QtScriptResolverHelper::addAlbumTrackResults( const QVariantMap& results )
+{
+    qDebug() << "Resolver reporting album tracks:" << results;
+    QString artistName = results.value( "artist" ).toString();
+    if ( artistName.trimmed().isEmpty() )
+        return;
+    QString albumName = results.value( "album" ).toString();
+    if ( albumName.trimmed().isEmpty() )
+        return;
+
+    Tomahawk::artist_ptr artist = Tomahawk::Artist::get( artistName, false );
+    Tomahawk::album_ptr  album  = Tomahawk::Album::get( artist, albumName, false );
+
+    QList< Tomahawk::result_ptr > tracks = m_resolver->parseResultVariantList( results.value("results").toList() );
+
+    QString qid = results.value("qid").toString();
+
+    Tomahawk::collection_ptr collection = Tomahawk::collection_ptr();
+    foreach ( const Tomahawk::collection_ptr& coll, m_resolver->collections() )
+    {
+        if ( coll->name() == qid )
+        {
+            collection = coll;
+        }
+    }
+    if ( collection.isNull() )
+        return;
+
+    QList< Tomahawk::query_ptr > queries;
+    foreach ( const Tomahawk::result_ptr& result, tracks )
+    {
+        result->setScore( 1.0 );
+        queries.append( result->toQuery() );
+    }
+
+    tDebug() << Q_FUNC_INFO << "about to push" << tracks.count() << "tracks";
+
+    emit m_resolver->tracksFound( queries );
+}
+
+
+void
+QtScriptResolverHelper::reportCapabilities( const QVariant& v )
+{
+    bool ok = 0;
+    int intCap = v.toInt( &ok );
+    Tomahawk::ExternalResolver::Capabilities capabilities;
+    if ( !ok )
+        capabilities = Tomahawk::ExternalResolver::NullCapability;
+    else
+        capabilities = static_cast< Tomahawk::ExternalResolver::Capabilities >( intCap );
+
+    m_resolver->onCapabilitiesChanged( capabilities );
+}
+
+
+void
 QtScriptResolverHelper::setResolverConfig( const QVariantMap& config )
 {
     m_resolverConfig = config;
@@ -172,9 +292,15 @@ QtScriptResolverHelper::md5( const QByteArray& input )
 
 
 void
-QtScriptResolverHelper::addCustomUrlHandler( const QString& protocol, const QString& callbackFuncName )
+QtScriptResolverHelper::addCustomUrlHandler( const QString& protocol,
+                                             const QString& callbackFuncName,
+                                             const QString& isAsynchronous )
 {
-    boost::function<QSharedPointer<QIODevice>(Tomahawk::result_ptr)> fac = boost::bind( &QtScriptResolverHelper::customIODeviceFactory, this, _1 );
+    m_urlCallbackIsAsync = ( isAsynchronous.toLower() == "true" ) ? true : false;
+
+    boost::function< void( const Tomahawk::result_ptr&,
+                           boost::function< void( QSharedPointer< QIODevice >& ) > )> fac =
+            boost::bind( &QtScriptResolverHelper::customIODeviceFactory, this, _1, _2 );
     Servent::instance()->registerIODeviceFactory( protocol, fac );
 
     m_urlCallback = callbackFuncName;
@@ -195,22 +321,66 @@ QtScriptResolverHelper::base64Decode( const QByteArray& input )
 }
 
 
-QSharedPointer< QIODevice >
-QtScriptResolverHelper::customIODeviceFactory( const Tomahawk::result_ptr& result )
+void
+QtScriptResolverHelper::customIODeviceFactory( const Tomahawk::result_ptr& result,
+                                               boost::function< void( QSharedPointer< QIODevice >& ) > callback )
 {
-    QString getUrl = QString( "Tomahawk.resolver.instance.%1( '%2' );" ).arg( m_urlCallback )
-                                                                        .arg( QString( QUrl( result->url() ).toEncoded() ) );
+    //can be sync or async
+    QString origResultUrl = QString( QUrl( result->url() ).toEncoded() );
 
-    QString urlStr = m_resolver->m_engine->mainFrame()->evaluateJavaScript( getUrl ).toString();
+    if ( m_urlCallbackIsAsync )
+    {
+        QString qid = uuid();
+        QString getUrl = QString( "Tomahawk.resolver.instance.%1( '%2', '%3' );" ).arg( m_urlCallback )
+                                                                                  .arg( qid )
+                                                                                  .arg( origResultUrl );
 
-    if ( urlStr.isEmpty() )
-        return QSharedPointer< QIODevice >();
+        m_streamCallbacks.insert( qid, callback );
+        m_resolver->m_engine->mainFrame()->evaluateJavaScript( getUrl );
+    }
+    else
+    {
+        QString getUrl = QString( "Tomahawk.resolver.instance.%1( '%2' );" ).arg( m_urlCallback )
+                                                                            .arg( origResultUrl );
 
-    QUrl url = QUrl::fromEncoded( urlStr.toUtf8() );
+        QString urlStr = m_resolver->m_engine->mainFrame()->evaluateJavaScript( getUrl ).toString();
+
+        returnStreamUrl( urlStr, callback );
+    }
+}
+
+
+void
+QtScriptResolverHelper::reportStreamUrl( const QString& qid,
+                                         const QString& streamUrl )
+{
+    if ( !m_streamCallbacks.contains( qid ) )
+        return;
+
+    boost::function< void( QSharedPointer< QIODevice >& ) > callback = m_streamCallbacks.take( qid );
+
+    returnStreamUrl( streamUrl, callback );
+}
+
+
+void
+QtScriptResolverHelper::returnStreamUrl( const QString& streamUrl, boost::function< void( QSharedPointer< QIODevice >& ) > callback )
+{
+    QSharedPointer< QIODevice > sp;
+    if ( streamUrl.isEmpty() )
+    {
+        callback( sp );
+        return;
+    }
+
+    QUrl url = QUrl::fromEncoded( streamUrl.toUtf8() );
     QNetworkRequest req( url );
     tDebug() << "Creating a QNetowrkReply with url:" << req.url().toString();
     QNetworkReply* reply = TomahawkUtils::nam()->get( req );
-    return QSharedPointer<QIODevice>( reply, &QObject::deleteLater );
+
+    //boost::functions cannot accept temporaries as parameters
+    sp = QSharedPointer< QIODevice >( reply, &QObject::deleteLater );
+    callback( sp );
 }
 
 
@@ -224,12 +394,13 @@ ScriptEngine::javaScriptConsoleMessage( const QString& message, int lineNumber, 
 }
 
 
-QtScriptResolver::QtScriptResolver( const QString& scriptPath )
+QtScriptResolver::QtScriptResolver( const QString& scriptPath, const QStringList& additionalScriptPaths )
     : Tomahawk::ExternalResolverGui( scriptPath )
     , m_ready( false )
     , m_stopped( true )
     , m_error( Tomahawk::ExternalResolver::NoError )
     , m_resolverHelper( new QtScriptResolverHelper( scriptPath, this ) )
+    , m_requiredScriptPaths( additionalScriptPaths )
 {
     tLog() << Q_FUNC_INFO << "Loading JS resolver:" << scriptPath;
 
@@ -260,14 +431,14 @@ QtScriptResolver::~QtScriptResolver()
 }
 
 
-Tomahawk::ExternalResolver* QtScriptResolver::factory( const QString& scriptPath )
+Tomahawk::ExternalResolver* QtScriptResolver::factory( const QString& scriptPath, const QStringList& additionalScriptPaths )
 {
     ExternalResolver* res = 0;
 
     const QFileInfo fi( scriptPath );
     if ( fi.suffix() == "js" || fi.suffix() == "script" )
     {
-        res = new QtScriptResolver( scriptPath );
+        res = new QtScriptResolver( scriptPath, additionalScriptPaths );
         tLog() << Q_FUNC_INFO << scriptPath << "Loaded.";
     }
 
@@ -318,6 +489,21 @@ QtScriptResolver::init()
     jslib.open( QIODevice::ReadOnly );
     m_engine->mainFrame()->evaluateJavaScript( jslib.readAll() );
     jslib.close();
+
+    // add resolver dependencies, if any
+    foreach ( QString s, m_requiredScriptPaths )
+    {
+        QFile reqFile( s );
+        if( !reqFile.open( QIODevice::ReadOnly ) )
+        {
+            qWarning() << "Failed to read contents of file:" << s << reqFile.errorString();
+            return;
+        }
+        const QByteArray reqContents = reqFile.readAll();
+
+        m_engine->setScriptPath( s );
+        m_engine->mainFrame()->evaluateJavaScript( reqContents );
+    }
 
     // add resolver
     m_engine->setScriptPath( filePath() );
@@ -373,6 +559,109 @@ QtScriptResolver::start()
         Tomahawk::Pipeline::instance()->addResolver( this );
     else
         init();
+}
+
+
+void
+QtScriptResolver::artists( const Tomahawk::collection_ptr& collection )
+{
+    if ( QThread::currentThread() != thread() )
+    {
+        QMetaObject::invokeMethod( this, "artists", Qt::QueuedConnection, Q_ARG( Tomahawk::collection_ptr, collection ) );
+        return;
+    }
+
+    if ( !m_collections.contains( collection->name() ) || //if the collection doesn't belong to this resolver
+         !capabilities().testFlag( Browsable ) )          //or this resolver doesn't even support collections
+    {
+        emit artistsFound( QList< Tomahawk::artist_ptr >() );
+        return;
+    }
+
+    QString eval = QString( "resolver.artists( '%1' );" )
+                   .arg( collection->name().replace( "'", "\\'" ) );
+
+    QVariantMap m = m_engine->mainFrame()->evaluateJavaScript( eval ).toMap();
+    if ( m.isEmpty() )
+    {
+        // if the resolver doesn't return anything, async api is used
+        return;
+    }
+
+    QString errorMessage = tr( "Script Resolver Warning: API call %1 returned data synchronously." ).arg( eval );
+    JobStatusView::instance()->model()->addJob( new ErrorStatusMessage( errorMessage ) );
+    tDebug() << errorMessage << m;
+}
+
+
+void
+QtScriptResolver::albums( const Tomahawk::collection_ptr& collection, const Tomahawk::artist_ptr& artist )
+{
+    if ( QThread::currentThread() != thread() )
+    {
+        QMetaObject::invokeMethod( this, "albums", Qt::QueuedConnection,
+                                   Q_ARG( Tomahawk::collection_ptr, collection ),
+                                   Q_ARG( Tomahawk::artist_ptr, artist ) );
+        return;
+    }
+
+    if ( !m_collections.contains( collection->name() ) || //if the collection doesn't belong to this resolver
+         !capabilities().testFlag( Browsable ) )          //or this resolver doesn't even support collections
+    {
+        emit albumsFound( QList< Tomahawk::album_ptr >() );
+        return;
+    }
+
+    QString eval = QString( "resolver.albums( '%1', '%2' );" )
+                   .arg( collection->name().replace( "'", "\\'" ) )
+                   .arg( artist->name().replace( "'", "\\'" ) );
+
+    QVariantMap m = m_engine->mainFrame()->evaluateJavaScript( eval ).toMap();
+    if ( m.isEmpty() )
+    {
+        // if the resolver doesn't return anything, async api is used
+        return;
+    }
+
+    QString errorMessage = tr( "Script Resolver Warning: API call %1 returned data synchronously." ).arg( eval );
+    JobStatusView::instance()->model()->addJob( new ErrorStatusMessage( errorMessage ) );
+    tDebug() << errorMessage << m;
+}
+
+
+void
+QtScriptResolver::tracks( const Tomahawk::collection_ptr& collection, const Tomahawk::album_ptr& album )
+{
+    if ( QThread::currentThread() != thread() )
+    {
+        QMetaObject::invokeMethod( this, "tracks", Qt::QueuedConnection,
+                                   Q_ARG( Tomahawk::collection_ptr, collection ),
+                                   Q_ARG( Tomahawk::album_ptr, album ) );
+        return;
+    }
+
+    if ( !m_collections.contains( collection->name() ) || //if the collection doesn't belong to this resolver
+         !capabilities().testFlag( Browsable ) )          //or this resolver doesn't even support collections
+    {
+        emit tracksFound( QList< Tomahawk::query_ptr >() );
+        return;
+    }
+
+    QString eval = QString( "resolver.tracks( '%1', '%2', '%3' );" )
+                   .arg( collection->name().replace( "'", "\\'" ) )
+                   .arg( album->artist()->name().replace( "'", "\\'" ) )
+                   .arg( album->name().replace( "'", "\\'" ) );
+
+    QVariantMap m = m_engine->mainFrame()->evaluateJavaScript( eval ).toMap();
+    if ( m.isEmpty() )
+    {
+        // if the resolver doesn't return anything, async api is used
+        return;
+    }
+
+    QString errorMessage = tr( "Script Resolver Warning: API call %1 returned data synchronously." ).arg( eval );
+    JobStatusView::instance()->model()->addJob( new ErrorStatusMessage( errorMessage ) );
+    tDebug() << errorMessage << m;
 }
 
 
@@ -490,11 +779,54 @@ QtScriptResolver::parseResultVariantList( const QVariantList& reslist )
     return results;
 }
 
+QList< Tomahawk::artist_ptr >
+QtScriptResolver::parseArtistVariantList( const QVariantList& reslist )
+{
+    QList< Tomahawk::artist_ptr > results;
+
+    foreach( const QVariant& rv, reslist )
+    {
+        if ( rv.toString().trimmed().isEmpty() )
+            continue;
+
+        Tomahawk::artist_ptr ap = Tomahawk::Artist::get( rv.toString(), false );
+
+        results << ap;
+    }
+
+    return results;
+}
+
+
+QList< Tomahawk::album_ptr >
+QtScriptResolver::parseAlbumVariantList( const Tomahawk::artist_ptr& artist, const QVariantList& reslist )
+{
+    QList< Tomahawk::album_ptr > results;
+
+    foreach( const QVariant& rv, reslist )
+    {
+        if ( rv.toString().trimmed().isEmpty() )
+            continue;
+
+        Tomahawk::album_ptr ap = Tomahawk::Album::get( artist, rv.toString(), false );
+
+        results << ap;
+    }
+
+    return results;
+}
+
 
 void
 QtScriptResolver::stop()
 {
     m_stopped = true;
+
+    foreach ( const Tomahawk::collection_ptr& collection, m_collections )
+    {
+        emit collectionRemoved( collection );
+    }
+
     Tomahawk::Pipeline::instance()->removeResolver( this );
     emit stopped();
 }
@@ -527,13 +859,13 @@ QtScriptResolver::loadUi()
     if( m.contains( "images" ) )
         uiData = fixDataImagePaths( uiData, compressed, images );
 
-    m_configWidget = QWeakPointer< QWidget >( widgetFromData( uiData, 0 ) );
+    m_configWidget = QPointer< AccountConfigWidget >( widgetFromData( uiData, 0 ) );
 
     emit changed();
 }
 
 
-QWidget*
+AccountConfigWidget*
 QtScriptResolver::configUI() const
 {
     if( m_configWidget.isNull() )
@@ -625,6 +957,112 @@ QtScriptResolver::fillDataInWidgets( const QVariantMap& data )
 }
 
 
+void
+QtScriptResolver::onCapabilitiesChanged( Tomahawk::ExternalResolver::Capabilities capabilities )
+{
+    m_capabilities = capabilities;
+    loadCollections();
+}
+
+
+void
+QtScriptResolver::loadCollections()
+{
+    if ( m_capabilities.testFlag( Browsable ) )
+    {
+        QVariantMap collectionInfo = m_engine->mainFrame()->evaluateJavaScript( "resolver.collection();" ).toMap();
+        if ( collectionInfo.isEmpty() ||
+             !collectionInfo.contains( "prettyname" ) ||
+             !collectionInfo.contains( "description" ) )
+            return;
+
+        QString prettyname = collectionInfo.value( "prettyname" ).toString();
+        QString desc = collectionInfo.value( "description" ).toString();
+
+        foreach ( Tomahawk::collection_ptr collection, m_collections )
+        {
+            emit collectionRemoved( collection );
+        }
+
+        m_collections.clear();
+        // at this point we assume that all the tracks browsable through a resolver belong to the local source
+        Tomahawk::ScriptCollection* sc = new Tomahawk::ScriptCollection( SourceList::instance()->getLocal(), this );
+        sc->setServiceName( prettyname );
+        sc->setDescription( desc );
+
+        if ( collectionInfo.contains( "trackcount" ) ) //a resolver might not expose this
+        {
+            bool ok = false;
+            int trackCount = collectionInfo.value( "trackcount" ).toInt( &ok );
+            if ( ok )
+                sc->setTrackCount( trackCount );
+        }
+
+        if ( collectionInfo.contains( "iconfile" ) )
+        {
+            bool ok = false;
+            QString iconPath = QFileInfo( filePath() ).path() + "/"
+                               + collectionInfo.value( "iconfile" ).toString();
+
+            QPixmap iconPixmap;
+            ok = iconPixmap.load( iconPath );
+            if ( ok && !iconPixmap.isNull() )
+                sc->setIcon( QIcon( iconPixmap ) );
+        }
+
+        Tomahawk::collection_ptr collection( sc );
+
+        m_collections.insert( collection->name(), collection );
+        emit collectionAdded( collection );
+
+        if ( collectionInfo.contains( "iconurl" ) )
+        {
+            QString iconUrlString = collectionInfo.value( "iconurl" ).toString();
+            if ( !iconUrlString.isEmpty() )
+            {
+                QUrl iconUrl = QUrl::fromEncoded( iconUrlString.toLatin1() );
+                if ( iconUrl.isValid() )
+                {
+                    QNetworkRequest req( iconUrl );
+                    tDebug() << "Creating a QNetworkReply with url:" << req.url().toString();
+                    QNetworkReply* reply = TomahawkUtils::nam()->get( req );
+                    reply->setProperty( "collectionName", collection->name() );
+
+                    connect( reply, SIGNAL( finished() ),
+                             this, SLOT( onCollectionIconFetched() ) );
+                }
+            }
+        }
+
+        //TODO: implement multiple collections from a resolver
+    }
+}
+
+
+void
+QtScriptResolver::onCollectionIconFetched()
+{
+    QNetworkReply* reply = qobject_cast< QNetworkReply* >( sender() );
+    if ( reply != 0 )
+    {
+        Tomahawk::collection_ptr collection;
+        collection = m_collections.value( reply->property( "collectionName" ).toString() );
+        if ( !collection.isNull() )
+        {
+            if ( reply->error() == QNetworkReply::NoError )
+            {
+                QImageReader imageReader( reply );
+                QPixmap collectionIcon = QPixmap::fromImageReader( &imageReader );
+
+                if ( !collectionIcon.isNull() )
+                    qobject_cast< Tomahawk::ScriptCollection* >( collection.data() )->setIcon( collectionIcon );
+            }
+        }
+        reply->deleteLater();
+    }
+}
+
+
 QVariantMap
 QtScriptResolver::resolverSettings()
 {
@@ -643,5 +1081,16 @@ QVariantMap
 QtScriptResolver::resolverInit()
 {
     return m_engine->mainFrame()->evaluateJavaScript( RESOLVER_LEGACY_CODE "resolver.init();" ).toMap();
+}
+
+
+QVariantMap
+QtScriptResolver::resolverCollections()
+{
+    return QVariantMap(); //TODO: add a way to distinguish collections
+    // the resolver should provide a unique ID string for each collection, and then be queriable
+    // against this ID. doesn't matter what kind of ID string as long as it's unique.
+    // Then when there's callbacks from a resolver, it sends source name, collection id
+    // + data.
 }
 

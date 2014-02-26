@@ -32,8 +32,8 @@
     #include <lastfm/ws.h>
 #endif
 
-#include <quazip.h>
-#include <quazipfile.h>
+#include <quazip/quazip.h>
+#include <quazip/quazipfile.h>
 
 #include <QNetworkConfiguration>
 #include <QNetworkAccessManager>
@@ -45,7 +45,12 @@
 #include <QMutex>
 #include <QCryptographicHash>
 #include <QProcess>
+#include <QStringList>
 #include <QTranslator>
+
+#if QT_VERSION >= QT_VERSION_CHECK( 5, 0, 0 )
+    #include <QUrlQuery>
+#endif
 
 #ifdef Q_OS_WIN
     #include <windows.h>
@@ -322,6 +327,7 @@ extensionToMimetype( const QString& extension )
         s_ext2mime.insert( "flac", "audio/flac" );
         s_ext2mime.insert( "aiff", "audio/aiff" );
         s_ext2mime.insert( "aif",  "audio/aiff" );
+        s_ext2mime.insert( "wv",   "audio/x-wavpack" );
     }
 
     return s_ext2mime.value( extension, "unknown" );
@@ -768,6 +774,20 @@ md5( const QByteArray& data )
 }
 
 
+bool
+isHttpResult( const QString& url )
+{
+    return url.startsWith( "http://" ) || url.startsWith( "https://" );
+}
+
+
+bool
+isLocalResult( const QString& url )
+{
+    return url.startsWith( "file://" );
+}
+
+
 void
 crash()
 {
@@ -892,16 +912,17 @@ verifyFile( const QString& filePath, const QString& signature )
 
 
 QString
-extractScriptPayload( const QString& filename, const QString& resolverId )
+extractScriptPayload( const QString& filename, const QString& resolverId, const QString& dirName )
 {
     // uses QuaZip to extract the temporary zip file to the user's tomahawk data/resolvers directory
     QDir resolverDir = appDataDir();
-    if ( !resolverDir.mkpath( QString( "atticaresolvers/%1" ).arg( resolverId ) ) )
+    if ( !resolverDir.mkpath( QString( "%1/%2" ).arg( dirName )
+                                                .arg( resolverId ) ) )
     {
-        tLog() << "Failed to mkdir resolver save dir:" << TomahawkUtils::appDataDir().absoluteFilePath( QString( "atticaresolvers/%1" ).arg( resolverId ) );
+        tLog() << "Failed to mkdir resolver save dir:" << TomahawkUtils::appDataDir().absoluteFilePath( QString( "%1/%2" ).arg( dirName ).arg( resolverId ) );
         return QString();
     }
-    resolverDir.cd( QString( "atticaresolvers/%1" ).arg( resolverId ) );
+    resolverDir.cd( QString( "%1/%2" ).arg( dirName ).arg( resolverId ) );
 
     if ( !unzipFileInFolder( filename, resolverDir ) )
     {
@@ -922,7 +943,8 @@ unzipFileInFolder( const QString& zipFileName, const QDir& folder )
     QuaZip zipFile( zipFileName );
     if ( !zipFile.open( QuaZip::mdUnzip ) )
     {
-        qWarning() << "Failed to QuaZip open:" << zipFile.getZipError();
+        qWarning() << "Failed to QuaZip open" << zipFileName
+                   << "with error:" << zipFile.getZipError();
         return false;
     }
 
@@ -989,6 +1011,110 @@ whitelistedHttpResultHint( const QString& url )
 {
     // For now, just http/https
     return url.startsWith( "http" );
+}
+
+
+int
+compareVersionStrings( const QString& first, const QString& second )
+{
+    QStringList a = first.split( '.', QString::SkipEmptyParts );
+    QStringList b = second.split( '.', QString::SkipEmptyParts );
+
+    const int depth = qMax( a.count(), b.count() );
+
+    while ( a.count() < depth )
+        a.append( "0" );
+
+    while ( b.count() < depth )
+        b.append( "0" );
+
+    int verdict = 0;
+    for ( int i = 0; i < depth; ++i )
+    {
+        bool aOk;
+        int aNumber = a.at( i ).toInt( &aOk );
+        bool bOk;
+        int bNumber = b.at( i ).toInt( &bOk );
+
+        if ( aOk && bOk )
+        {
+            if ( aNumber < bNumber )
+            {
+                verdict = -1;
+                break;
+            }
+            if ( aNumber > bNumber )
+            {
+                verdict = 1;
+                break;
+            }
+        }
+        else //fallback: string comparison
+        {
+            verdict = a.at( i ).compare( b.at( i ) );
+            if ( verdict != 0 )
+                break;
+        }
+    }
+
+    return verdict;
+}
+
+
+void
+urlAddQueryItem( QUrl& url, const QString& key, const QString& value )
+{
+#if QT_VERSION >= QT_VERSION_CHECK( 5, 0, 0 )
+    QUrlQuery urlQuery( url );
+    urlQuery.addQueryItem( key, value );
+    url.setQuery( urlQuery );
+#else
+    url.addQueryItem( key, value );
+#endif
+}
+
+
+QString
+urlQueryItemValue( const QUrl& url, const QString& key )
+{
+#if QT_VERSION >= QT_VERSION_CHECK( 5, 0, 0 )
+    return QUrlQuery( url ).queryItemValue( key ).replace( "+", " " );
+#else
+    return url.queryItemValue( key ).replace( "+", " " );
+#endif
+}
+
+
+bool
+urlHasQueryItem( const QUrl& url, const QString& key )
+{
+#if QT_VERSION >= QT_VERSION_CHECK( 5, 0, 0 )
+    return QUrlQuery( url ).hasQueryItem( key );
+#else
+    return url.hasQueryItem( key );
+#endif
+}
+
+
+QList<QPair<QString, QString> >
+urlQueryItems( const QUrl& url )
+{
+#if QT_VERSION >= QT_VERSION_CHECK( 5, 0, 0 )
+    return QUrlQuery( url ).queryItems();
+#else
+    return url.queryItems();
+#endif
+}
+
+
+void
+urlSetQuery( QUrl& url, const QString& query )
+{
+#if QT_VERSION >= QT_VERSION_CHECK( 5, 0, 0 )
+    url.setQuery( query );
+#else
+    url.setEncodedQuery( query.toLocal8Bit() );
+#endif
 }
 
 

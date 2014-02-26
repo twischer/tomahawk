@@ -20,8 +20,8 @@
 #ifndef CONTEXTMENU_H
 #define CONTEXTMENU_H
 
-#include <QtCore/QSignalMapper>
-#include <QtGui/QMenu>
+#include <QSignalMapper>
+#include <QMenu>
 
 #include "Typedefs.h"
 #include "DllMacro.h"
@@ -46,7 +46,8 @@ public:
        ActionTrackPage =    65,
        ActionArtistPage =   66,
        ActionAlbumPage =    67,
-       ActionEditMetadata = 128
+       ActionEditMetadata = 128,
+       ActionPlaylist =     256
     };
 
     explicit ContextMenu( QWidget* parent = 0 );
@@ -79,15 +80,18 @@ private slots:
     void onTriggered( int action );
     void copyLink();
     void openPage( MenuActions action );
+    void addToPlaylist( int playlistIdx );
 
     void onSocialActionsLoaded();
 
 private:
     QSignalMapper* m_sigmap;
+    QSignalMapper* m_playlists_sigmap;
     int m_supportedActions;
 
     QAction* m_loveAction;
 
+    QList< Tomahawk::playlist_ptr > m_playlists;
     QList< Tomahawk::query_ptr > m_queries;
     QList< Tomahawk::artist_ptr > m_artists;
     QList< Tomahawk::album_ptr > m_albums;

@@ -66,7 +66,6 @@ AudioControls::AudioControls( QWidget* parent )
     ui->artistTrackLabel->setFont( font );
     ui->artistTrackLabel->setElideMode( Qt::ElideMiddle );
     ui->artistTrackLabel->setType( QueryLabel::Track );
-    ui->artistTrackLabel->setJumpLinkVisible( true );
 
     font.setPointSize( TomahawkUtils::defaultFontSize() );
     ui->albumLabel->setFont( font );
@@ -76,7 +75,7 @@ AudioControls::AudioControls( QWidget* parent )
     queryLabelsPalette.setColor( QPalette::Foreground, Qt::black );
     ui->artistTrackLabel->setPalette( queryLabelsPalette );
     ui->albumLabel->setPalette( queryLabelsPalette );
-    
+
     font.setWeight( QFont::Normal );
     ui->timeLabel->setFont( font );
     ui->timeLeftLabel->setFont( font );
@@ -138,7 +137,6 @@ AudioControls::AudioControls( QWidget* parent )
     connect( ui->loveButton,       SIGNAL( clicked( bool ) ), SLOT( onLoveButtonClicked( bool ) ) );
     connect( ui->ownerButton,      SIGNAL( clicked() ),       SLOT( onOwnerButtonClicked() ) );
 
-    // <From MainAudioEngine>
     connect( MainAudioEngine::instance(), SIGNAL( loading( Tomahawk::result_ptr ) ), SLOT( onPlaybackLoading( Tomahawk::result_ptr ) ) );
     connect( MainAudioEngine::instance(), SIGNAL( started( Tomahawk::result_ptr ) ), SLOT( onPlaybackStarted( Tomahawk::result_ptr ) ) );
     connect( MainAudioEngine::instance(), SIGNAL( paused() ), SLOT( onPlaybackPaused() ) );
@@ -153,6 +151,8 @@ AudioControls::AudioControls( QWidget* parent )
 
     // <Form ActionCollection> used tu disable next and previous button if party mode was activated
     connect( TomahawkSettings::instance(), SIGNAL( partyModeChanged() ), SLOT( onPartyModeChanged() ) );
+
+    connect( ViewManager::instance(), SIGNAL( viewPageDestroyed() ), SLOT( onControlStateChanged() ) );
 
     ui->buttonAreaLayout->setSpacing( 0 );
     ui->stackedLayout->setSpacing( 0 );
@@ -224,9 +224,13 @@ AudioControls::onControlStateChanged()
 
     if ( !TomahawkSettings::instance()->partyModeEnabled() )
     {
-        ui->prevButton->setEnabled( MainAudioEngine::instance()->canGoPrevious() );
-        ui->nextButton->setEnabled( MainAudioEngine::instance()->canGoNext() );
-    }
+    ui->prevButton->setEnabled( MainAudioEngine::instance()->canGoPrevious() );
+    ui->nextButton->setEnabled( MainAudioEngine::instance()->canGoNext() );
+
+    // If the ViewManager doesn't know a page for the current interface, we can't offer the jump link
+    ui->artistTrackLabel->setJumpLinkVisible( MainAudioEngine::instance()->currentTrackPlaylist()
+                                                && ViewManager::instance()->pageForInterface( MainAudioEngine::instance()->currentTrackPlaylist() ) );
+	}
 }
 
 
@@ -252,7 +256,7 @@ AudioControls::onPlaybackStarted( const Tomahawk::result_ptr& result )
 
     ui->timeLabel->setText( TomahawkUtils::timeToString( 0 ) );
     ui->timeLeftLabel->setText( "-" + TomahawkUtils::timeToString( 0 ) );
-    
+
     m_sliderTimeLine.setDuration( duration );
     m_sliderTimeLine.setFrameRange( 0, duration );
     m_sliderTimeLine.setCurveShape( QTimeLine::LinearCurve );
@@ -319,9 +323,6 @@ AudioControls::onPlaybackLoading( const Tomahawk::result_ptr& result )
     ui->seekSlider->setValue( 0 );
     ui->seekSlider->setVisible( true );
     m_sliderTimeLine.stop();
-
-    // If the ViewManager doesn't know a page for the current interface, we can't offer the jump link
-    ui->artistTrackLabel->setJumpLinkVisible( ( ViewManager::instance()->pageForInterface( MainAudioEngine::instance()->currentTrackPlaylist() ) ) );
 
     onControlStateChanged();
 
@@ -515,7 +516,7 @@ AudioControls::onPlaybackTimer( qint64 msElapsed )
         return;
 
     int currentTime = m_sliderTimeLine.currentTime();
-    //tDebug( LOGEXTRA ) << Q_FUNC_INFO << "msElapsed =" << msElapsed << "and timer current time =" << currentTime << "and audio engine state is" << (int)MainAudioEngine::instance()->state();
+    //tDebug( LOGEXTRA ) << Q_FUNC_INFO << "msElapsed =" << msElapsed << "and timer current time =" << currentTime << "and audio engine state is" << (int)AudioEngine::instance()->state();
 
     // First condition checks for the common case where
     // 1) the track has been started

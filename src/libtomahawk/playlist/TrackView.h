@@ -20,15 +20,15 @@
 #ifndef TRACKVIEW_H
 #define TRACKVIEW_H
 
-#include <QtGui/QTreeView>
-#include <QtGui/QSortFilterProxyModel>
-#include <QtCore/QTimer>
-
 #include "ContextMenu.h"
 #include "PlaylistItemDelegate.h"
 #include "ViewPage.h"
 
 #include "DllMacro.h"
+
+#include <QTreeView>
+#include <QSortFilterProxyModel>
+#include <QTimer>
 
 class QAction;
 class AnimatedSpinner;
@@ -75,7 +75,6 @@ public:
     virtual bool setFilter( const QString& filter );
     virtual bool jumpToCurrentTrack();
 
-    QModelIndex hoveredIndex() const { return m_hoveredIndex; }
     QModelIndex contextMenuIndex() const { return m_contextMenuIndex; }
     void setContextMenuIndex( const QModelIndex& idx ) { m_contextMenuIndex = idx; }
 
@@ -108,16 +107,13 @@ protected:
 
     virtual void startDrag( Qt::DropActions supportedActions );
     virtual void dragEnterEvent( QDragEnterEvent* event );
-    virtual void dragLeaveEvent( QDragLeaveEvent* /*event*/ ) { m_dragging = false; setDirtyRegion( m_dropRect ); }
+    virtual void dragLeaveEvent( QDragLeaveEvent* event );
     virtual void dragMoveEvent( QDragMoveEvent* event );
     virtual void dropEvent( QDropEvent* event );
 
-    void wheelEvent( QWheelEvent* event );
-    void mouseMoveEvent( QMouseEvent* event );
-    void mousePressEvent( QMouseEvent* event );
-    void leaveEvent( QEvent* event );
-    void paintEvent( QPaintEvent* event );
-    void keyPressEvent( QKeyEvent* event );
+    virtual void paintEvent( QPaintEvent* event );
+    virtual void keyPressEvent( QKeyEvent* event );
+    virtual void wheelEvent( QWheelEvent* event );
 
 protected slots:
     virtual void currentChanged( const QModelIndex& current, const QModelIndex& previous );
@@ -133,7 +129,7 @@ private slots:
     void autoPlayResolveFinished( const Tomahawk::query_ptr& query, int row );
 
     void verifySize();
-    
+
 private:
     void startAutoPlay( const QModelIndex& index );
     bool tryToPlayItem( const QModelIndex& index );
@@ -156,7 +152,6 @@ private:
     bool m_updateContextView;
     bool m_autoResize;
 
-    QModelIndex m_hoveredIndex;
     QModelIndex m_contextMenuIndex;
 
     Tomahawk::query_ptr m_autoPlaying;

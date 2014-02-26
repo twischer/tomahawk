@@ -33,10 +33,11 @@ namespace Tomahawk
 namespace Accounts
 {
 
-XmppConfigWidget::XmppConfigWidget( XmppAccount* account, QWidget *parent ) :
-    QWidget( parent ),
-    m_ui( new Ui::XmppConfigWidget ),
-    m_account( account )
+XmppConfigWidget::XmppConfigWidget( XmppAccount* account, QWidget *parent )
+    : AccountConfigWidget( parent )
+    , m_ui( new Ui::XmppConfigWidget )
+    , m_account( account )
+    , m_disableChecksForGoogle( false )
 {
     m_ui->setupUi( this );
 
@@ -47,6 +48,7 @@ XmppConfigWidget::XmppConfigWidget( XmppAccount* account, QWidget *parent ) :
     m_ui->xmppPublishTracksCheckbox->setChecked( account->configuration().contains( "publishtracks" ) ? account->configuration()[ "publishtracks" ].toBool() : true);
     m_ui->xmppEnforceSecureCheckbox->setChecked( account->configuration().contains( "enforcesecure" ) ? account->configuration()[ "enforcesecure" ].toBool() : false);
     m_ui->jidExistsLabel->hide();
+
 
     connect( m_ui->xmppUsername, SIGNAL( textChanged( QString ) ), SLOT( onCheckJidExists( QString ) ) );
 }
@@ -80,7 +82,7 @@ XmppConfigWidget::saveConfig()
 
 
 void
-XmppConfigWidget::onCheckJidExists( QString jid )
+XmppConfigWidget::onCheckJidExists( const QString &jid )
 {
     QList< Tomahawk::Accounts::Account* > accounts = Tomahawk::Accounts::AccountManager::instance()->accounts( Tomahawk::Accounts::SipType );
     foreach( Tomahawk::Accounts::Account* account, accounts )
@@ -106,6 +108,35 @@ XmppConfigWidget::onCheckJidExists( QString jid )
     }
     m_ui->jidExistsLabel->hide();
     emit dataError( false );
+}
+
+
+void
+XmppConfigWidget::checkForErrors()
+{
+    const QString username = m_ui->xmppUsername->text().trimmed();
+    const QStringList usernameParts = username.split( '@', QString::KeepEmptyParts );
+
+    QString errorMessage;
+    if( username.isEmpty() )
+    {
+        errorMessage.append( tr( "You forgot to enter your username!" ) );
+    }
+
+    //HACK: don't check for xmpp id being an "email address"
+    if( !m_disableChecksForGoogle )
+    {
+        if( usernameParts.count() != 2 || usernameParts.at( 0 ).isEmpty() || ( usernameParts.count() == 2 && usernameParts.at( 1 ).isEmpty() ) )
+        {
+            errorMessage.append( tr( "Your Xmpp Id should look like an email address" ) );
+        }
+    }
+
+    if( !errorMessage.isEmpty() )
+    {
+        errorMessage.append( tr( "\n\nExample:\nusername@jabber.org" ) );
+        m_errors.append( errorMessage );
+    }
 }
 
 

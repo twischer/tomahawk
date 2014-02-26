@@ -29,18 +29,16 @@
 #include "Query.h"
 #include "Result.h"
 #include "Source.h"
-#include "audio/MainAudioEngine.h"
-
-#include "utils/TomahawkUtilsGui.h"
-#include "utils/PixmapDelegateFader.h"
-#include <utils/Closure.h>
-
-#include "playlist/PlayableItem.h"
-#include "playlist/PlayableProxyModel.h"
 #include "GridView.h"
 #include "ViewManager.h"
-#include "utils/AnimatedSpinner.h"
+#include "audio/MainAudioEngine.h"
+#include "playlist/PlayableItem.h"
+#include "playlist/PlayableProxyModel.h"
 #include "widgets/ImageButton.h"
+#include "utils/TomahawkUtilsGui.h"
+#include "utils/PixmapDelegateFader.h"
+#include "utils/Closure.h"
+#include "utils/AnimatedSpinner.h"
 #include "utils/Logger.h"
 #include "TomahawkSettings.h"
 
@@ -258,6 +256,10 @@ GridItemDelegate::onPlayClicked( const QPersistentModelIndex& index )
     m_spinner[ index ] = spinner;
 
     PlayableItem* item = m_model->sourceModel()->itemFromIndex( m_model->mapToSource( index ) );
+
+    NewClosure(  MainAudioEngine::instance(), SIGNAL( started( Tomahawk::result_ptr ) ),
+                const_cast<GridItemDelegate*>(this), SLOT( onPlaybackStarted( QPersistentModelIndex ) ), QPersistentModelIndex( index ) );
+
     if ( item )
     {
         if ( !item->query().isNull() )
@@ -379,7 +381,6 @@ GridItemDelegate::editorEvent( QEvent* event, QAbstractItemModel* model, const Q
 
     if ( hoveringArtist )
     {
-
         if ( event->type() == QEvent::MouseButtonRelease )
         {
             PlayableItem* item = m_model->sourceModel()->itemFromIndex( m_model->mapToSource( index ) );
@@ -462,8 +463,54 @@ GridItemDelegate::onPlaybackFinished()
 
 
 void
+GridItemDelegate::onPlayPauseHover( const QPersistentModelIndex& index )
+{
+    if( m_pauseButton.contains( index ) )
+    {
+        updatePlayPauseButton( m_pauseButton[ index ] );
+    }
+}
+
+
+void
+GridItemDelegate::updatePlayPauseButton( ImageButton* button, bool setState )
+{
+    if ( button )
+    {
+        if ( button->property( "paused" ).toBool() )
+        {
+            button->setPixmap( TomahawkUtils::defaultPixmap( TomahawkUtils::PauseButton, TomahawkUtils::Original, QSize( 48, 48 ) ) );
+            button->setPixmap( TomahawkUtils::defaultPixmap( TomahawkUtils::PauseButtonPressed, TomahawkUtils::Original, QSize( 48, 48 ) ), QIcon::Off, QIcon::Active );
+        }
+        else
+        {
+            button->setPixmap( TomahawkUtils::defaultPixmap( TomahawkUtils::PlayButton, TomahawkUtils::Original, QSize( 48, 48 ) ) );
+            button->setPixmap( TomahawkUtils::defaultPixmap( TomahawkUtils::PlayButtonPressed, TomahawkUtils::Original, QSize( 48, 48 ) ), QIcon::Off, QIcon::Active );
+        }
+
+        if ( setState )
+            button->setProperty( "paused", !button->property( "paused" ).toBool() );
+    }
+}
+
+
+void
+GridItemDelegate::onPlayPausedClicked()
+{
+    ImageButton* button = qobject_cast< ImageButton* >( QObject::sender() );
+    updatePlayPauseButton( button, true );
+}
+
+
+void
 GridItemDelegate::onPlaybackStarted( const QPersistentModelIndex& index )
 {
+    if( m_spinner.contains( index ) )
+    {
+        LoadingSpinner* spinner = static_cast<LoadingSpinner*>(m_spinner[ index ]);
+        spinner->fadeOut();
+    }
+
     clearButtons();
     createPauseButton( index );
 
@@ -510,9 +557,11 @@ GridItemDelegate::createPauseButton( const QPersistentModelIndex& index )
     button->setContentsMargins( 0, 0, 0, 0 );
     button->setFocusPolicy( Qt::NoFocus );
     button->installEventFilter( this );
+    button->setProperty( "paused", false );
     button->show();
 
     connect( button, SIGNAL( clicked( bool ) ), MainAudioEngine::instance(), SLOT( playPause() ) );
+    connect( button, SIGNAL( clicked( bool ) ), this, SLOT( onPlayPausedClicked() ) );
 
     m_pauseButton[ index ] = button;
 }

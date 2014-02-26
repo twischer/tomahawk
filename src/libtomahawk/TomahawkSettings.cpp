@@ -23,7 +23,6 @@
 #include <QDir>
 
 #include "Source.h"
-#include "sip/SipHandler.h"
 #include "PlaylistInterface.h"
 
 #include "utils/Logger.h"
@@ -32,6 +31,7 @@
 #include "database/DatabaseCommand_UpdateSearchIndex.h"
 #include "database/Database.h"
 #include "playlist/PlaylistUpdaterInterface.h"
+#include "infosystem/InfoSystemCache.h"
 
 using namespace Tomahawk;
 
@@ -207,7 +207,7 @@ TomahawkSettings::doUpgrade( int oldVersion, int newVersion )
 
     if ( oldVersion == 1 )
     {
-        qDebug() << "Migrating config from verson 1 to 2: script resolver config name";
+        qDebug() << "Migrating config from version 1 to 2: script resolver config name";
         if( contains( "script/resolvers" ) ) {
             setValue( "script/loadedresolvers", value( "script/resolvers" ) );
             remove( "script/resolvers" );
@@ -604,6 +604,13 @@ TomahawkSettings::doUpgrade( int oldVersion, int newVersion )
                 tDebug() << "Tried to remove cached image, succeeded?" << removed << cacheDir.filePath( file );
             }
         }
+    }
+    else if ( oldVersion == 13 )
+    {
+        //Delete old echonest_stylesandmoods.dat file
+        QFile dataFile( TomahawkUtils::appDataDir().absoluteFilePath( "echonest_stylesandmoods.dat" ) );
+        const bool removed = dataFile.remove();
+        tDebug() << "Tried to remove echonest_stylesandmoods.dat, succeeded?" << removed;
     }
 }
 

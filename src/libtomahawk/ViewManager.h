@@ -17,15 +17,15 @@
  *   along with Tomahawk. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PLAYLISTMANAGER_H
-#define PLAYLISTMANAGER_H
+#ifndef VIEWMANAGER_H
+#define VIEWMANAGER_H
 
 #include <QObject>
 #include <QHash>
 #include <QStackedWidget>
 
 #include "Artist.h"
-#include "Collection.h"
+#include "collection/Collection.h"
 #include "PlaylistInterface.h"
 #include "playlist/QueueView.h"
 #include "ViewPage.h"
@@ -37,7 +37,7 @@ class AlbumModel;
 class GridView;
 class AlbumInfoWidget;
 class ArtistInfoWidget;
-class TreeView;
+class TreeWidget;
 class CollectionModel;
 class ContextWidget;
 class FlexibleView;
@@ -91,7 +91,7 @@ public:
     Tomahawk::ViewPage* whatsHotWidget() const;
     Tomahawk::ViewPage* newReleasesWidget() const;
     Tomahawk::ViewPage* recentPlaysWidget() const;
-    TreeView* superCollectionView() const;
+    Tomahawk::ViewPage* superCollectionView() const;
 
     /// Get the view page for the given item. Not pretty...
     Tomahawk::ViewPage* pageForPlaylist( const Tomahawk::playlist_ptr& pl );
@@ -115,6 +115,8 @@ signals:
 
     void tempPageActivated( Tomahawk::ViewPage* );
     void viewPageActivated( Tomahawk::ViewPage* );
+    void viewPageAboutToBeDestroyed( Tomahawk::ViewPage* );
+    void viewPageDestroyed();
 
     void showQueueRequested();
     void hideQueueRequested();
@@ -153,10 +155,6 @@ public slots:
 
     void playlistInterfaceChanged( Tomahawk::playlistinterface_ptr );
 
-    // called by the playlist creation dbcmds
-    void createPlaylist( const Tomahawk::source_ptr& src, const QVariant& contents );
-    void createDynamicPlaylist( const Tomahawk::source_ptr& src, const QVariant& contents );
-
     void setTomahawkLoaded();
 
 private slots:
@@ -179,7 +177,7 @@ private:
     AnimatedSplitter* m_splitter;
 
     TreeModel* m_superCollectionModel;
-    TreeView* m_superCollectionView;
+    TreeWidget* m_superCollectionView;
     QueueView* m_queue;
     WelcomeWidget* m_welcomeWidget;
     WhatsHotWidget* m_whatsHotWidget;
@@ -188,13 +186,13 @@ private:
 
     QList< Tomahawk::collection_ptr > m_superCollections;
 
-    QHash< Tomahawk::dynplaylist_ptr, QWeakPointer<Tomahawk::DynamicWidget> > m_dynamicWidgets;
-    QHash< Tomahawk::collection_ptr, QWeakPointer<TreeView> > m_treeViews;
-    QHash< Tomahawk::artist_ptr, QWeakPointer<ArtistInfoWidget> > m_artistViews;
-    QHash< Tomahawk::album_ptr, QWeakPointer<AlbumInfoWidget> > m_albumViews;
-    QHash< Tomahawk::query_ptr, QWeakPointer<TrackInfoWidget> > m_trackViews;
-    QHash< Tomahawk::playlist_ptr, QWeakPointer<FlexibleView> > m_playlistViews;
-    QHash< Tomahawk::source_ptr, QWeakPointer<SourceInfoWidget> > m_sourceViews;
+    QHash< Tomahawk::dynplaylist_ptr, QPointer<Tomahawk::DynamicWidget> > m_dynamicWidgets;
+    QHash< Tomahawk::collection_ptr, QPointer<TreeWidget> > m_treeWidgets;
+    QHash< Tomahawk::artist_ptr, QPointer<ArtistInfoWidget> > m_artistViews;
+    QHash< Tomahawk::album_ptr, QPointer<AlbumInfoWidget> > m_albumViews;
+    QHash< Tomahawk::query_ptr, QPointer<TrackInfoWidget> > m_trackViews;
+    QHash< Tomahawk::playlist_ptr, QPointer<FlexibleView> > m_playlistViews;
+    QHash< Tomahawk::source_ptr, QPointer<SourceInfoWidget> > m_sourceViews;
 
     QList<Tomahawk::ViewPage*> m_pageHistoryBack;
     QList<Tomahawk::ViewPage*> m_pageHistoryFwd;
@@ -210,4 +208,4 @@ private:
     static ViewManager* s_instance;
 };
 
-#endif // PLAYLISTMANAGER_H
+#endif // VIEWMANAGER_H

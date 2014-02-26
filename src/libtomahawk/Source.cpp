@@ -19,7 +19,7 @@
 
 #include "Source.h"
 
-#include "Collection.h"
+#include "collection/Collection.h"
 #include "SourceList.h"
 #include "SourcePlaylistInterface.h"
 
@@ -27,12 +27,13 @@
 #include "network/ControlConnection.h"
 #include "database/DatabaseCommand_AddSource.h"
 #include "database/DatabaseCommand_CollectionStats.h"
+#include "database/DatabaseCommand_LoadAllSources.h"
 #include "database/DatabaseCommand_SourceOffline.h"
 #include "database/DatabaseCommand_UpdateSearchIndex.h"
 #include "database/Database.h"
 
 #include <QCoreApplication>
-#include <QBuffer>
+#include <QtAlgorithms>
 
 #include "utils/TomahawkCache.h"
 #include "database/DatabaseCommand_SocialAction.h"
@@ -42,23 +43,21 @@
 #endif
 
 #include "utils/Logger.h"
+#include "sip/PeerInfo.h"
 
 using namespace Tomahawk;
 
 
-Source::Source( int id, const QString& username )
+Source::Source( int id, const QString& nodeId )
     : QObject()
     , m_isLocal( false )
     , m_online( false )
-    , m_username( username )
+    , m_nodeId( nodeId )
     , m_id( id )
     , m_updateIndexWhenSynced( false )
-    , m_avatarUpdated( true )
     , m_state( DBSyncConnection::UNKNOWN )
     , m_cc( 0 )
     , m_commandCount( 0 )
-    , m_avatar( 0 )
-    , m_fancyAvatar( 0 )
 {
     m_scrubFriendlyName = qApp->arguments().contains( "--demo" );
 
@@ -78,9 +77,7 @@ Source::Source( int id, const QString& username )
 
 Source::~Source()
 {
-    qDebug() << Q_FUNC_INFO << friendlyName();
-    delete m_avatar;
-    delete m_fancyAvatar;
+    tDebug() << Q_FUNC_INFO << friendlyName();
 }
 
 
@@ -91,11 +88,31 @@ Source::setControlConnection( ControlConnection* cc )
 }
 
 
-collection_ptr
-Source::collection() const
+const QSet<peerinfo_ptr>
+Source::peerInfos() const
 {
-    if( m_collections.length() )
-        return m_collections.first();
+    if ( controlConnection() )
+    {
+        return controlConnection()->peerInfos();
+    }
+    else if ( isLocal() )
+    {
+        return PeerInfo::getAllSelf().toSet();
+
+    }
+    return QSet< Tomahawk::peerinfo_ptr >();
+}
+
+
+collection_ptr
+Source::dbCollection() const
+{
+    if ( m_collections.length() )
+    {
+        foreach ( const collection_ptr& collection, m_collections )
+            if ( collection->backendType() == Collection::DatabaseCollectionType )
+                return collection; // We assume only one is a db collection. Now get off my lawn.
+    }
 
     collection_ptr tmp;
     return tmp;
@@ -110,99 +127,117 @@ Source::setStats( const QVariantMap& m )
     emit stateChanged();
 }
 
+QString
+Source::nodeId() const
+{
+    return m_nodeId;
+
+}
 
 QString
 Source::friendlyName() const
 {
+    QStringList candidateNames;
+    foreach ( const peerinfo_ptr& peerInfo, peerInfos() )
+    {
+        if ( !peerInfo.isNull() && !peerInfo->friendlyName().isEmpty() )
+        {
+            candidateNames.append( peerInfo->friendlyName() );
+        }
+    }
+
+    if ( !candidateNames.isEmpty() )
+    {
+        if ( candidateNames.count() > 1 )
+            qSort( candidateNames.begin(), candidateNames.end(), &Source::friendlyNamesLessThan );
+
+        return candidateNames.first();
+    }
+
     if ( m_friendlyname.isEmpty() )
-        return m_username;
-
-    //TODO: this is a terrible assumption, help me clean this up, mighty muesli!
-    if ( m_friendlyname.contains( "@conference." ) )
-        return QString( m_friendlyname ).remove( 0, m_friendlyname.lastIndexOf( "/" ) + 1 ).append( " via MUC" );
-
-    if ( m_friendlyname.contains( "/" ) )
-        return m_friendlyname.left( m_friendlyname.indexOf( "/" ) );
+        return dbFriendlyName();
 
     return m_friendlyname;
 }
 
 
-#ifndef ENABLE_HEADLESS
-void
-Source::setAvatar( const QPixmap& avatar )
+bool
+Source::friendlyNamesLessThan( const QString& first, const QString& second )
 {
-    QByteArray ba;
-    QBuffer buffer( &ba );
-    buffer.open( QIODevice::WriteOnly );
-    avatar.save( &buffer, "PNG" );
+    //Least favored match first.
+    QList< QRegExp > penalties;
+    penalties.append( QRegExp( "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}" ) ); //IPv4 address
+    penalties.append( QRegExp( "([\\w-\\.\\+]+)@((?:[\\w]+\\.)+)([a-zA-Z]{2,4})" ) ); //email/jabber id
 
-    // Check if the avatar is different by comparing a hash of the first 4096 bytes
-    const QByteArray hash = QCryptographicHash::hash( ba.left( 4096 ), QCryptographicHash::Sha1 );
-    if ( m_avatarHash == hash )
-        return;
-    else
-        m_avatarHash = hash;
+    //Most favored match first.
+    QList< QRegExp > favored;
+    favored.append( QRegExp( "\\b([A-Z][a-z']* ?){2,10}" ) ); //properly capitalized person's name
+    favored.append( QRegExp( "[a-zA-Z ']+" ) ); //kind of person's name
 
-    delete m_avatar;
-    m_avatar = new QPixmap( avatar );
-    m_fancyAvatar = 0;
+    bool matchFirst = false;
+    bool matchSecond = false;
 
-    TomahawkUtils::Cache::instance()->putData( "Sources", 7776000000 /* 90 days */, m_username, ba );
-    m_avatarUpdated = true;
+    //We check if the strings match the regexps. The regexps represent friendly name patterns we do
+    //*not* want (penalties) or want (favored), prioritized. If none of the strings match a regexp,
+    //we go to the next regexp. If one of the strings matches, and we're matching penalties, we say
+    //the other one is lessThan, i.e. comes first. If one of the string matches, and we're matching
+    //favored, we say this one is lessThan, i.e. comes first. If both strings match, or if no match
+    //is found for any regexp, we go to string comparison (fallback).
+    while( !penalties.isEmpty() || !favored.isEmpty() )
+    {
+        QRegExp rx;
+        bool isPenalty;
+        if ( !penalties.isEmpty() )
+        {
+            rx = penalties.first();
+            penalties.pop_front();
+            isPenalty = true;
+        }
+        else
+        {
+            rx = favored.first();
+            favored.pop_front();
+            isPenalty = false;
+        }
+
+        matchFirst = rx.exactMatch( first );
+        matchSecond = rx.exactMatch( second );
+
+        if ( matchFirst == false && matchSecond == false )
+            continue;
+
+        if ( matchFirst == true && matchSecond == true )
+            break;
+
+        if ( matchFirst == true && matchSecond == false )
+            return isPenalty ? false : true;
+
+        if ( matchFirst == false && matchSecond == true )
+            return isPenalty ? true : false;
+    }
+
+    return ( first.compare( second ) == -1 ) ? true : false;
 }
 
 
+#ifndef ENABLE_HEADLESS
 QPixmap
 Source::avatar( TomahawkUtils::ImageMode style, const QSize& size )
 {
-    if ( !m_avatar && m_avatarUpdated )
+//     tLog() << "****************************************************************************************";
+//     tLog() << peerInfos().count() << "PEERS FOR " << friendlyName();
+    QPixmap result;
+    foreach( const peerinfo_ptr& peerInfo, peerInfos() )
     {
-        m_avatar = new QPixmap();
-        QByteArray ba = TomahawkUtils::Cache::instance()->getData( "Sources", m_username ).toByteArray();
-
-        if ( ba.count() )
-            m_avatar->loadFromData( ba );
-
-        if ( m_avatar->isNull() )
+//         peerInfoDebug(peerInfo) << !peerInfo->avatar().isNull();
+        if( !peerInfo.isNull() && !peerInfo->avatar( style, size ).isNull() )
         {
-            delete m_avatar;
-            m_avatar = 0;
+            result =  peerInfo->avatar( style, size );
+            break;
         }
-        m_avatarUpdated = false;
     }
-
-    if ( style == TomahawkUtils::RoundedCorners && m_avatar && !m_avatar->isNull() && !m_fancyAvatar )
-        m_fancyAvatar = new QPixmap( TomahawkUtils::createRoundedImage( QPixmap( *m_avatar ), QSize( 0, 0 ) ) );
-
-    QPixmap pixmap;
-    if ( style == TomahawkUtils::RoundedCorners && m_fancyAvatar )
-    {
-        pixmap = *m_fancyAvatar;
-    }
-    else if ( m_avatar )
-    {
-        pixmap = *m_avatar;
-    }
-
-    if ( !pixmap.isNull() && !size.isEmpty() )
-    {
-        if ( m_coverCache[ style ].contains( size.width() ) )
-        {
-            return m_coverCache[ style ].value( size.width() );
-        }
-
-        QPixmap scaledCover;
-        scaledCover = pixmap.scaled( size, Qt::KeepAspectRatio, Qt::SmoothTransformation );
-
-        QHash< int, QPixmap > innerCache = m_coverCache[ style ];
-        innerCache.insert( size.width(), scaledCover );
-        m_coverCache[ style ] = innerCache;
-
-        return scaledCover;
-    }
-
-    return pixmap;
+//        tLog() << "****************************************************************************************";
+    return result;
 }
 #endif
 
@@ -222,10 +257,30 @@ Source::setFriendlyName( const QString& fname )
 }
 
 
+QString
+Source::dbFriendlyName() const
+{
+    if( m_dbFriendlyName.isEmpty() )
+        return nodeId();
+
+    return m_dbFriendlyName;
+}
+
+
+void
+Source::setDbFriendlyName( const QString& dbFriendlyName )
+{
+    if ( dbFriendlyName.isEmpty() )
+        return;
+
+    m_dbFriendlyName = dbFriendlyName;
+}
+
+
 void
 Source::addCollection( const collection_ptr& c )
 {
-    Q_ASSERT( m_collections.length() == 0 ); // only 1 source supported atm
+    //Q_ASSERT( m_collections.length() == 0 ); // only 1 source supported atm
     m_collections.append( c );
     emit collectionAdded( c );
 }
@@ -234,7 +289,7 @@ Source::addCollection( const collection_ptr& c )
 void
 Source::removeCollection( const collection_ptr& c )
 {
-    Q_ASSERT( m_collections.length() == 1 && m_collections.first() == c ); // only 1 source supported atm
+    //Q_ASSERT( m_collections.length() == 1 && m_collections.first() == c ); // only 1 source supported atm
     m_collections.removeAll( c );
     emit collectionRemoved( c );
 }
@@ -275,7 +330,7 @@ Source::setOnline()
     if ( !isLocal() )
     {
         // ensure username is in the database
-        DatabaseCommand_addSource* cmd = new DatabaseCommand_addSource( m_username, friendlyName() );
+        DatabaseCommand_addSource* cmd = new DatabaseCommand_addSource( m_nodeId, dbFriendlyName() );
         connect( cmd, SIGNAL( done( unsigned int, QString ) ),
                         SLOT( dbLoaded( unsigned int, const QString& ) ) );
         Database::instance()->enqueue( QSharedPointer<DatabaseCommand>(cmd) );
@@ -287,7 +342,7 @@ void
 Source::dbLoaded( unsigned int id, const QString& fname )
 {
     m_id = id;
-    setFriendlyName( fname );
+    setDbFriendlyName( fname );
 
     emit syncedWithDatabase();
 }
@@ -427,6 +482,16 @@ Source::lastCmdGuid() const
 {
     QMutexLocker lock( &m_cmdMutex );
     return m_lastCmdGuid;
+}
+
+
+void
+Source::setLastCmdGuid( const QString& guid )
+{
+    tLog( LOGVERBOSE ) << Q_FUNC_INFO << "name is" << friendlyName() << "and guid is" << guid;
+
+    QMutexLocker lock( &m_cmdMutex );
+    m_lastCmdGuid = guid;
 }
 
 

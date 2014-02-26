@@ -19,6 +19,8 @@
 
 #include "SipInfo.h"
 
+#include "utils/Logger.h"
+
 #include <qjson/parser.h>
 #include <qjson/serializer.h>
 
@@ -33,12 +35,13 @@ public:
     {
     }
 
-    SipInfoPrivate( const SipInfoPrivate& other ) : QSharedData( other ),
-        visible(other.visible),
-        host(other.host),
-        port(other.port),
-        uniqname(other.uniqname),
-        key(other.key)
+    SipInfoPrivate( const SipInfoPrivate& other )
+        : QSharedData( other )
+        , visible( other.visible )
+        , host( other.host )
+        , port( other.port )
+        , nodeId( other.nodeId )
+        , key( other.key )
     {
     }
     ~SipInfoPrivate() { }
@@ -46,7 +49,7 @@ public:
     QVariant visible;
     QString host;
     int port;
-    QString uniqname;
+    QString nodeId;
     QString key;
 };
 
@@ -83,7 +86,7 @@ SipInfo::clear()
     d->visible.clear();
     d->host = QString();
     d->port = -1;
-    d->uniqname = QString();
+    d->nodeId = QString();
     d->key = QString();
 }
 
@@ -91,14 +94,14 @@ SipInfo::clear()
 bool
 SipInfo::isValid() const
 {
-//    qDebug() << Q_FUNC_INFO << d->visible << d->host.hostName() << d->port << d->uniqname << d->key;
-    if( !d->visible.isNull() )
+//    tDebug() << Q_FUNC_INFO << d->visible << d->host << d->port << d->nodeId << d->key;
+    if ( !d->visible.isNull() )
     {
-        if(
+        if (
             // visible and all data available
-            (  d->visible.toBool() && !d->host.isEmpty() && ( d->port > 0 ) && !d->uniqname.isNull() && !d->key.isNull() )
+            (  d->visible.toBool() && !d->host.isEmpty() && ( d->port > 0 ) && !d->nodeId.isNull() && !d->key.isNull() )
             // invisible and no data available
-         || ( !d->visible.toBool() &&  d->host.isEmpty() && ( d->port < 0 ) && d->uniqname.isNull() &&   d->key.isNull() )
+         || ( !d->visible.toBool() &&  d->host.isEmpty() && ( d->port < 0 ) && d->nodeId.isNull() &&   d->key.isNull() )
         )
             return true;
     }
@@ -110,7 +113,7 @@ SipInfo::isValid() const
 void
 SipInfo::setVisible( bool visible )
 {
-    d->visible.setValue(visible);
+    d->visible.setValue( visible );
 }
 
 
@@ -156,18 +159,18 @@ SipInfo::port() const
 
 
 void
-SipInfo::setUniqname( const QString& uniqname )
+SipInfo::setNodeId( const QString& nodeId )
 {
-    d->uniqname = uniqname;
+    d->nodeId = nodeId;
 }
 
 
 const QString
-SipInfo::uniqname() const
+SipInfo::nodeId() const
 {
     Q_ASSERT( isValid() );
 
-    return d->uniqname;
+    return d->nodeId;
 }
 
 
@@ -193,19 +196,19 @@ SipInfo::toJson() const
     // build variant map
     QVariantMap m;
     m["visible"] = isVisible();
-    if( isVisible() )
+    if ( isVisible() )
     {
         m["ip"] = host();
         m["port"] = port();
         m["key"] = key();
-        m["uniqname"] = uniqname();
+        m["uniqname"] = nodeId();
     }
 
     // serialize
     QJson::Serializer serializer;
     QByteArray ba = serializer.serialize( m );
 
-    return QString::fromAscii( ba );
+    return QString::fromLatin1( ba );
 }
 
 
@@ -216,7 +219,7 @@ SipInfo::fromJson( QString json )
 
     QJson::Parser parser;
     bool ok;
-    QVariant v = parser.parse( json.toAscii(), &ok );
+    QVariant v = parser.parse( json.toLatin1(), &ok );
     if ( !ok  || v.type() != QVariant::Map )
     {
         qDebug() << Q_FUNC_INFO << "Invalid JSON: " << json;
@@ -225,11 +228,11 @@ SipInfo::fromJson( QString json )
     QVariantMap m = v.toMap();
 
     info.setVisible( m["visible"].toBool() );
-    if( m["visible"].toBool() )
+    if ( m["visible"].toBool() )
     {
         info.setHost( m["host"].toString() );
         info.setPort( m["port"].toInt() );
-        info.setUniqname( m["uniqname"].toString() );
+        info.setNodeId( m["uniqname"].toString() );
         info.setKey( m["key"].toString() );
     }
 
@@ -237,12 +240,50 @@ SipInfo::fromJson( QString json )
 }
 
 
-QDebug operator<< ( QDebug dbg, const SipInfo& info )
+QDebug
+operator<< ( QDebug dbg, const SipInfo& info )
 {
-    if( !info.isValid() )
+    if ( !info.isValid() )
         dbg.nospace() << "info is invalid";
     else
         dbg.nospace() << info.toJson();
 
     return dbg.maybeSpace();
 }
+
+
+bool
+operator==( const SipInfo& one, const SipInfo& two )
+{
+    // check valid/invalid combinations first, so we don't try to access any invalid sipInfos (->assert)
+    if ( ( one.isValid() && !two.isValid() ) || ( !one.isValid() && two.isValid() ) )
+    {
+        return false;
+    }
+    else if ( one.isValid() && two.isValid() )
+    {
+        if ( one.isVisible() == two.isVisible()
+            && one.host() == two.host()
+            && one.port() == two.port()
+            && one.nodeId() == two.nodeId()
+            && one.key() == two.key() )
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+const QString
+SipInfo::debugString() const
+{
+    QString debugString( "SIP INFO: visible: %1 host: host %2 port: %3 nodeid: %4 key: %5" );
+    return debugString.arg( d->visible.toBool() )
+                      .arg( d->host )
+                      .arg( d->port )
+                      .arg( d->nodeId )
+                      .arg( d->key );
+}
+

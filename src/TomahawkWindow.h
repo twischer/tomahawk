@@ -34,7 +34,6 @@
 #include <QString>
 #include <QStackedWidget>
 #include <QToolButton>
-
 #ifdef Q_OS_WIN
     #include <shobjidl.h>
 #endif
@@ -110,8 +109,6 @@ public slots:
     void fullScreenExited();
 
 private slots:
-    void onAccountError();
-
     void onHistoryBackAvailable( bool avail );
     void onHistoryForwardAvailable( bool avail );
 
@@ -119,8 +116,6 @@ private slots:
 
     void onXSPFError( XSPFLoader::XSPFErrorCode error );
     void onXSPFOk( const Tomahawk::playlist_ptr& );
-
-    void addPeerManually();
 
     void onPlaybackLoading( const Tomahawk::result_ptr& result );
 

@@ -108,7 +108,6 @@ TomahawkWindow::TomahawkWindow( QWidget* parent )
 #endif
     , ui( new Ui::TomahawkWindow )
     , m_searchWidget( 0 )
-    , m_audioControls( new AudioControls( this ) )
     , m_trayIcon( new TomahawkTrayIcon( this ) )
     , m_settingsDialog( 0 )
     , m_previewPlayer( TomahawkSettings::instance()->previewPlayerEnabled() ? new PreviewPlayer( this ) : NULL )
@@ -117,6 +116,8 @@ TomahawkWindow::TomahawkWindow( QWidget* parent )
     setWindowIcon( QIcon( RESPATH "icons/tomahawk-icon-128x128.png" ) );
 
     ViewManager* vm = new ViewManager( this );
+    m_audioControls = new AudioControls( this );
+
     connect( vm, SIGNAL( showQueueRequested() ), SLOT( showQueue() ) );
     connect( vm, SIGNAL( hideQueueRequested() ), SLOT( hideQueue() ) );
     connect( APP, SIGNAL( tomahawkLoaded() ), vm, SLOT( setTomahawkLoaded() ) ); // Pass loaded signal into libtomahawk so components in there can connect to ViewManager
@@ -420,6 +421,7 @@ TomahawkWindow::setupSideBar()
 
     ui->splitter->addWidget( sidebarWidget );
     ui->splitter->addWidget( ViewManager::instance()->widget() );
+    ui->splitter->setCollapsible( 0, false );
     ui->splitter->setCollapsible( 1, false );
 
     ActionCollection::instance()->getAction( "showOfflineSources" )
@@ -540,7 +542,6 @@ TomahawkWindow::setupSignals()
 
     // <Menu Items>
     ActionCollection *ac = ActionCollection::instance();
-    //    connect( ui->actionAddPeerManually, SIGNAL( triggered() ), SLOT( addPeerManually() ) );
     connect( ac->getAction( "preferences" ), SIGNAL( triggered() ), SLOT( showSettingsDialog() ) );
     connect( ac->getAction( "diagnostics" ), SIGNAL( triggered() ), SLOT( showDiagnosticsDialog() ) );
     connect( ac->getAction( "legalInfo" ), SIGNAL( triggered() ), SLOT( legalInfo() ) );
@@ -561,9 +562,6 @@ TomahawkWindow::setupSignals()
 #else
     connect( ac->getAction( "toggleMenuBar" ), SIGNAL( triggered() ), SLOT( toggleMenuBar() ) );
 #endif
-
-    // <AccountHandler>
-    connect( AccountManager::instance(), SIGNAL( authError( Tomahawk::Accounts::Account* ) ), SLOT( onAccountError() ) );
 
     connect( ViewManager::instance(), SIGNAL( historyBackAvailable( bool ) ), SLOT( onHistoryBackAvailable( bool ) ) );
     connect( ViewManager::instance(), SIGNAL( historyForwardAvailable( bool ) ), SLOT( onHistoryForwardAvailable( bool ) ) );
@@ -878,37 +876,6 @@ TomahawkWindow::rescanCollectionManually()
 
 
 void
-TomahawkWindow::addPeerManually()
-{
-    TomahawkSettings* s = TomahawkSettings::instance();
-    bool ok;
-    QString addr = QInputDialog::getText( this, tr( "Connect To Peer" ),
-                                                tr( "Enter peer address:" ), QLineEdit::Normal,
-                                                s->value( "connip" ).toString(), &ok ); // FIXME
-    if ( !ok )
-        return;
-
-    s->setValue( "connip", addr );
-    QString ports = QInputDialog::getText( this, tr( "Connect To Peer" ),
-                                                 tr( "Enter peer port:" ), QLineEdit::Normal,
-                                                 s->value( "connport", "50210" ).toString(), &ok );
-    if ( !ok )
-        return;
-
-    s->setValue( "connport", ports );
-    int port = ports.toInt();
-    QString key = QInputDialog::getText( this, tr( "Connect To Peer" ),
-                                               tr( "Enter peer key:" ), QLineEdit::Normal,
-                                               "whitelist", &ok );
-    if ( !ok )
-        return;
-
-    qDebug() << "Attempting to connect to" << addr;
-    Servent::instance()->connectToPeer( addr, port, key );
-}
-
-
-void
 TomahawkWindow::showOfflineSources()
 {
     m_sourcetree->showOfflineSources(
@@ -950,7 +917,7 @@ TomahawkWindow::loadSpiff()
     connect( diag, SIGNAL( finished( int ) ), this, SLOT( loadXspfFinished( int ) ) );
     diag->show();
 #else
-    QWeakPointer< LoadXSPFDialog > safe( diag );
+    QPointer< LoadXSPFDialog > safe( diag );
 
     int ret = diag->exec();
     if ( !safe.isNull() && ret == QDialog::Accepted )
@@ -1016,12 +983,17 @@ void
 TomahawkWindow::onAudioEngineError( AudioEngine::AudioErrorCode /* error */ )
 {
     QString msg;
-#ifdef Q_WS_X11
-    msg = tr( "Sorry, there is a problem accessing your audio device or the desired track, current track will be skipped. Make sure you have a suitable Phonon backend and required plugins installed." );
-#else
-    msg = tr( "Sorry, there is a problem accessing your audio device or the desired track, current track will be skipped." );
-#endif
+    #ifdef Q_WS_X11
+        msg = tr( "Sorry, there is a problem accessing your audio device or the desired track, current track will be skipped. Make sure you have a suitable Phonon backend and required plugins installed." );
+    #else
+        msg = tr( "Sorry, there is a problem accessing your audio device or the desired track, current track will be skipped." );
+    #endif
+
+    tLog() << msg;
+
+#ifndef ENABLE_HEADLESS
     JobStatusView::instance()->model()->addJob( new ErrorStatusMessage( msg, 15 ) );
+#endif
 
     if ( m_audioRetryCounter < 3 )
         MainAudioEngine::instance()->play();
@@ -1059,7 +1031,7 @@ TomahawkWindow::createStation()
 
     if ( playlistName.isEmpty() || playlistName == title )
     {
-        QList< dynplaylist_ptr > pls = SourceList::instance()->getLocal()->collection()->stations();
+        QList< dynplaylist_ptr > pls = SourceList::instance()->getLocal()->dbCollection()->stations();
         QStringList titles;
         foreach ( const playlist_ptr& pl, pls )
             titles << pl->title();
@@ -1111,7 +1083,7 @@ TomahawkWindow::playlistCreateDialogFinished( int ret )
     {
         if ( playlistName.isEmpty() )
         {
-            QList< playlist_ptr > pls = SourceList::instance()->getLocal()->collection()->playlists();
+            QList< playlist_ptr > pls = SourceList::instance()->getLocal()->dbCollection()->playlists();
             QStringList titles;
             foreach ( const playlist_ptr& pl, pls )
                 titles << pl->title();
@@ -1133,7 +1105,7 @@ TomahawkWindow::playlistCreateDialogFinished( int ret )
        // create Auto Playlist
         if ( playlistName.isEmpty() )
         {
-            QList< dynplaylist_ptr > pls = SourceList::instance()->getLocal()->collection()->autoPlaylists();
+            QList< dynplaylist_ptr > pls = SourceList::instance()->getLocal()->dbCollection()->autoPlaylists();
             QStringList titles;
             foreach ( const dynplaylist_ptr& pl, pls )
                 titles << pl->title();
@@ -1202,20 +1174,6 @@ TomahawkWindow::onPlaybackLoading( const Tomahawk::result_ptr& result )
 {
     m_currentTrack = result;
     setWindowTitle( m_windowTitle );
-}
-
-
-void
-TomahawkWindow::onAccountError()
-{
-    // TODO fix.
-//     onAccountDisconnected();
-
-    // TODO real error message from plugin kthxbbq
-    QMessageBox::warning( this,
-                          tr( "Authentication Error" ),
-                          tr( "Error connecting to SIP: Authentication failed!" ),
-                          QMessageBox::Ok );
 }
 
 

@@ -88,8 +88,9 @@ public slots:
     virtual void disconnectPlugin();
     virtual void checkSettings();
     virtual void configurationChanged();
-    virtual void sendMsg( const QString& peerId, const SipInfo& info );
     virtual void addContact( const QString& peerId, const QString& msg = QString() );
+
+    virtual void sendSipInfo( const Tomahawk::peerinfo_ptr& receiver, const SipInfo& info );
 
     void showAddFriendDialog();
     void publishTune( const QUrl& url, const Tomahawk::InfoSystem::InfoStringHash& trackInfo );
@@ -132,7 +133,7 @@ private:
     int m_currentPort;
     QString m_currentResource;
 
-    QWeakPointer< Tomahawk::InfoSystem::XmppInfoPlugin > m_infoPlugin;
+    QPointer< Tomahawk::InfoSystem::XmppInfoPlugin > m_infoPlugin;
     Tomahawk::Accounts::Account::ConnectionState m_state;
 
     // sort out
@@ -141,6 +142,7 @@ private:
     Jreen::MUCRoom* m_room;
     Jreen::SimpleRoster* m_roster;
     QHash< Jreen::JID, Jreen::Presence::Type > m_peers;
+    QHash< QString, QString > m_jidsNames;
 
 #ifndef ENABLE_HEADLESS
     QHash< Jreen::JID, QMessageBox* > m_subscriptionConfirmBoxes;

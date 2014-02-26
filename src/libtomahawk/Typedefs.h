@@ -21,14 +21,16 @@
 #define TYPEDEFS_H
 
 #include <QSharedPointer>
+#include <QPointer>
 #include <QUuid>
 #include <QPair>
 #include <QPersistentModelIndex>
+
 #include <boost/function.hpp>
 
 //template <typename T> class QSharedPointer;
 
-class QNetworkReply;
+#include <QNetworkReply>
 
 namespace Tomahawk
 {
@@ -44,6 +46,7 @@ namespace Tomahawk
     class Source;
     class DynamicControl;
     class GeneratorInterface;
+    class PeerInfo;
 
     typedef QSharedPointer<Collection> collection_ptr;
     typedef QSharedPointer<Playlist> playlist_ptr;
@@ -54,7 +57,11 @@ namespace Tomahawk
     typedef QSharedPointer<Result> result_ptr;
     typedef QSharedPointer<Source> source_ptr;
     typedef QSharedPointer<Artist> artist_ptr;
+    typedef QWeakPointer<Artist> artist_wptr;
     typedef QSharedPointer<Album> album_ptr;
+    typedef QWeakPointer<Album> album_wptr;
+    typedef QSharedPointer<PeerInfo> peerinfo_ptr;
+    typedef QWeakPointer<PeerInfo> peerinfo_wptr;
 
     typedef QSharedPointer<DynamicControl> dyncontrol_ptr;
     typedef QSharedPointer<GeneratorInterface> geninterface_ptr;
@@ -85,7 +92,7 @@ namespace Tomahawk
     };
 
     class ExternalResolver;
-    typedef boost::function<Tomahawk::ExternalResolver*(QString)> ResolverFactoryFunc;
+    typedef boost::function<Tomahawk::ExternalResolver*( QString, QStringList )> ResolverFactoryFunc;
 
     namespace PlaylistModes {
         enum RepeatMode { NoRepeat, RepeatOne, RepeatAll };
@@ -212,7 +219,7 @@ namespace Tomahawk
         typedef QHash< QString, QString > InfoStringHash;
         typedef QPair< QVariantMap, QVariant > PushInfoPair;
 
-        typedef QWeakPointer< InfoPlugin > InfoPluginPtr;
+        typedef QPointer< InfoPlugin > InfoPluginPtr;
     }
 }; // ns
 
@@ -224,7 +231,7 @@ typedef QList< QPair< QString, QString > > PairList;
 inline static QString uuid()
 {
     // kinda lame, but
-    QString q = QUuid::createUuid();
+    QString q = QUuid::createUuid().toString();
     q.remove( 0, 1 );
     q.chop( 1 );
     return q;

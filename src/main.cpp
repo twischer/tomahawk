@@ -34,7 +34,9 @@
 
 #ifndef ENABLE_HEADLESS
     #include "TomahawkSettingsGui.h"
-    #include "breakpad/BreakPad.h"
+    #ifdef WITH_BREAKPAD
+        #include "breakpad/BreakPad.h"
+    #endif
 #endif
 
 
@@ -148,7 +150,7 @@ main( int argc, char *argv[] )
     new TomahawkSettingsGui( &a );
 #endif
 
-#ifndef ENABLE_HEADLESSs
+#ifndef ENABLE_HEADLESS
 #ifdef WITH_BREAKPAD
     new BreakPad( QDir::tempPath(), TomahawkSettings::instance()->crashReporterEnabled() && !TomahawkUtils::headless() );
 #endif

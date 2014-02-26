@@ -20,11 +20,6 @@
 #include "MetadataEditor.h"
 #include "ui_MetadataEditor.h"
 
-#include <QtGui/QDialog>
-#include <QtGui/QDialogButtonBox>
-#include <QtCore/QFileInfo>
-#include <QtCore/QFile>
-
 #include "Source.h"
 #include "Result.h"
 #include "Artist.h"
@@ -34,11 +29,16 @@
 #include "PlaylistInterface.h"
 #include "AlbumPlaylistInterface.h"
 
-#include "taglib/fileref.h"
 #include "filemetadata/taghandlers/tag.h"
 #include "utils/TomahawkUtils.h"
 #include "utils/Closure.h"
 #include "utils/Logger.h"
+#include "taglib/fileref.h"
+
+#include <QDialog>
+#include <QDialogButtonBox>
+#include <QFileInfo>
+#include <QFile>
 
 
 MetadataEditor::MetadataEditor( const Tomahawk::query_ptr& query, const Tomahawk::playlistinterface_ptr& interface, QWidget* parent )
@@ -229,7 +229,11 @@ MetadataEditor::loadResult( const Tomahawk::result_ptr& result )
 
     if ( result->collection() && result->collection()->source()->isLocal() )
     {
-        QFileInfo fi( QUrl( m_result->url() ).toLocalFile() );
+        QString furl = m_result->url();
+        if ( furl.startsWith( "file://" ) )
+            furl = furl.right( furl.length() - 7 );
+
+        QFileInfo fi( furl );
         setFileName( fi.absoluteFilePath() );
         setFileSize( TomahawkUtils::filesizeToString( fi.size() ) );
     }

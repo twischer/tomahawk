@@ -29,9 +29,9 @@
 #include "database/DatabaseCommand_SocialAction.h"
 #include "database/DatabaseCommand_TrackStats.h"
 #include "Album.h"
-#include "Collection.h"
+#include "collection/Collection.h"
 #include "Pipeline.h"
-#include "Resolver.h"
+#include "resolvers/Resolver.h"
 #include "SourceList.h"
 #include "audio/AudioEngine.h"
 
@@ -392,7 +392,7 @@ Query::currentResolver() const
     int x = m_resolvers.count();
     while ( --x )
     {
-        QWeakPointer< Resolver > r = m_resolvers.at( x );
+        QPointer< Resolver > r = m_resolvers.at( x );
         if ( r.isNull() )
             continue;
 

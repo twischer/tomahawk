@@ -28,8 +28,8 @@
 #include "utils/SmartPointerList.h"
 #include "DllMacro.h"
 
-class QAction;
-class QAction;
+#include <QAction>
+
 class SpotifyPlaylistUpdater;
 class QTimer;
 
@@ -89,7 +89,7 @@ public:
     virtual ~SpotifyAccount();
     static SpotifyAccount* instance();
     virtual QPixmap icon() const;
-    virtual QWidget* configurationWidget();
+    virtual AccountConfigWidget* configurationWidget();
     virtual QWidget* aboutWidget();
     virtual void saveConfig();
     virtual Attica::Content atticaContent() const;
@@ -103,15 +103,16 @@ public:
     virtual SipPlugin* sipPlugin() { return 0; }
     virtual bool preventEnabling() const { return m_preventEnabling; }
 
-
+    bool hasPlaylist( const QString& plId );
+    Tomahawk::playlist_ptr playlistForURI( const QString& plId );
     void registerUpdaterForPlaylist( const QString& plId, SpotifyPlaylistUpdater* updater );
-    void registerPlaylistInfo( const QString& name, const QString& plid, const QString &revid, const bool sync, const bool subscribed , const bool owner = false);
+    void registerPlaylistInfo( const QString& name, const QString& plid, const QString &revid, const bool sync, const bool subscribed , const bool owner = false );
     void registerPlaylistInfo( SpotifyPlaylistInfo* info );
     void unregisterUpdater( const QString& plid );
 
     bool deleteOnUnsync() const;
     bool loveSync() const;
-    void starTrack(const QString& artist, const QString&title, const bool starred);
+    void starTrack( const QString& artist, const QString& title, const bool starred );
     void setManualResolverPath( const QString& resolverPath );
 
     bool loggedIn() const;
@@ -122,7 +123,7 @@ public slots:
     void aboutToShow( QAction* action, const Tomahawk::playlist_ptr& playlist );
     void syncActionTriggered( QAction* action );
     void subscribeActionTriggered( QAction* action );
-    void atticaLoaded(Attica::Content::List);
+    void atticaLoaded( Attica::Content::List );
     void collaborateActionTriggered( QAction* action );
 
 private slots:
@@ -141,6 +142,7 @@ private slots:
     void playlistCopyCreated( const QString& msgType, const QVariantMap& msg, const QVariant& extraData );
     void delayedInit();
     void hookupAfterDeletion( bool autoEnable );
+
 private:
     void init();
     bool checkForResolver();
@@ -163,10 +165,10 @@ private:
     SpotifyPlaylistUpdater* getPlaylistUpdater( QObject* sender );
     static SpotifyAccount* s_instance;
 
-    QWeakPointer<SpotifyAccountConfig> m_configWidget;
-    QWeakPointer<QWidget> m_aboutWidget;
-    QWeakPointer<ScriptResolver> m_spotifyResolver;
-    QWeakPointer< InfoSystem::SpotifyInfoPlugin > m_infoPlugin;
+    QPointer<SpotifyAccountConfig> m_configWidget;
+    QPointer<QWidget> m_aboutWidget;
+    QPointer<ScriptResolver> m_spotifyResolver;
+    QPointer< InfoSystem::SpotifyInfoPlugin > m_infoPlugin;
 
     QMap<QString, QPair<QObject*, QString> > m_qidToSlotMap;
     QMap<QString, QVariant > m_qidToExtraData;
@@ -185,6 +187,7 @@ private:
 };
 
 }
+
 }
 
 Q_DECLARE_METATYPE( Tomahawk::Accounts::SpotifyPlaylistInfo* )

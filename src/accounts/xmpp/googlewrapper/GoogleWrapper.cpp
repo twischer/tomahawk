@@ -40,7 +40,7 @@ GoogleWrapperFactory::createAccount( const QString& pluginId )
 QPixmap
 GoogleWrapperFactory::icon() const
 {
-    return QPixmap( ":/gmail-logo.png" );
+    return QPixmap( ":/google-account/gmail-logo.png" );
 }
 
 GoogleWrapperSip::GoogleWrapperSip( Account* account )
@@ -85,17 +85,18 @@ GoogleWrapper::GoogleWrapper ( const QString& pluginID )
     : XmppAccount ( pluginID )
 {
     XmppConfigWidget* config = static_cast< XmppConfigWidget* >( m_configWidget.data() );
+    config->m_disableChecksForGoogle = true;
     config->m_ui->headerLabel->setText( tr( "Configure this Google Account" ) );
     config->m_ui->emailLabel->setText( tr( "Google Address:" ) );
     config->m_ui->xmppBlurb->setText( tr( "Enter your Google login to connect with your friends using Tomahawk!" ) );
     config->m_ui->xmppUsername->setPlaceholderText( tr( "username@gmail.com" ) );
-    config->m_ui->logoLabel->setPixmap( QPixmap( ":/gmail-logo.png" ) );
+    config->m_ui->logoLabel->setPixmap( QPixmap( ":/google-account/gmail-logo.png" ) );
     config->m_ui->xmppServer->setText( "talk.google.com" );
     config->m_ui->xmppPort->setValue( 5222 );
     config->m_ui->groupBoxXmppAdvanced->hide();
 
-    m_onlinePixmap = QPixmap( ":/gmail-logo.png" );
-    m_offlinePixmap = QPixmap( ":/gmail-offline-logo.png" );
+    m_onlinePixmap = QPixmap( ":/google-account/gmail-logo.png" );
+    m_offlinePixmap = QPixmap( ":/google-account/gmail-offline-logo.png" );
 }
 
 GoogleWrapper::~GoogleWrapper()
@@ -109,7 +110,7 @@ GoogleWrapper::sipPlugin()
 {
     if ( m_xmppSipPlugin.isNull() )
     {
-        m_xmppSipPlugin = QWeakPointer< XmppSipPlugin >( new GoogleWrapperSip( const_cast< GoogleWrapper* >( this ) ) );
+        m_xmppSipPlugin = QPointer< XmppSipPlugin >( new GoogleWrapperSip( const_cast< GoogleWrapper* >( this ) ) );
 
         connect( m_xmppSipPlugin.data(), SIGNAL( stateChanged( Tomahawk::Accounts::Account::ConnectionState ) ), this, SIGNAL( connectionStateChanged( Tomahawk::Accounts::Account::ConnectionState ) ) );
         connect( m_xmppSipPlugin.data(), SIGNAL( error( int, QString ) ), this, SIGNAL( error( int, QString ) ) );

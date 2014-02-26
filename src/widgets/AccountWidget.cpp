@@ -1,6 +1,6 @@
 /* === This file is part of Tomahawk Player - <http://tomahawk-player.org> ===
  *
- *   Copyright 2012 Teo Mrnjavac <teo@kde.org>
+ *   Copyright 2012-2013, Teo Mrnjavac <teo@kde.org>
  *
  *   Tomahawk is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -27,6 +27,10 @@
 #include "utils/TomahawkUtilsGui.h"
 #include "utils/AnimatedSpinner.h"
 #include "widgets/ElidedLabel.h"
+
+#include "jobview/JobStatusView.h"
+#include "jobview/JobStatusModel.h"
+#include "sip/SipStatusMessage.h"
 
 #include <QBoxLayout>
 #include <QCheckBox>
@@ -264,6 +268,20 @@ AccountWidget::sendInvite()
     }
 }
 
+
+void
+AccountWidget::onInviteSentSuccess( const QString& inviteId )
+{
+    JobStatusView::instance()->model()->addJob( new SipStatusMessage( SipStatusMessage::SipInviteSuccess, inviteId ) );
+}
+
+void
+AccountWidget::onInviteSentFailure( const QString& inviteId )
+{
+    JobStatusView::instance()->model()->addJob( new SipStatusMessage( SipStatusMessage::SipInviteFailure, inviteId ) );
+}
+
+
 void
 AccountWidget::clearInviteWidgets()
 {
@@ -293,8 +311,15 @@ AccountWidget::setupConnections( const QPersistentModelIndex& idx, int accountId
                  this, SLOT( changeAccountConnectionState( bool ) ) );
         connect( m_inviteButton, SIGNAL( clicked() ),
                  this, SLOT( sendInvite() ) );
+        connect( m_inviteEdit, SIGNAL( returnPressed() ),
+                 this, SLOT( sendInvite() ) );
 
-        m_inviteEdit->setPlaceholderText( account->sipPlugin()->inviteString() );
+        if ( account->sipPlugin() )
+        {
+            m_inviteEdit->setPlaceholderText( account->sipPlugin()->inviteString() );
+            connect( account->sipPlugin(), SIGNAL( inviteSentSuccess( QString ) ), SLOT( onInviteSentSuccess( QString ) ) );
+            connect( account->sipPlugin(), SIGNAL( inviteSentFailure( QString ) ), SLOT( onInviteSentFailure( QString ) ) );
+        }
     }
 }
 

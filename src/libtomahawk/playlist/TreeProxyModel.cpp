@@ -2,6 +2,7 @@
  *
  *   Copyright 2010-2011, Christian Muehlhaeuser <muesli@tomahawk-player.org>
  *   Copyright 2010-2012, Jeff Mitchell <jeff@tomahawk-player.org>
+ *   Copyright 2013,      Teo Mrnjavac <teo@kde.org>
  *
  *   Tomahawk is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -19,17 +20,18 @@
 
 #include "TreeProxyModel.h"
 
-#include <QtGui/QListView>
-
 #include "TreeProxyModelPlaylistInterface.h"
 #include "Source.h"
 #include "Query.h"
 #include "database/Database.h"
 #include "database/DatabaseImpl.h"
+#include "collection/AlbumsRequest.h"
+#include "collection/ArtistsRequest.h"
 #include "database/DatabaseCommand_AllAlbums.h"
 #include "PlayableItem.h"
 #include "utils/Logger.h"
 
+#include <QListView>
 
 TreeProxyModel::TreeProxyModel( QObject* parent )
     : PlayableProxyModel( parent )
@@ -72,14 +74,18 @@ TreeProxyModel::onRowsInserted( const QModelIndex& parent, int /* start */, int 
     if ( pi->artist().isNull() )
         return;
 
-    DatabaseCommand_AllAlbums* cmd = new DatabaseCommand_AllAlbums( m_model->collection() );
-    cmd->setArtist( pi->artist() );
+    Tomahawk::AlbumsRequest* cmd = 0;
+    if ( !m_model->collection().isNull() )
+        cmd = m_model->collection()->requestAlbums( pi->artist() );
+    else
+        cmd = new DatabaseCommand_AllAlbums( Tomahawk::collection_ptr(), pi->artist() );
+
     cmd->setFilter( m_filter );
 
-    connect( cmd, SIGNAL( albums( QList<Tomahawk::album_ptr>, QVariant ) ),
-                    SLOT( onFilterAlbums( QList<Tomahawk::album_ptr> ) ) );
+    connect( dynamic_cast< QObject* >( cmd ), SIGNAL( albums( QList<Tomahawk::album_ptr> ) ),
+             SLOT( onFilterAlbums( QList<Tomahawk::album_ptr> ) ) );
 
-    Database::instance()->enqueue( QSharedPointer<DatabaseCommand>( cmd ) );
+    cmd->enqueue();
 }
 
 
@@ -102,8 +108,8 @@ TreeProxyModel::setFilter( const QString& pattern )
 
     if ( m_artistsFilterCmd )
     {
-        disconnect( m_artistsFilterCmd, SIGNAL( artists( QList<Tomahawk::artist_ptr> ) ),
-                    this,                 SLOT( onFilterArtists( QList<Tomahawk::artist_ptr> ) ) );
+        disconnect( dynamic_cast< QObject* >( m_artistsFilterCmd ), SIGNAL( artists( QList<Tomahawk::artist_ptr> ) ),
+                    this, SLOT( onFilterArtists( QList<Tomahawk::artist_ptr> ) ) );
 
         m_artistsFilterCmd = 0;
     }
@@ -114,15 +120,27 @@ TreeProxyModel::setFilter( const QString& pattern )
     }
     else
     {
-        DatabaseCommand_AllArtists* cmd = new DatabaseCommand_AllArtists( m_model->collection() );
+        Tomahawk::ArtistsRequest* cmd = 0;
+        if ( !m_model->collection().isNull() )
+            cmd = m_model->collection()->requestArtists();
+        else
+            cmd = new DatabaseCommand_AllArtists(); //for SuperCollection, TODO: replace with a proper proxy-ArtistsRequest
+
         cmd->setFilter( pattern );
         m_artistsFilterCmd = cmd;
 
-        connect( cmd, SIGNAL( artists( QList<Tomahawk::artist_ptr> ) ),
-                        SLOT( onFilterArtists( QList<Tomahawk::artist_ptr> ) ) );
+        connect( dynamic_cast< QObject* >( cmd ), SIGNAL( artists( QList<Tomahawk::artist_ptr> ) ),
+                 SLOT( onFilterArtists( QList<Tomahawk::artist_ptr> ) ) );
 
-        Database::instance()->enqueue( QSharedPointer<DatabaseCommand>( cmd ) );
+        cmd->enqueue();
     }
+}
+
+
+QString
+TreeProxyModel::filter() const
+{
+    return m_filter;
 }
 
 
@@ -140,14 +158,14 @@ TreeProxyModel::onFilterArtists( const QList<Tomahawk::artist_ptr>& artists )
         {
             finished = false;
 
-            DatabaseCommand_AllAlbums* cmd = new DatabaseCommand_AllAlbums( m_model->collection() );
-            cmd->setArtist( artist );
+            Tomahawk::AlbumsRequest* cmd = m_model->collection()->requestAlbums( artist );
+
             cmd->setFilter( m_filter );
 
-            connect( cmd, SIGNAL( albums( QList<Tomahawk::album_ptr>, QVariant ) ),
-                            SLOT( onFilterAlbums( QList<Tomahawk::album_ptr> ) ) );
+            connect( dynamic_cast< QObject* >( cmd ), SIGNAL( albums( QList<Tomahawk::album_ptr> ) ),
+                     SLOT( onFilterAlbums( QList<Tomahawk::album_ptr> ) ) );
 
-            Database::instance()->enqueue( QSharedPointer<DatabaseCommand>( cmd ) );
+            cmd->enqueue();
         }
     }
 

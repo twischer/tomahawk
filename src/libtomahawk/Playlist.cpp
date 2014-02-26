@@ -217,7 +217,7 @@ Playlist::load( const QString& guid )
 
     foreach( const Tomahawk::source_ptr& source, SourceList::instance()->sources() )
     {
-        p = source->collection()->playlist( guid );
+        p = source->dbCollection()->playlist( guid );
         if ( !p.isNull() )
             return p;
     }
@@ -265,7 +265,7 @@ void
 Playlist::reportCreated( const playlist_ptr& self )
 {
     Q_ASSERT( self.data() == this );
-    m_source->collection()->addPlaylist( self );
+    m_source->dbCollection()->addPlaylist( self );
 }
 
 
@@ -280,7 +280,7 @@ Playlist::reportDeleted( const Tomahawk::playlist_ptr& self )
     }
 
     m_deleted = true;
-    m_source->collection()->deletePlaylist( self );
+    m_source->dbCollection()->deletePlaylist( self );
 
     emit deleted( self );
 }
@@ -656,7 +656,6 @@ Playlist::addEntries( const QList<query_ptr>& queries, const QString& oldrev )
 
     QString newrev = uuid();
     createNewRevision( newrev, oldrev, el );
-
 
     // We are appending at end, so notify listeners.
     // PlaylistModel also emits during appends, but since we call

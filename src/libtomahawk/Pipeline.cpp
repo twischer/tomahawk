@@ -22,10 +22,11 @@
 
 #include "FuncTimeout.h"
 #include "database/Database.h"
-#include "ExternalResolver.h"
+#include "resolvers/ExternalResolver.h"
 #include "resolvers/ScriptResolver.h"
 #include "resolvers/QtScriptResolver.h"
 #include "Source.h"
+#include "SourceList.h"
 
 #include "utils/Logger.h"
 
@@ -59,6 +60,11 @@ Pipeline::Pipeline( QObject* parent )
 
     m_temporaryQueryTimer.setInterval( CLEANUP_TIMEOUT );
     connect( &m_temporaryQueryTimer, SIGNAL( timeout() ), SLOT( onTemporaryQueryTimer() ) );
+
+    connect( this, SIGNAL( resolverAdded( Tomahawk::Resolver* ) ),
+             SourceList::instance(), SLOT( onResolverAdded( Tomahawk::Resolver* ) ) );
+    connect( this, SIGNAL( resolverRemoved( Tomahawk::Resolver* ) ),
+             SourceList::instance(), SLOT( onResolverRemoved( Tomahawk::Resolver* ) ) );
 }
 
 
@@ -68,7 +74,7 @@ Pipeline::~Pipeline()
     m_running = false;
 
     // stop script resolvers
-    foreach ( QWeakPointer< ExternalResolver > r, m_scriptResolvers )
+    foreach ( QPointer< ExternalResolver > r, m_scriptResolvers )
         if ( !r.isNull() )
             r.data()->deleteLater();
 
@@ -131,17 +137,17 @@ Pipeline::addExternalResolverFactory( ResolverFactoryFunc resolverFactory )
 
 
 Tomahawk::ExternalResolver*
-Pipeline::addScriptResolver( const QString& path )
+Pipeline::addScriptResolver( const QString& path, const QStringList& additionalScriptPaths )
 {
     ExternalResolver* res = 0;
 
     foreach ( ResolverFactoryFunc factory, m_resolverFactories )
     {
-        res = factory( path );
+        res = factory( path, additionalScriptPaths );
         if ( !res )
             continue;
 
-        m_scriptResolvers << QWeakPointer< ExternalResolver >( res );
+        m_scriptResolvers << QPointer< ExternalResolver > ( res );
 
         break;
     }
@@ -153,7 +159,7 @@ Pipeline::addScriptResolver( const QString& path )
 void
 Pipeline::stopScriptResolver( const QString& path )
 {
-    foreach ( QWeakPointer< ExternalResolver > res, m_scriptResolvers )
+    foreach ( QPointer< ExternalResolver > res, m_scriptResolvers )
     {
         if ( res.data()->filePath() == path )
             res.data()->stop();
@@ -164,8 +170,8 @@ Pipeline::stopScriptResolver( const QString& path )
 void
 Pipeline::removeScriptResolver( const QString& scriptPath )
 {
-    QWeakPointer< ExternalResolver > r;
-    foreach ( QWeakPointer< ExternalResolver > res, m_scriptResolvers )
+    QPointer< ExternalResolver > r;
+    foreach ( QPointer< ExternalResolver > res, m_scriptResolvers )
     {
         if ( res.isNull() )
             continue;
@@ -186,7 +192,7 @@ Pipeline::removeScriptResolver( const QString& scriptPath )
 ExternalResolver*
 Pipeline::resolverForPath( const QString& scriptPath )
 {
-    foreach ( QWeakPointer< ExternalResolver > res, m_scriptResolvers )
+    foreach ( QPointer< ExternalResolver > res, m_scriptResolvers )
     {
         if ( res.data()->filePath() == scriptPath )
             return res.data();
@@ -300,9 +306,13 @@ Pipeline::reportResults( QID qid, const QList< result_ptr >& results )
     if ( !cleanResults.isEmpty() )
     {
         q->addResults( cleanResults );
-        foreach ( const result_ptr& r, cleanResults )
+        
+        if ( m_queries_temporary.contains( q ) )
         {
-            m_rids.insert( r->id(), r );
+            foreach ( const result_ptr& r, cleanResults )
+            {
+                m_rids.insert( r->id(), r );
+            }
         }
 
         if ( q->solved() && !q->isFullTextQuery() )
@@ -546,13 +556,31 @@ Pipeline::decQIDState( const Tomahawk::query_ptr& query )
 void
 Pipeline::onTemporaryQueryTimer()
 {
-    QMutexLocker lock( &m_mut );
     tDebug() << Q_FUNC_INFO;
+
+    QMutexLocker lock( &m_mut );
     m_temporaryQueryTimer.stop();
 
     for ( int i = m_queries_temporary.count() - 1; i >= 0; i-- )
     {
         query_ptr q = m_queries_temporary.takeAt( i );
+        
         m_qids.remove( q->id() );
+        foreach ( const Tomahawk::result_ptr& r, q->results() )
+            m_rids.remove( r->id() );
     }
+}
+
+
+query_ptr
+Pipeline::query( const QID& qid ) const
+{
+    return m_qids.value( qid );
+}
+
+
+result_ptr
+Pipeline::result( const RID& rid ) const
+{
+    return m_rids.value( rid );
 }

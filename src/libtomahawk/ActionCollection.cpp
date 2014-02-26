@@ -80,7 +80,9 @@ ActionCollection::initActions()
     connect( m_actionCollection[ "partyMode" ], SIGNAL( triggered() ), SLOT( togglePartyMode() ), Qt::UniqueConnection );
 
     m_actionCollection[ "loadPlaylist" ] =   new QAction( tr( "&Load Playlist" ), this );
+    m_actionCollection[ "loadStation" ] =    new QAction( tr( "&Load Station" ), this );
     m_actionCollection[ "renamePlaylist" ] = new QAction( tr( "&Rename Playlist" ), this );
+    m_actionCollection[ "renameStation" ] = new QAction( tr( "&Rename Station" ), this );
     m_actionCollection[ "copyPlaylist" ] =   new QAction( tr( "&Copy Playlist Link" ), this );
     m_actionCollection[ "playPause" ] =      new QAction( tr( "&Play" ), this );
     m_actionCollection[ "playPause" ]->setIcon( ImageRegistry::instance()->icon( RESPATH "images/play-rest.svg" ) );
@@ -117,6 +119,8 @@ ActionCollection::initActions()
     m_actionCollection[ "minimize" ]->setShortcut( QKeySequence( "Ctrl+M" ) );
     m_actionCollection[ "zoom" ] = new QAction( tr( "Zoom" ), this );
     m_actionCollection[ "zoom" ]->setShortcut( QKeySequence( "Meta+Ctrl+Z" ) );
+    m_actionCollection[ "fullscreen" ] = new QAction( tr( "Enter Full Screen" ), this );
+    m_actionCollection[ "fullscreen" ]->setShortcut( QKeySequence( "Meta+Ctrl+F" ) );
 #else
     m_actionCollection[ "toggleMenuBar" ] = new QAction( tr( "Hide Menu Bar" ), this );
     m_actionCollection[ "toggleMenuBar" ]->setShortcut( QKeySequence( "Ctrl+M" ) );

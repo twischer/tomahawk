@@ -20,11 +20,16 @@
 #ifndef TOMAHAWK_INFOSYSTEM_H
 #define TOMAHAWK_INFOSYSTEM_H
 
+#include "DllMacro.h"
+#include "utils/TomahawkUtils.h"
+#include "Typedefs.h"
+#include "TomahawkPlugin.h"
+
 #include <QtCore/QCryptographicHash>
 #include <QtCore/QObject>
 #include <QtCore/QtDebug>
 #include <QtCore/QMap>
-#include <QtCore/QWeakPointer>
+#include <QtCore/QPointer>
 #include <QtCore/QSet>
 #include <QtCore/QLinkedList>
 #include <QtCore/QUrl>
@@ -32,11 +37,8 @@
 #include <QtCore/QThread>
 #include <QtCore/QStringList>
 
-#include "DllMacro.h"
-#include "utils/TomahawkUtils.h"
-#include "Typedefs.h"
-
 class QNetworkAccessManager;
+class DiagnosticsDialog;
 
 namespace Tomahawk {
 
@@ -109,6 +111,9 @@ public:
 
     virtual ~InfoPlugin();
 
+    void setFriendlyName( const QString& friendlyName );
+    virtual const QString friendlyName() const;
+
     QSet< InfoType > supportedGetTypes() const { return m_supportedGetTypes; }
     QSet< InfoType > supportedPushTypes() const { return m_supportedPushTypes; }
 
@@ -133,6 +138,7 @@ protected slots:
 
 protected:
     InfoType m_type;
+    QString m_friendlyName;
     QSet< InfoType > m_supportedGetTypes;
     QSet< InfoType > m_supportedPushTypes;
 
@@ -141,7 +147,7 @@ private:
 };
 
 
-class InfoSystemCacheThread : public QThread
+class DLLEXPORT InfoSystemCacheThread : public QThread
 {
     Q_OBJECT
 
@@ -155,11 +161,11 @@ private:
     friend class InfoSystem;
     InfoSystemCache* cache() const;
 
-    QWeakPointer< InfoSystemCache > m_cache;
+    QPointer< InfoSystemCache > m_cache;
 };
 
 
-class InfoSystemWorkerThread : public QThread
+class DLLEXPORT InfoSystemWorkerThread : public QThread
 {
     Q_OBJECT
 
@@ -170,11 +176,11 @@ public:
     void run();
 
 private:
-    friend class DiagnosticsDialog;
+    friend class ::DiagnosticsDialog;
     friend class InfoSystem;
     InfoSystemWorker* worker() const;
 
-    QWeakPointer< InfoSystemWorker > m_worker;
+    QPointer< InfoSystemWorker > m_worker;
 };
 
 
@@ -197,7 +203,7 @@ public:
     const InfoTypeSet& supportedGetTypes() const { return m_supportedGetTypes; }
     const InfoTypeSet& supportedPushTypes() const { return m_supportedPushTypes; }
 
-    QWeakPointer< QThread > workerThread() const;
+    QPointer< QThread > workerThread() const;
 
 public slots:
     // InfoSystem takes ownership of InfoPlugins
@@ -260,7 +266,6 @@ Q_DECLARE_METATYPE( Tomahawk::InfoSystem::InfoStringHash );
 Q_DECLARE_METATYPE( Tomahawk::InfoSystem::PushInfoPair );
 Q_DECLARE_METATYPE( Tomahawk::InfoSystem::PushInfoFlags );
 Q_DECLARE_METATYPE( Tomahawk::InfoSystem::InfoType );
-Q_DECLARE_METATYPE( Tomahawk::InfoSystem::InfoSystemCache* );
 Q_DECLARE_METATYPE( QList< Tomahawk::InfoSystem::InfoStringHash > );
 Q_DECLARE_METATYPE( Tomahawk::InfoSystem::InfoPluginPtr );
 Q_DECLARE_METATYPE( Tomahawk::InfoSystem::InfoPlugin* );

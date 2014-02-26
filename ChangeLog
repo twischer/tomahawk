@@ -1,3 +1,33 @@
+Version 0.7.1:
+    * Heavily reduced memory footprint during and after indexing the database.
+
+Version 0.7.0:
+    * JavaScript Resolvers can now expose collections.
+    * Introduced bundle system for JavaScript Resolvers, called "axes".
+    * Fixed playback-loop caused by duplicate tracks in a playlist.
+    * Improved peer handling.
+    * Taking an account offline now also disconnects associated peers.
+    * Improved spotify protocol handling.
+    * Added "Append to Playlist" context menu item.
+    * User-friendlier collection handling: added info-buttons for artists and
+      albums. Double-clicking an item expands it now.
+    * Charts only load on-demand now.
+    * Fixed Diagnostics information not correctly updating.
+    * Fixed issue with hidden sidebar and panels.
+    * Fixed issues with some color schemes.
+    * Fixed playing files with special characters in the filename.
+    * Improved stability.
+    * Added translations for Catalan, Czech, Galician, Greek, Italian and
+      Chinese.
+    * (Windows) Smoother and more responsive audio playback.
+    * (Linux) Fixed grid issues with GTK-styles.
+
+Version 0.6.1:
+    * Improved stability.
+    * Improved UPnP detection and port-forwarding.
+    * Fixed scrolling behaviour of grid-views.
+    * Lots of small design tweaks and fixes.
+
 Version 0.6.0:
     * Improved icon theme with vector graphics.
     * Higher resolution artist and album images.
@@ -28,6 +58,7 @@ Version 0.6.0:
     * Added iTunes as available source for New Releases.
     * Updates and additions to translations including: Japanese, Bulgarian, 
       Finnish, Russian, Arabic, Chinese, Swedish, Czech and more.
+    * (Windows) Added thumb buttons to Windows 7's taskbar.
     * (Linux) Allow disabling of playback notifications.
 
 Version 0.5.5:

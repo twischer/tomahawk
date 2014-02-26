@@ -20,20 +20,20 @@
 #ifndef ACCOUNT_H
 #define ACCOUNT_H
 
-#include <QtCore/QObject>
-#include <QtCore/QVariantMap>
-#include <QtGui/QWidget>
-#include <QtGui/QIcon>
-#include <QtCore/QString>
-#include <QtCore/QUuid>
-#include <QMutex>
-
 #include "Typedefs.h"
 #include "DllMacro.h"
 
-// #include "libtomahawk/infosystem/InfoSystem.h"
+#include <QObject>
+#include <QVariantMap>
+#include <QWidget>
+#include <QIcon>
+#include <QString>
+#include <QUuid>
+#include <QMutex>
+
 
 class SipPlugin;
+class AccountConfigWidget;
 
 namespace Tomahawk
 {
@@ -55,7 +55,7 @@ DLLEXPORT QString accountTypeToString( AccountType type );
 
 Q_DECLARE_FLAGS(AccountTypes, AccountType);
 
-inline QString generateId( const QString &factoryId )
+inline QString generateId( const QString& factoryId )
 {
     QString uniq = QUuid::createUuid().toString().mid( 1, 8 );
     return factoryId + "_" + uniq;
@@ -83,11 +83,14 @@ public:
      * Configuration widgets can have a "dataError( bool )" signal to enable/disable the OK button in their wrapper dialogs.
      */
 #ifndef ENABLE_HEADLESS
-    virtual QWidget* configurationWidget() = 0;
+    virtual AccountConfigWidget* configurationWidget() = 0;
     virtual QWidget* aboutWidget() { return 0; }
     virtual QWidget* aclWidget() = 0;
     virtual QPixmap icon() const = 0;
 #endif
+    virtual QString description() const { return QString(); }
+    virtual QString author() const { return QString(); }
+    virtual QString version() const { return QString(); }
 
     virtual void saveConfig() {} // called when the widget has been edited. save values from config widget, call sync() to write to disk account generic settings
 
@@ -196,4 +199,5 @@ Q_DECLARE_INTERFACE( Tomahawk::Accounts::AccountFactory, "tomahawk.AccountFactor
 Q_DECLARE_METATYPE( Tomahawk::Accounts::Account* )
 Q_DECLARE_METATYPE( QList< Tomahawk::Accounts::Account* > )
 Q_DECLARE_METATYPE( Tomahawk::Accounts::AccountTypes )
+
 #endif

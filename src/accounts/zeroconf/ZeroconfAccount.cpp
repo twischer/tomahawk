@@ -22,8 +22,6 @@
 #include "Zeroconf.h"
 #include "Source.h"
 
-#include <QtPlugin>
-
 using namespace Tomahawk;
 using namespace Accounts;
 
@@ -33,7 +31,7 @@ ZeroconfFactory::ZeroconfFactory()
 {
 #ifndef ENABLE_HEADLESS
     if ( s_icon == 0 )
-        s_icon = new QPixmap( ":/zeroconf-icon.png" );
+        s_icon = new QPixmap( ":/zeroconf-account/zeroconf-icon.png" );
 #endif
 }
 
@@ -120,7 +118,7 @@ SipPlugin*
 ZeroconfAccount::sipPlugin()
 {
     if ( m_sipPlugin.isNull() )
-        m_sipPlugin = QWeakPointer< ZeroconfPlugin >( new ZeroconfPlugin( this ) );
+        m_sipPlugin = QPointer< ZeroconfPlugin >( new ZeroconfPlugin( this ) );
 
     return m_sipPlugin.data();
 }

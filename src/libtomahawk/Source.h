@@ -26,17 +26,18 @@
 
 #include "Typedefs.h"
 #include "network/DbSyncConnection.h"
-#include "Collection.h"
+#include "collection/Collection.h"
 #include "Query.h"
 #include "utils/TomahawkUtils.h"
 
 #include "DllMacro.h"
 
 class ControlConnection;
+class DatabaseCommand_DeleteFiles;
+class DatabaseCommand_LoadAllSources;
 class DatabaseCommand_LogPlayback;
 class DatabaseCommand_SocialAction;
 class DatabaseCommand_UpdateSearchIndex;
-class DatabaseCommand_DeleteFiles;
 class MusicScanner;
 
 namespace Tomahawk
@@ -48,35 +49,46 @@ Q_OBJECT
 
 friend class ::DBSyncConnection;
 friend class ::ControlConnection;
-friend class ::DatabaseCommand_LogPlayback;
-friend class ::DatabaseCommand_SocialAction;
 friend class ::DatabaseCommand_AddFiles;
 friend class ::DatabaseCommand_DeleteFiles;
+friend class ::DatabaseCommand_LoadAllSources;
+friend class ::DatabaseCommand_LogPlayback;
+friend class ::DatabaseCommand_SocialAction;
 friend class ::MusicScanner;
 
 public:
-    explicit Source( int id, const QString& username = QString() );
+    explicit Source( int id, const QString& nodeId = QString() );
     virtual ~Source();
 
     bool isLocal() const { return m_isLocal; }
     bool isOnline() const { return m_online || m_isLocal; }
 
-    QString userName() const { return m_username; }
+    QString nodeId() const;
+
     QString friendlyName() const;
     void setFriendlyName( const QString& fname );
 
+
+    // fallback when the normal friendlyname from cache is not available
+    // this is usually the jabber id or whatever was used when first connected
+    QString dbFriendlyName() const;
+    void setDbFriendlyName( const QString& dbFriendlyName );
+
+
 #ifndef ENABLE_HEADLESS
-    void setAvatar( const QPixmap& avatar );
     QPixmap avatar( TomahawkUtils::ImageMode style = TomahawkUtils::Original, const QSize& size = QSize() );
 #endif
 
-    collection_ptr collection() const;
+    collection_ptr dbCollection() const;
+    QList< Tomahawk::collection_ptr > collections() const { return m_collections; }
     void addCollection( const Tomahawk::collection_ptr& c );
     void removeCollection( const Tomahawk::collection_ptr& c );
 
     int id() const { return m_id; }
     ControlConnection* controlConnection() const { return m_cc; }
     void setControlConnection( ControlConnection* cc );
+
+    const QSet< Tomahawk::peerinfo_ptr > peerInfos() const;
 
     void scanningProgress( unsigned int files );
     void scanningFinished( bool updateGUI );
@@ -96,11 +108,10 @@ signals:
     void online();
     void offline();
 
-    void collectionAdded( const collection_ptr& collection );
-    void collectionRemoved( const collection_ptr& collection );
+    void collectionAdded( const Tomahawk::collection_ptr& collection );
+    void collectionRemoved( const Tomahawk::collection_ptr& collection );
 
     void stats( const QVariantMap& );
-    void usernameChanged( const QString& );
 
     void playbackStarted( const Tomahawk::query_ptr& query );
     void playbackFinished( const Tomahawk::query_ptr& query );
@@ -115,10 +126,11 @@ signals:
 
 public slots:
     void setStats( const QVariantMap& m );
+    QString lastCmdGuid() const;
 
 private slots:
+    void setLastCmdGuid( const QString& guid );
     void dbLoaded( unsigned int id, const QString& fname );
-    QString lastCmdGuid() const;
     void updateIndexWhenSynced();
 
     void setOffline();
@@ -134,6 +146,8 @@ private slots:
     void addCommand( const QSharedPointer<DatabaseCommand>& command );
 
 private:
+    static bool friendlyNamesLessThan( const QString& first, const QString& second ); //lessThan for sorting
+
     void updateTracks();
     void reportSocialAttributesChanged( DatabaseCommand_SocialAction* action );
 
@@ -142,12 +156,12 @@ private:
 
     bool m_isLocal;
     bool m_online;
-    QString m_username;
+    QString m_nodeId;
     QString m_friendlyname;
+    QString m_dbFriendlyName;
     int m_id;
     bool m_scrubFriendlyName;
     bool m_updateIndexWhenSynced;
-    bool m_avatarUpdated;
 
     Tomahawk::query_ptr m_currentTrack;
     QString m_textStatus;
@@ -159,11 +173,6 @@ private:
     int m_commandCount;
     QString m_lastCmdGuid;
     mutable QMutex m_cmdMutex;
-
-    mutable QPixmap* m_avatar;
-    mutable QPixmap* m_fancyAvatar;
-    mutable QByteArray m_avatarHash;
-    mutable QHash< TomahawkUtils::ImageMode, QHash< int, QPixmap > > m_coverCache;
 
     Tomahawk::playlistinterface_ptr m_playlistInterface;
 };

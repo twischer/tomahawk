@@ -2,7 +2,7 @@
 #define TOMAHAWK_WEBSEARCHQUERY_H
 
 #include <QtCore/QObject>
-#include <QxtWebRedirectEvent>
+#include <QxtWeb/QxtWebPageEvent>
 #include "Query.h"
 
 namespace Tomahawk {

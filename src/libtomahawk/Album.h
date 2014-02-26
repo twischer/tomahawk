@@ -20,8 +20,6 @@
 #ifndef TOMAHAWKALBUM_H
 #define TOMAHAWKALBUM_H
 
-#include "config.h"
-
 #include <QtCore/QObject>
 #include <QtCore/QSharedPointer>
 #ifndef ENABLE_HEADLESS
@@ -32,7 +30,7 @@
 #include "Typedefs.h"
 #include "PlaylistInterface.h"
 #include "DllMacro.h"
-#include "Collection.h"
+#include "collection/Collection.h"
 #include "infosystem/InfoSystem.h"
 
 class IdThreadWorker;
@@ -70,13 +68,16 @@ public:
 
     void loadId( bool autoCreate );
 
+public slots:
+    void deleteLater();
+
 signals:
     void tracksAdded( const QList<Tomahawk::query_ptr>& tracks, Tomahawk::ModelMode mode, const Tomahawk::collection_ptr& collection );
     void updated();
     void coverChanged();
 
 private slots:
-    void onTracksLoaded(Tomahawk::ModelMode mode, const Tomahawk::collection_ptr& collection );
+    void onTracksLoaded( Tomahawk::ModelMode mode, const Tomahawk::collection_ptr& collection );
 
     void infoSystemInfo( const Tomahawk::InfoSystem::InfoRequestData& requestData, const QVariant& output );
     void infoSystemFinished( const QString& target );
@@ -108,8 +109,8 @@ private:
 
     QWeakPointer< Tomahawk::Album > m_ownRef;
 
-    static QHash< QString, album_ptr > s_albumsByName;
-    static QHash< unsigned int, album_ptr > s_albumsById;
+    static QHash< QString, album_wptr > s_albumsByName;
+    static QHash< unsigned int, album_wptr > s_albumsById;
 
     friend class ::IdThreadWorker;
 };

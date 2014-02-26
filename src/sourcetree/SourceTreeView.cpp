@@ -2,7 +2,8 @@
  *
  *   Copyright 2010-2011, Christian Muehlhaeuser <muesli@tomahawk-player.org>
  *   Copyright 2010-2012, Jeff Mitchell <jeff@tomahawk-player.org>
- *   Copyright 2010-2012, Leo Franchi   <lfranchi@kde.org>
+ *   Copyright 2010-2012, Leo Franchi <lfranchi@kde.org>
+ *   Copyright 2013,      Teo Mrnjavac <teo@kde.org>
  *
  *   Tomahawk is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -117,7 +118,11 @@ SourceTreeView::SourceTreeView( QWidget* parent )
     setModel( m_proxyModel );
 
     header()->setStretchLastSection( false );
+#if QT_VERSION >= QT_VERSION_CHECK( 5, 0, 0 )
+    header()->setSectionResizeMode( 0, QHeaderView::Stretch );
+#else
     header()->setResizeMode( 0, QHeaderView::Stretch );
+#endif
 
     connect( this, SIGNAL( expanded( QModelIndex ) ), SLOT( onItemExpanded( QModelIndex ) ) );
     connect( selectionModel(), SIGNAL( selectionChanged( QItemSelection, QItemSelection ) ), SLOT( onSelectionChanged() ) );
@@ -136,6 +141,12 @@ SourceTreeView::SourceTreeView( QWidget* parent )
     connect( this, SIGNAL( latchModeChangeRequest( Tomahawk::source_ptr, bool ) ), m_latchManager, SLOT( latchModeChangeRequest( Tomahawk::source_ptr, bool ) ) );
 
     connect( ActionCollection::instance(), SIGNAL( privacyModeChanged() ), SLOT( repaint() ) );
+
+    QAction* renamePlaylistAction = new QAction( this );
+    renamePlaylistAction->setShortcutContext( Qt::WidgetWithChildrenShortcut );
+    renamePlaylistAction->setShortcut( Qt::Key_F2 );
+    addAction( renamePlaylistAction );
+    connect( renamePlaylistAction, SIGNAL( triggered() ), SLOT( renamePlaylist() ) );
 }
 
 
@@ -191,9 +202,22 @@ SourceTreeView::setupMenus()
         }
     }
 
-    QAction* loadPlaylistAction = ActionCollection::instance()->getAction( "loadPlaylist" );
+    QAction* loadPlaylistAction;
+    QAction* renamePlaylistAction;
+
+    if ( type == SourcesModel::Station )
+    {
+        loadPlaylistAction = ActionCollection::instance()->getAction( "loadStation" );
+        renamePlaylistAction = ActionCollection::instance()->getAction( "renameStation" );
+
+    }
+    else
+    {
+        loadPlaylistAction = ActionCollection::instance()->getAction( "loadPlaylist" );
+        renamePlaylistAction = ActionCollection::instance()->getAction( "renamePlaylist" );
+    }
+
     m_playlistMenu.addAction( loadPlaylistAction );
-    QAction* renamePlaylistAction = ActionCollection::instance()->getAction( "renamePlaylist" );
     m_playlistMenu.addAction( renamePlaylistAction );
     m_playlistMenu.addSeparator();
 
@@ -253,7 +277,7 @@ SourceTreeView::setupMenus()
     connect( deletePlaylistAction, SIGNAL( triggered() ), SLOT( deletePlaylist() ) );
     connect( copyPlaylistAction,   SIGNAL( triggered() ), SLOT( copyPlaylistLink() ) );
     connect( addToLocalAction,     SIGNAL( triggered() ), SLOT( addToLocal() ) );
-    connect( latchOnAction,        SIGNAL( triggered() ), SLOT( latchOnOrCatchUp() ), Qt::QueuedConnection );
+    connect( latchOnAction,        SIGNAL( triggered() ), SLOT( latchOnOrCatchUp() ) );
 }
 
 
@@ -388,7 +412,7 @@ SourceTreeView::deletePlaylist( const QModelIndex& idxIn )
     {
         if ( m_popupDialog.isNull() )
         {
-            m_popupDialog = QWeakPointer< SourceTreePopupDialog >( new SourceTreePopupDialog() );
+            m_popupDialog = QPointer< SourceTreePopupDialog >( new SourceTreePopupDialog() );
             connect( m_popupDialog.data(), SIGNAL( result( bool ) ), this, SLOT( onDeletePlaylistResult( bool ) ) );
         }
 
@@ -638,6 +662,7 @@ SourceTreeView::onCustomContextMenu( const QPoint& pos )
         customMenu.addActions( customActions );
         customMenu.exec( mapToGlobal( pos ) );
     }
+    m_contextMenuIndex = QModelIndex(); //we invalidate it because there's no active context menu
 }
 
 

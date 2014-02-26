@@ -26,8 +26,9 @@
 #include "AclRegistryImpl.h"
 #include "Album.h"
 #include "Artist.h"
-#include "Collection.h"
+#include "collection/Collection.h"
 #include "infosystem/InfoSystem.h"
+#include "infosystem/InfoSystemCache.h"
 #include "accounts/AccountManager.h"
 #include "accounts/spotify/SpotifyAccount.h"
 #include "accounts/lastfm/LastFmAccount.h"
@@ -50,6 +51,7 @@
 #include "Pipeline.h"
 #include "DropJob.h"
 #include "EchonestCatalogSynchronizer.h"
+#include "database/DatabaseImpl.h"
 
 #include "audio/MainAudioEngine.h"
 #include "audio/PreviewAudioEngine.h"
@@ -186,25 +188,25 @@ TomahawkApp::init()
     // Cause the creation of the nam, but don't need to address it directly, so prevent warning
     Q_UNUSED( TomahawkUtils::nam() );
 
-    m_audioEngine = QWeakPointer<MainAudioEngine>( new MainAudioEngine );
+    m_audioEngine = QPointer<MainAudioEngine>( new MainAudioEngine );
 
     if ( TomahawkSettings::instance()->previewPlayerEnabled() )
-        m_previewEngine = QWeakPointer<PreviewAudioEngine>( new PreviewAudioEngine );
+        m_previewEngine = QPointer<PreviewAudioEngine>( new PreviewAudioEngine );
 
     // init pipeline and resolver factories
     new Pipeline();
 
-    m_servent = QWeakPointer<Servent>( new Servent( this ) );
+    m_servent = QPointer<Servent>( new Servent( this ) );
     connect( m_servent.data(), SIGNAL( ready() ), SLOT( initSIP() ) );
 
     tDebug() << "Init Database.";
     initDatabase();
 
-    m_scanManager = QWeakPointer<ScanManager>( new ScanManager( this ) );
+    m_scanManager = QPointer<ScanManager>( new ScanManager( this ) );
 
 #ifndef ENABLE_HEADLESS
-    Pipeline::instance()->addExternalResolverFactory( boost::bind( &QtScriptResolver::factory, _1 ) );
-    Pipeline::instance()->addExternalResolverFactory( boost::bind( &ScriptResolver::factory, _1 ) );
+    Pipeline::instance()->addExternalResolverFactory( boost::bind( &QtScriptResolver::factory, _1, _2 ) );
+    Pipeline::instance()->addExternalResolverFactory( boost::bind( &ScriptResolver::factory, _1, _2 ) );
 
     new ActionCollection( this );
     connect( ActionCollection::instance()->getAction( "quit" ), SIGNAL( triggered() ), SLOT( quit() ), Qt::UniqueConnection );
@@ -225,7 +227,7 @@ TomahawkApp::init()
 
     // Register shortcut handler for this platform
 #ifdef Q_WS_MAC
-    m_shortcutHandler = QWeakPointer<Tomahawk::ShortcutHandler>( new MacShortcutHandler( this ) );
+    m_shortcutHandler = QPointer<Tomahawk::ShortcutHandler>( new MacShortcutHandler( this ) );
     Tomahawk::setShortcutHandler( static_cast<MacShortcutHandler*>( m_shortcutHandler.data() ) );
 
     Tomahawk::setApplicationHandler( this );
@@ -246,10 +248,10 @@ TomahawkApp::init()
     }
 
     tDebug() << "Init InfoSystem.";
-    m_infoSystem = QWeakPointer<Tomahawk::InfoSystem::InfoSystem>( Tomahawk::InfoSystem::InfoSystem::instance() );
+    m_infoSystem = QPointer<Tomahawk::InfoSystem::InfoSystem>( Tomahawk::InfoSystem::InfoSystem::instance() );
 
     tDebug() << "Init AccountManager.";
-    m_accountManager = QWeakPointer< Tomahawk::Accounts::AccountManager >( new Tomahawk::Accounts::AccountManager( this ) );
+    m_accountManager = QPointer< Tomahawk::Accounts::AccountManager >( new Tomahawk::Accounts::AccountManager( this ) );
     connect( m_accountManager.data(), SIGNAL( ready() ), SLOT( accountManagerReady() ) );
 
     Echonest::Config::instance()->setNetworkAccessManager( TomahawkUtils::nam() );
@@ -390,7 +392,7 @@ TomahawkApp::instance()
 void
 TomahawkApp::printHelp()
 {
-    #define echo( X ) std::cout << QString( X ).toAscii().data() << "\n"
+    #define echo( X ) std::cout << QString( X ).toLatin1().data() << "\n"
 
     echo( "Usage: " + arguments().at( 0 ) + " [options] [url]" );
     echo( "Options are:" );
@@ -402,6 +404,7 @@ TomahawkApp::printHelp()
     echo( "  --testdb       Use a test database instead of real collection" );
     echo( "  --noupnp       Disable UPnP" );
     echo( "  --nosip        Disable SIP" );
+    echo( "  --verbose      Increase verbosity (activates debug output)" );
     echo();
     echo( "Playback Controls:" );
     echo( "  --play         Start/resume playback" );
@@ -484,8 +487,6 @@ TomahawkApp::registerMetaTypes()
     qRegisterMetaType< Tomahawk::DynamicPlaylistRevision >("Tomahawk::DynamicPlaylistRevision");
     qRegisterMetaType< Tomahawk::QID >("Tomahawk::QID");
 
-    qRegisterMetaType< AudioErrorCode >("AudioErrorCode");
-
     qRegisterMetaType< Tomahawk::InfoSystem::InfoStringHash >( "Tomahawk::InfoSystem::InfoStringHash" );
     qRegisterMetaType< Tomahawk::InfoSystem::InfoType >( "Tomahawk::InfoSystem::InfoType" );
     qRegisterMetaType< Tomahawk::InfoSystem::PushInfoFlags >( "Tomahawk::InfoSystem::PushInfoFlags" );
@@ -524,7 +525,7 @@ TomahawkApp::initDatabase()
     }
 
     tDebug( LOGEXTRA ) << "Using database:" << dbpath;
-    m_database = QWeakPointer<Database>( new Database( dbpath, this ) );
+    m_database = QPointer<Database>( new Database( dbpath, this ) );
     Pipeline::instance()->databaseReady();
 }
 
@@ -548,8 +549,8 @@ TomahawkApp::initHTTP()
         return;
     }
 
-    m_session = QWeakPointer< QxtHttpSessionManager >( new QxtHttpSessionManager() );
-    m_connector = QWeakPointer< QxtHttpServerConnector >( new QxtHttpServerConnector );
+    m_session = QPointer< QxtHttpSessionManager >( new QxtHttpSessionManager() );
+    m_connector = QPointer< QxtHttpServerConnector >( new QxtHttpServerConnector );
     if ( m_session.isNull() || m_connector.isNull() )
     {
         if ( !m_session.isNull() )
@@ -585,7 +586,8 @@ TomahawkApp::initLocalCollection()
 {
     connect( SourceList::instance(), SIGNAL( ready() ), SLOT( initServent() ) );
 
-    source_ptr src( new Source( 0, tr( "My Collection" ) ) );
+    source_ptr src( new Source( 0, Database::instance()->impl()->dbid() ) );
+    src->setFriendlyName( tr( "My Collection" ) );
     collection_ptr coll( new LocalCollection( src ) );
 
     src->addCollection( coll );
@@ -648,8 +650,10 @@ TomahawkApp::spotifyApiCheckFinished()
 void
 TomahawkApp::accountManagerReady()
 {
+#ifdef LIBLASTFM_FOUND
     Tomahawk::Accounts::LastFmAccountFactory* lastfmFactory = new Tomahawk::Accounts::LastFmAccountFactory();
     m_accountManager.data()->addAccountFactory( lastfmFactory );
+#endif
 
     Tomahawk::Accounts::SpotifyAccountFactory* spotifyFactory = new Tomahawk::Accounts::SpotifyAccountFactory;
     m_accountManager.data()->addAccountFactory( spotifyFactory );
@@ -674,7 +678,7 @@ TomahawkApp::loadUrl( const QString& url )
 #ifndef ENABLE_HEADLESS
     if ( url.startsWith( "tomahawk://" ) )
         return GlobalActionManager::instance()->parseTomahawkLink( url );
-    else if ( url.contains( "open.spotify.com" ) || url.contains( "spotify:track" ) )
+    else if ( url.contains( "open.spotify.com" ) || url.startsWith( "spotify:" ) )
         return GlobalActionManager::instance()->openSpotifyLink( url );
     else if ( url.contains( "www.rdio.com" ) )
         return GlobalActionManager::instance()->openRdioLink( url );
@@ -739,8 +743,8 @@ TomahawkApp::instanceStarted( KDSingleApplicationGuard::Instance instance )
         return;
     }
 
-    QString arg1 = arguments[ 1 ];
-    if ( loadUrl( arg1 ) )
+    QString lastArg = arguments[ arguments.size() - 1 ];
+    if ( loadUrl( lastArg ) )
     {
         activate();
         return;

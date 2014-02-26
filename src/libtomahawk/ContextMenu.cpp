@@ -25,8 +25,9 @@
 #include "ViewManager.h"
 #include "Query.h"
 #include "Result.h"
-#include "Collection.h"
+#include "collection/Collection.h"
 #include "Source.h"
+#include "SourceList.h"
 #include "Artist.h"
 #include "Album.h"
 #include "TomahawkSettings.h"
@@ -44,7 +45,7 @@ ContextMenu::ContextMenu( QWidget* parent )
     m_sigmap = new QSignalMapper( this );
     connect( m_sigmap, SIGNAL( mapped( int ) ), SLOT( onTriggered( int ) ) );
 
-    m_supportedActions = ActionPlay | ActionQueue | ActionCopyLink | ActionLove | ActionStopAfter | ActionPage | ActionEditMetadata;
+    m_supportedActions = ActionPlay | ActionQueue | ActionPlaylist | ActionCopyLink | ActionLove | ActionStopAfter | ActionPage | ActionEditMetadata;
 }
 
 
@@ -72,6 +73,18 @@ ContextMenu::itemCount() const
 
 
 void
+ContextMenu::addToPlaylist( int playlistIdx )
+{
+    Tomahawk::playlist_ptr playlist = m_playlists.at( playlistIdx );
+    playlist->addEntries( m_queries, playlist->currentrevision() );
+}
+
+bool caseInsensitiveLessThan(Tomahawk::playlist_ptr &s1, Tomahawk::playlist_ptr &s2)
+{
+    return s1->title().toLower() < s2->title().toLower();
+}
+
+void
 ContextMenu::setQueries( const QList<Tomahawk::query_ptr>& queries )
 {
     if ( queries.isEmpty() )
@@ -90,9 +103,26 @@ ContextMenu::setQueries( const QList<Tomahawk::query_ptr>& queries )
     if ( m_supportedActions & ActionQueue )
         m_sigmap->setMapping( addAction( tr( "Add to &Queue" ) ), ActionQueue );
 
-
     if ( !TomahawkSettings::instance()->partyModeEnabled() )
-    {
+	{
+    if ( m_supportedActions & ActionPlaylist ) {
+        // Get the current list of all playlists.
+        m_playlists = QList< Tomahawk::playlist_ptr >( SourceList::instance()->getLocal()->dbCollection()->playlists() );
+        // Sort the playlist
+        qSort( m_playlists.begin(), m_playlists.end(), caseInsensitiveLessThan );
+        m_playlists_sigmap = new QSignalMapper( this );
+
+        // Build the menu listing all available playlists
+        QMenu* playlistMenu = addMenu( tr( "Add to &Playlist" ) );
+        for ( int i = 0; i < m_playlists.length(); ++i )
+        {
+            QAction* action = new QAction( m_playlists.at(i)->title() , this );
+            playlistMenu->addAction(action);
+            m_playlists_sigmap->setMapping( action, i );
+            connect( action, SIGNAL( triggered() ), m_playlists_sigmap, SLOT( map() ));
+        }
+        connect( m_playlists_sigmap, SIGNAL( mapped( int ) ), this, SLOT( addToPlaylist( int ) ) );
+    }
         if ( m_supportedActions & ActionStopAfter && itemCount() == 1 )
         {
             if ( MainAudioEngine::instance()->stopAfterTrack() == queries.first() )
@@ -117,13 +147,18 @@ ContextMenu::setQueries( const QList<Tomahawk::query_ptr>& queries )
 
     if ( m_supportedActions & ActionPage && itemCount() == 1 )
     {
+        // Ampersands need to be escaped as they indicate a keyboard shortcut
+        const QString track = m_queries.first()->track().replace( QString( "&" ), QString( "&&" ) );
         m_sigmap->setMapping( addAction( ImageRegistry::instance()->icon( RESPATH "images/track-icon.svg" ),
-                                         tr( "&Go to \"%1\"" ).arg( m_queries.first()->track() ) ), ActionTrackPage );
-        if ( !m_queries.first()->album().isEmpty() )
+                                         tr( "&Go to \"%1\"" ).arg( track ) ), ActionTrackPage );
+        if ( !m_queries.first()->album().isEmpty() ) {
+            const QString album = m_queries.first()->album().replace( QString( "&" ), QString( "&&" ) );
             m_sigmap->setMapping( addAction( ImageRegistry::instance()->icon( RESPATH "images/album-icon.svg" ),
-                                             tr( "Go to \"%1\"" ).arg( m_queries.first()->album() ) ), ActionAlbumPage );
+                                             tr( "Go to \"%1\"" ).arg( album ) ), ActionAlbumPage );
+        }
+        const QString artist = m_queries.first()->artist().replace( QString( "&" ), QString( "&&" ) );
         m_sigmap->setMapping( addAction( ImageRegistry::instance()->icon( RESPATH "images/artist-icon.svg" ),
-                                         tr( "Go to \"%1\"" ).arg( m_queries.first()->artist() ) ), ActionArtistPage );
+                                         tr( "Go to \"%1\"" ).arg( artist ) ), ActionArtistPage );
     }
 
     if ( !TomahawkSettings::instance()->partyModeEnabled() )
@@ -178,10 +213,12 @@ ContextMenu::setAlbums( const QList<Tomahawk::album_ptr>& albums )
 
     if ( m_supportedActions & ActionPage && itemCount() == 1 )
     {
+        const QString album = m_albums.first()->name().replace( QString( "&" ), QString( "&&" ) );
         m_sigmap->setMapping( addAction( ImageRegistry::instance()->icon( RESPATH "images/album-icon.svg" ),
-                                         tr( "&Go to \"%1\"" ).arg( m_albums.first()->name() ) ), ActionAlbumPage );
+                                         tr( "&Go to \"%1\"" ).arg( album ) ), ActionAlbumPage );
+        const QString artist = m_albums.first()->artist()->name().replace( QString( "&" ), QString( "&&" ) );
         m_sigmap->setMapping( addAction( ImageRegistry::instance()->icon( RESPATH "images/artist-icon.svg" ),
-                                         tr( "Go to \"%1\"" ).arg( m_albums.first()->artist()->name() ) ), ActionArtistPage );
+                                         tr( "Go to \"%1\"" ).arg( artist ) ), ActionArtistPage );
     }
 
     //m_sigmap->setMapping( addAction( tr( "&Add to Playlist" ) ), ActionAddToPlaylist );
@@ -225,9 +262,11 @@ ContextMenu::setArtists( const QList<Tomahawk::artist_ptr>& artists )
 
     addSeparator();
 
-    if ( m_supportedActions & ActionPage && itemCount() == 1 )
+    if ( m_supportedActions & ActionPage && itemCount() == 1 ) {
+        const QString artist = m_artists.first()->name().replace( QString( "&" ), QString( "&&" ) );
         m_sigmap->setMapping( addAction( ImageRegistry::instance()->icon( RESPATH "images/artist-icon.svg" ),
-                                         tr( "&Go to \"%1\"" ).arg( m_artists.first()->name() ) ), ActionArtistPage );
+                                         tr( "&Go to \"%1\"" ).arg( artist ) ), ActionArtistPage );
+    }
 
     //m_sigmap->setMapping( addAction( tr( "&Add to Playlist" ) ), ActionAddToPlaylist );
 

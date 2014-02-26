@@ -24,7 +24,6 @@
 #include "DatabaseWorker.h"
 #include "IdThreadWorker.h"
 #include "utils/Logger.h"
-#include "Source.h"
 
 #define DEFAULT_WORKER_THREADS 4
 #define MAX_WORKER_THREADS 16
@@ -55,16 +54,16 @@ Database::Database( const QString& dbname, QObject* parent )
 
     tDebug() << Q_FUNC_INFO << "Using" << m_maxConcurrentThreads << "database worker threads";
 
+    connect( m_impl, SIGNAL( indexReady() ), SLOT( markAsReady() ) );
     connect( m_impl, SIGNAL( indexReady() ), SIGNAL( indexReady() ) );
     connect( m_impl, SIGNAL( indexReady() ), SIGNAL( ready() ) );
-    connect( m_impl, SIGNAL( indexReady() ), SLOT( setIsReadyTrue() ) );
 
     Q_ASSERT( m_workerRW );
     m_workerRW.data()->start();
 
     while ( m_workerThreads.count() < m_maxConcurrentThreads )
     {
-        QWeakPointer< DatabaseWorkerThread > workerThread( new DatabaseWorkerThread( this, false ) );
+        QPointer< DatabaseWorkerThread > workerThread( new DatabaseWorkerThread( this, false ) );
         Q_ASSERT( workerThread );
         workerThread.data()->start();
         m_workerThreads << workerThread;
@@ -82,7 +81,7 @@ Database::~Database()
 
     if ( m_workerRW )
         m_workerRW.data()->quit();
-    foreach ( QWeakPointer< DatabaseWorkerThread > workerThread, m_workerThreads )
+    foreach ( QPointer< DatabaseWorkerThread > workerThread, m_workerThreads )
     {
         if ( workerThread && workerThread.data()->worker() )
             workerThread.data()->quit();
@@ -93,7 +92,7 @@ Database::~Database()
         m_workerRW.data()->wait( 60000 );
         delete m_workerRW.data();
     }
-    foreach ( QWeakPointer< DatabaseWorkerThread > workerThread, m_workerThreads )
+    foreach ( QPointer< DatabaseWorkerThread > workerThread, m_workerThreads )
     {
         if ( workerThread )
         {
@@ -120,6 +119,12 @@ void
 Database::enqueue( const QList< QSharedPointer<DatabaseCommand> >& lc )
 {
     Q_ASSERT( m_ready );
+    if ( !m_ready )
+    {
+        tDebug() << "Can't enqueue DatabaseCommand, Database is not ready yet!";
+        return;
+    }
+
     tDebug( LOGVERBOSE ) << "Enqueueing" << lc.count() << "commands to rw thread";
     if ( m_workerRW && m_workerRW.data()->worker() )
         m_workerRW.data()->worker().data()->enqueue( lc );
@@ -130,6 +135,12 @@ void
 Database::enqueue( const QSharedPointer<DatabaseCommand>& lc )
 {
     Q_ASSERT( m_ready );
+    if ( !m_ready )
+    {
+        tDebug() << "Can't enqueue DatabaseCommand, Database is not ready yet!";
+        return;
+    }
+
     if ( lc->doesMutates() )
     {
         tDebug( LOGVERBOSE ) << "Enqueueing command to rw thread:" << lc->commandname();
@@ -140,8 +151,8 @@ Database::enqueue( const QSharedPointer<DatabaseCommand>& lc )
     {
         // find thread for commandname with lowest amount of outstanding jobs and enqueue job
         int busyThreads = 0;
-        QWeakPointer< DatabaseWorkerThread > workerThread;
-        QWeakPointer< DatabaseWorker > happyWorker;
+        QPointer< DatabaseWorkerThread > workerThread;
+        QPointer< DatabaseWorker > happyWorker;
         for ( int i = 0; i < m_workerThreads.count(); i++ )
         {
             workerThread = m_workerThreads.at( i );
@@ -158,7 +169,7 @@ Database::enqueue( const QSharedPointer<DatabaseCommand>& lc )
                 happyWorker = workerThread.data()->worker();
         }
 
-//        tDebug( LOGVERBOSE ) << "Enqueueing command to thread:" << happyThread << busyThreads << lc->commandname();
+        tDebug( LOGVERBOSE ) << "Enqueueing command to thread:" << happyWorker << busyThreads << lc->commandname();
         Q_ASSERT( happyWorker );
         happyWorker.data()->enqueue( lc );
     }
@@ -179,4 +190,12 @@ Database::impl()
     }
 
     return m_implHash.value( thread );
+}
+
+
+void
+Database::markAsReady()
+{
+    tLog() << Q_FUNC_INFO << "Database is ready now!";
+    m_ready = true;
 }

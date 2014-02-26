@@ -19,19 +19,12 @@
 
 #include "TrackView.h"
 
-#include <QKeyEvent>
-#include <QPainter>
-#include <QScrollBar>
-#include <QStyleOptionViewItem>
-
 #include "ViewHeader.h"
 #include "ViewManager.h"
 #include "PlayableModel.h"
 #include "PlayableProxyModel.h"
 #include "PlayableItem.h"
 #include "DropJob.h"
-#include "Artist.h"
-#include "Album.h"
 #include "Source.h"
 #include "TomahawkSettings.h"
 #include "audio/MainAudioEngine.h"
@@ -43,6 +36,12 @@
 #include "utils/AnimatedSpinner.h"
 #include "TomahawkSettings.h"
 #include "utils/Logger.h"
+
+
+#include <QKeyEvent>
+#include <QPainter>
+#include <QScrollBar>
+#include <QDrag>
 
 #define SCROLL_TIMEOUT 280
 
@@ -156,14 +155,14 @@ TrackView::setProxyModel( PlayableProxyModel* model )
         disconnect( m_proxyModel, SIGNAL( rowsInserted( QModelIndex, int, int ) ), this, SLOT( verifySize() ) );
         disconnect( m_proxyModel, SIGNAL( rowsRemoved( QModelIndex, int, int ) ), this, SLOT( verifySize() ) );
     }
-    
+
     m_proxyModel = model;
 
     connect( m_proxyModel, SIGNAL( filterChanged( QString ) ), SLOT( onFilterChanged( QString ) ) );
     connect( m_proxyModel, SIGNAL( rowsInserted( QModelIndex, int, int ) ), SLOT( onViewChanged() ) );
     connect( m_proxyModel, SIGNAL( rowsInserted( QModelIndex, int, int ) ), SLOT( verifySize() ) );
     connect( m_proxyModel, SIGNAL( rowsRemoved( QModelIndex, int, int ) ), SLOT( verifySize() ) );
-    
+
     m_delegate = new PlaylistItemDelegate( this, m_proxyModel );
     setItemDelegate( m_delegate );
 
@@ -385,6 +384,7 @@ TrackView::tryToPlayItem( const QModelIndex& index )
     PlayableItem* item = m_model->itemFromIndex( m_proxyModel->mapToSource( index ) );
     if ( item && !item->query().isNull() )
     {
+        m_model->setCurrentIndex( m_proxyModel->mapToSource( index ) );
         MainAudioEngine::instance()->playItem( playlistInterface(), item->query() );
 
         return true;
@@ -474,6 +474,7 @@ TrackView::dragEnterEvent( QDragEnterEvent* event )
 void
 TrackView::dragMoveEvent( QDragMoveEvent* event )
 {
+    tDebug() << Q_FUNC_INFO;
     QTreeView::dragMoveEvent( event );
 
     if ( model()->isReadOnly() )
@@ -514,8 +515,20 @@ TrackView::dragMoveEvent( QDragMoveEvent* event )
 
 
 void
+TrackView::dragLeaveEvent( QDragLeaveEvent* event )
+{
+    tDebug() << Q_FUNC_INFO;
+    QTreeView::dragLeaveEvent( event );
+
+    m_dragging = false;
+    setDirtyRegion( m_dropRect );
+}
+
+
+void
 TrackView::dropEvent( QDropEvent* event )
 {
+    tDebug() << Q_FUNC_INFO;
     QTreeView::dropEvent( event );
 
     if ( event->isAccepted() )
@@ -524,7 +537,7 @@ TrackView::dropEvent( QDropEvent* event )
     }
     else
     {
-        if ( DropJob::acceptsMimeData( event->mimeData()) )
+        if ( DropJob::acceptsMimeData( event->mimeData() ) )
         {
             const QPoint pos = event->pos();
             const QModelIndex index = indexAt( pos );
@@ -572,6 +585,16 @@ TrackView::paintEvent( QPaintEvent* event )
             }
         }
     }
+}
+
+
+void
+TrackView::wheelEvent( QWheelEvent* event )
+{
+    QTreeView::wheelEvent( event );
+
+    m_delegate->resetHoverIndex();
+    repaint();
 }
 
 
@@ -704,105 +727,6 @@ TrackView::onMenuTriggered( int action )
 }
 
 
-void
-TrackView::updateHoverIndex( const QPoint& pos )
-{
-    QModelIndex idx = indexAt( pos );
-
-    if ( idx != m_hoveredIndex )
-    {
-        m_hoveredIndex = idx;
-        repaint();
-    }
-
-    if ( !m_model || m_proxyModel->style() != PlayableProxyModel::Detailed )
-        return;
-
-    if ( idx.column() == PlayableModel::Artist || idx.column() == PlayableModel::Album || idx.column() == PlayableModel::Track )
-    {
-        if ( pos.x() > header()->sectionViewportPosition( idx.column() ) + header()->sectionSize( idx.column() ) - 16 &&
-             pos.x() < header()->sectionViewportPosition( idx.column() ) + header()->sectionSize( idx.column() ) )
-        {
-            setCursor( Qt::PointingHandCursor );
-            return;
-        }
-    }
-
-    if ( cursor().shape() != Qt::ArrowCursor )
-        setCursor( Qt::ArrowCursor );
-}
-
-
-void
-TrackView::wheelEvent( QWheelEvent* event )
-{
-    QTreeView::wheelEvent( event );
-
-    if ( m_hoveredIndex.isValid() )
-    {
-        m_hoveredIndex = QModelIndex();
-        repaint();
-    }
-}
-
-
-void
-TrackView::leaveEvent( QEvent* event )
-{
-    QTreeView::leaveEvent( event );
-    updateHoverIndex( QPoint( -1, -1 ) );
-}
-
-
-void
-TrackView::mouseMoveEvent( QMouseEvent* event )
-{
-    QTreeView::mouseMoveEvent( event );
-    updateHoverIndex( event->pos() );
-}
-
-
-void
-TrackView::mousePressEvent( QMouseEvent* event )
-{
-    QTreeView::mousePressEvent( event );
-
-    if ( !m_model || m_proxyModel->style() != PlayableProxyModel::Detailed )
-        return;
-
-    QModelIndex idx = indexAt( event->pos() );
-    if ( event->pos().x() > header()->sectionViewportPosition( idx.column() ) + header()->sectionSize( idx.column() ) - 16 &&
-         event->pos().x() < header()->sectionViewportPosition( idx.column() ) + header()->sectionSize( idx.column() ) )
-    {
-        PlayableItem* item = proxyModel()->itemFromIndex( proxyModel()->mapToSource( idx ) );
-        switch ( idx.column() )
-        {
-            case PlayableModel::Artist:
-            {
-                ViewManager::instance()->show( Artist::get( item->query()->displayQuery()->artist() ) );
-                break;
-            }
-
-            case PlayableModel::Album:
-            {
-                artist_ptr artist = Artist::get( item->query()->displayQuery()->artist() );
-                ViewManager::instance()->show( Album::get( artist, item->query()->displayQuery()->album() ) );
-                break;
-            }
-
-            case PlayableModel::Track:
-            {
-                ViewManager::instance()->show( item->query()->displayQuery() );
-                break;
-            }
-
-            default:
-                break;
-        }
-    }
-}
-
-
 Tomahawk::playlistinterface_ptr
 TrackView::playlistInterface() const
 {
@@ -834,7 +758,7 @@ TrackView::description() const
 QPixmap
 TrackView::pixmap() const
 {
-    return TomahawkUtils::defaultPixmap( TomahawkUtils::SuperCollection );
+    return model()->icon();
 }
 
 

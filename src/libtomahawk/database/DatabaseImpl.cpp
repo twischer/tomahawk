@@ -27,6 +27,7 @@
 #include <QFile>
 
 #include "database/Database.h"
+#include "FuzzyIndex.h"
 #include "SourceList.h"
 #include "Result.h"
 #include "Artist.h"
@@ -292,7 +293,7 @@ DatabaseImpl::file( int fid )
                 return r;
             }
 
-            url = QString( "servent://%1\t%2" ).arg( s->userName() ).arg( url );
+            url = QString( "servent://%1\t%2" ).arg( s->nodeId() ).arg( url );
         }
 
         r = Tomahawk::Result::get( url );
@@ -310,7 +311,7 @@ DatabaseImpl::file( int fid )
         r->setComposer( composer );
         r->setTrack( query.value( 13 ).toString() );
         r->setTrackId( query.value( 9 ).toUInt() );
-        r->setCollection( s->collection() );
+        r->setCollection( s->dbCollection() );
         r->setScore( 1.0 );
         r->setFileId( fid );
     }
@@ -690,7 +691,7 @@ DatabaseImpl::resultFromHint( const Tomahawk::query_ptr& origquery )
                 return res;
             }
 
-            url = QString( "servent://%1\t%2" ).arg( s->userName() ).arg( url );
+            url = QString( "servent://%1\t%2" ).arg( s->nodeId() ).arg( url );
         }
 
         res = Tomahawk::Result::get( url );
@@ -712,7 +713,7 @@ DatabaseImpl::resultFromHint( const Tomahawk::query_ptr& origquery )
         res->setDiscNumber( query.value( 17 ).toUInt() );
         res->setRID( uuid() );
         res->setTrackId( query.value( 9 ).toUInt() );
-        res->setCollection( s->collection() );
+        res->setCollection( s->dbCollection() );
         res->setYear( query.value( 21 ).toUInt() );
     }
 

@@ -113,7 +113,7 @@ DirListerThreadController::~DirListerThreadController()
 void
 DirListerThreadController::run()
 {
-    m_dirLister = QWeakPointer< DirLister >( new DirLister( m_paths ) );
+    m_dirLister = QPointer< DirLister >( new DirLister( m_paths ) );
     connect( m_dirLister.data(), SIGNAL( fileToScan( QFileInfo ) ),
              parent(), SLOT( scanFile( QFileInfo ) ), Qt::QueuedConnection );
 
@@ -147,6 +147,7 @@ MusicScanner::MusicScanner( MusicScanner::ScanMode scanMode, const QStringList& 
     m_ext2mime.insert( "flac", TomahawkUtils::extensionToMimetype( "flac" ) );
     m_ext2mime.insert( "aiff", TomahawkUtils::extensionToMimetype( "aiff" ) );
     m_ext2mime.insert( "aif",  TomahawkUtils::extensionToMimetype( "aif" ) );
+    m_ext2mime.insert( "wv",   TomahawkUtils::extensionToMimetype( "wv" ) );
 }
 
 

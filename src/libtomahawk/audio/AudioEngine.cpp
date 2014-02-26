@@ -2,6 +2,7 @@
  *
  *   Copyright 2010-2012, Christian Muehlhaeuser <muesli@tomahawk-player.org>
  *   Copyright 2010-2012, Jeff Mitchell <jeff@tomahawk-player.org>
+ *   Copyright 2013,      Teo Mrnjavac <teo@kde.org>
  *
  *   Tomahawk is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -39,13 +40,17 @@
 #include "utils/Logger.h"
 #include "playlist/SingleTrackPlaylistInterface.h"
 
+#include <boost/bind.hpp>
+
 #include <QtCore/QUrl>
+#include <QDir>
 #include <QtNetwork/QNetworkReply>
-#include <QTemporaryFile>
 
 using namespace Tomahawk;
 
 #define AUDIO_VOLUME_STEP 5
+
+static const uint_fast8_t UNDERRUNTHRESHOLD = 2;
 
 static QString s_aeInfoIdentifier = QString( "AUDIOENGINE" );
 
@@ -57,6 +62,7 @@ AudioEngine::AudioEngine()
     , m_expectStop( false )
     , m_waitingOnNewTrack( false )
     , m_state( Stopped )
+    , m_coverTempFile( 0 )
 {
     tDebug() << "Init AudioEngine";
 
@@ -230,7 +236,9 @@ AudioEngine::canGoNext()
         return false;
     }
 
-    return ( m_currentTrack && m_playlist.data()->hasNextResult() && m_playlist.data()->nextResult()->isOnline() );
+    return ( m_currentTrack && m_playlist.data()->hasNextResult() &&
+             !m_playlist.data()->nextResult().isNull() &&
+             m_playlist.data()->nextResult()->isOnline() );
 }
 
 
@@ -374,28 +382,27 @@ AudioEngine::onNowPlayingInfoReady( const Tomahawk::InfoSystem::InfoType type )
     {
         playInfo["cover"] = cover;
 
-        QTemporaryFile* coverTempFile = new QTemporaryFile( QDir::toNativeSeparators( QDir::tempPath() + "/" + m_currentTrack->artist()->name() + "_" + m_currentTrack->album()->name() + "_tomahawk_cover.png" ) );
-        if ( !coverTempFile->open() )
+        delete m_coverTempFile;
+        m_coverTempFile = new QTemporaryFile( QDir::toNativeSeparators( QDir::tempPath() + "/" + m_currentTrack->artist()->name() + "_" + m_currentTrack->album()->name() + "_tomahawk_cover.png" ) );
+        if ( !m_coverTempFile->open() )
         {
             tDebug() << Q_FUNC_INFO << "WARNING: could not write temporary file for cover art!";
         }
         else
         {
             // Finally, save the image to the new temp file
-            coverTempFile->setAutoRemove( false );
-            if ( cover.save( coverTempFile, "PNG" ) )
+            if ( cover.save( m_coverTempFile, "PNG" ) )
             {
-                tDebug() <<  Q_FUNC_INFO << "Saving cover image to:" << QFileInfo( *coverTempFile ).absoluteFilePath();
-                playInfo["coveruri"] = QFileInfo( *coverTempFile ).absoluteFilePath();
+                tDebug() <<  Q_FUNC_INFO << "Saving cover image to:" << QFileInfo( *m_coverTempFile ).absoluteFilePath();
+                playInfo["coveruri"] = QFileInfo( *m_coverTempFile ).absoluteFilePath();
             }
             else
                 tDebug() << Q_FUNC_INFO << "Failed to save cover image!";
         }
-        delete coverTempFile;
     }
     else
         tDebug() << Q_FUNC_INFO << "Cover from query is null!";
-#endif<
+#endif
 
     Tomahawk::InfoSystem::InfoStringHash trackInfo;
     trackInfo["title"] = m_currentTrack->track();
@@ -412,29 +419,43 @@ AudioEngine::onNowPlayingInfoReady( const Tomahawk::InfoSystem::InfoType type )
 }
 
 
-bool
-AudioEngine::loadTrack( const Tomahawk::result_ptr& result, const bool doCrossfading )
+void
+AudioEngine::loadTrack( const Tomahawk::result_ptr& result, const bool doCrossfading  )
+{
+    if ( result.isNull() )
+    {
+        stop();
+        return;
+    }
+
+    setCurrentTrack( result );
+
+    if ( !TomahawkUtils::isHttpResult( m_currentTrack->url() ) &&
+         !TomahawkUtils::isLocalResult( m_currentTrack->url() ) )
+    {
+        boost::function< void ( QSharedPointer< QIODevice >& ) > callback =
+                boost::bind( &AudioEngine::performLoadTrack, this, result, _1, doCrossfading );
+        Servent::instance()->getIODeviceForUrl( m_currentTrack, callback );
+    }
+    else
+    {
+        QSharedPointer< QIODevice > io;
+        performLoadTrack( result, io, doCrossfading );
+    }
+}
+
+
+void
+AudioEngine::performLoadTrack( const Tomahawk::result_ptr& result, QSharedPointer< QIODevice >& io, const bool doCrossfading )
 {
     bool err = false;
     {
-        QSharedPointer<QIODevice> io;
-
-        if ( result.isNull() )
-            err = true;
-        else
+        if ( !TomahawkUtils::isHttpResult( m_currentTrack->url() ) &&
+             !TomahawkUtils::isLocalResult( m_currentTrack->url() ) &&
+             ( !io || io.isNull() ) )
         {
-            setCurrentTrack( result );
-
-            if ( !isHttpResult( m_currentTrack->url() ) && !isLocalResult( m_currentTrack->url() ) )
-            {
-                io = Servent::instance()->getIODeviceForUrl( m_currentTrack );
-
-                if ( !io || io.isNull() )
-                {
-                    tLog() << "Error getting iodevice for" << result->url();
-                    err = true;
-                }
-            }
+            tLog() << "Error getting iodevice for" << result->url();
+            err = true;
         }
 
         if ( !err )
@@ -445,7 +466,8 @@ AudioEngine::loadTrack( const Tomahawk::result_ptr& result, const bool doCrossfa
 
             qint64 totalTime = m_currentTrack->duration() * 1000;
 
-            if ( !isHttpResult( m_currentTrack->url() ) && !isLocalResult( m_currentTrack->url() ) )
+            if ( !TomahawkUtils::isHttpResult( m_currentTrack->url() ) &&
+                 !TomahawkUtils::isLocalResult( m_currentTrack->url() ) )
             {
                 if ( QNetworkReply* qnr_io = qobject_cast< QNetworkReply* >( io.data() ) )
                     m_mediaQueue->setNextSource( new QNR_IODeviceStream( qnr_io, this ), false, doCrossfading, totalTime );
@@ -454,13 +476,13 @@ AudioEngine::loadTrack( const Tomahawk::result_ptr& result, const bool doCrossfa
             }
             else
             {
-                if ( !isLocalResult( m_currentTrack->url() ) )
+                if ( !TomahawkUtils::isLocalResult( m_currentTrack->url() ) )
                 {
                     QUrl furl = m_currentTrack->url();
                     if ( m_currentTrack->url().contains( "?" ) )
                     {
                         furl = QUrl( m_currentTrack->url().left( m_currentTrack->url().indexOf( '?' ) ) );
-                        furl.setEncodedQuery( QString( m_currentTrack->url().mid( m_currentTrack->url().indexOf( '?' ) + 1 ) ).toLocal8Bit() );
+                        TomahawkUtils::urlSetQuery( furl, QString( m_currentTrack->url().mid( m_currentTrack->url().indexOf( '?' ) + 1 ) ) );
                     }
                     tLog( LOGVERBOSE ) << "Passing to Phonon:" << furl;
                     m_mediaQueue->setNextSource( furl, true, doCrossfading, totalTime );
@@ -468,12 +490,10 @@ AudioEngine::loadTrack( const Tomahawk::result_ptr& result, const bool doCrossfa
                 else
                 {
                     QString furl = m_currentTrack->url();
-#ifdef Q_WS_WIN
                     if ( furl.startsWith( "file://" ) )
                         furl = furl.right( furl.length() - 7 );
-#endif
-                    tLog( LOGVERBOSE ) << "Passing to Phonon:" << furl << furl.toLatin1();
-                    m_mediaQueue->setNextSource( furl, true, doCrossfading, totalTime );
+                    tLog( LOGVERBOSE ) << "Passing to Phonon:" << QUrl::fromLocalFile( furl );
+                    m_mediaQueue->setNextSource( QUrl::fromLocalFile( furl ), true, doCrossfading, totalTime );
                 }
             }
 
@@ -498,11 +518,11 @@ AudioEngine::loadTrack( const Tomahawk::result_ptr& result, const bool doCrossfa
     if ( err )
     {
         stop();
-        return false;
+        return;
     }
 
     m_waitingOnNewTrack = false;
-    return true;
+    return;
 }
 
 
@@ -520,7 +540,7 @@ AudioEngine::loadPreviousTrack()
     Tomahawk::result_ptr result;
     if ( m_playlist.data()->previousResult() )
     {
-        result = m_playlist.data()->previousResult();
+        result = m_playlist.data()->setSiblingResult( -1 );
         m_currentTrackPlaylist = m_playlist;
     }
 
@@ -561,7 +581,7 @@ AudioEngine::loadNextTrack( const bool doCrossfading )
 
         if ( m_playlist.data()->nextResult() )
         {
-            result = m_playlist.data()->nextResult();
+            result = m_playlist.data()->setSiblingResult( 1 );
             m_currentTrackPlaylist = m_playlist;
         }
     }
@@ -731,6 +751,16 @@ AudioEngine::onStateChanged( Phonon::State newState, Phonon::State oldState )
         // We don't emit this state to listeners - yet.
         m_state = Loading;
     }
+    if ( newState == Phonon::BufferingState )
+    {
+        if ( m_underrunCount > UNDERRUNTHRESHOLD && !m_underrunNotified )
+        {
+            m_underrunNotified = true;
+            //FIXME: Actually notify
+        }
+        else
+            m_underrunCount++;
+    }
     if ( newState == Phonon::ErrorState )
     {
         stop( UnknownError );
@@ -743,7 +773,11 @@ AudioEngine::onStateChanged( Phonon::State newState, Phonon::State oldState )
     if ( newState == Phonon::PlayingState )
     {
         if ( state() != Paused && state() != Playing )
+        {
+            m_underrunCount = 0;
+            m_underrunNotified = false;
             emit started( m_currentTrack );
+        }
 
         setState( Playing );
     }
@@ -906,7 +940,7 @@ AudioEngine::setPlaylist( Tomahawk::playlistinterface_ptr playlist )
 
         connect( m_playlist.data(), SIGNAL( shuffleModeChanged( bool ) ), SIGNAL( shuffleModeChanged( bool ) ) );
         connect( m_playlist.data(), SIGNAL( repeatModeChanged( Tomahawk::PlaylistModes::RepeatMode ) ), SIGNAL( repeatModeChanged( Tomahawk::PlaylistModes::RepeatMode ) ) );
-        
+
         emit shuffleModeChanged( m_playlist.data()->shuffled() );
         emit repeatModeChanged( m_playlist.data()->repeatMode() );
     }
@@ -964,25 +998,11 @@ AudioEngine::setCurrentTrack( const Tomahawk::result_ptr& result )
 
     if ( result )
     {
-        if ( m_playlist )
+        if ( m_playlist && m_playlist->currentItem() != result )
         {
             m_playlist->setCurrentIndex( m_playlist->indexOfResult( result ) );
         }
     }
-}
-
-
-bool
-AudioEngine::isHttpResult( const QString& url ) const
-{
-    return url.startsWith( "http://" ) || url.startsWith( "https://" );
-}
-
-
-bool
-AudioEngine::isLocalResult( const QString& url ) const
-{
-    return url.startsWith( "file://" );
 }
 
 

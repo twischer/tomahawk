@@ -24,6 +24,7 @@
 #include "AtticaManager.h"
 #include "ResolverAccount.h"
 #include "TomahawkSettings.h"
+#include "utils/Logger.h"
 
 #ifndef ENABLE_HEADLESS
 #include <QMessageBox>
@@ -332,11 +333,17 @@ AccountModel::data( const QModelIndex& index, int role ) const
                 switch ( role )
                 {
                 case Qt::DisplayRole:
-                    return acct->accountFriendlyName();
+                    return !acct->accountFriendlyName().isEmpty() ? acct->accountFriendlyName() : node->factory->prettyName();
                 case Qt::DecorationRole:
                     return acct->icon();
                 case DescriptionRole:
-                    return node->factory ? node->factory->description() : QString();
+                    return node->factory ?
+                              ( !node->factory->description().isEmpty() ? node->factory->description() : acct->description() )
+                              : acct->description();
+                case AuthorRole:
+                    return acct->author();
+                case VersionRole:
+                    return acct->version();
                 case Qt::CheckStateRole:
                     return acct->enabled() ? Qt::Checked : Qt::Unchecked;
                 case AccountData:

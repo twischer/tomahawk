@@ -25,6 +25,7 @@
 
 #include "Artist.h"
 #include "Album.h"
+#include "Source.h"
 #include "DatabaseCommand.h"
 
 #include "DllMacro.h"
@@ -71,14 +72,14 @@ public slots:
     void enqueue( const QList< QSharedPointer<DatabaseCommand> >& lc );
 
 private slots:
-    void setIsReadyTrue() { m_ready = true; }
+    void markAsReady();
 
 private:
     bool m_ready;
 
     DatabaseImpl* m_impl;
-    QWeakPointer< DatabaseWorkerThread > m_workerRW;
-    QList< QWeakPointer< DatabaseWorkerThread > > m_workerThreads;
+    QPointer< DatabaseWorkerThread > m_workerRW;
+    QList< QPointer< DatabaseWorkerThread > > m_workerThreads;
     IdThreadWorker* m_idWorker;
     int m_maxConcurrentThreads;
 

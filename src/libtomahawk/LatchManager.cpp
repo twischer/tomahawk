@@ -23,10 +23,11 @@
 #include "audio/MainAudioEngine.h"
 #include "database/Database.h"
 
-#include <QtGui/QAction>
 #include "SourceList.h"
 #include "database/DatabaseCommand_SocialAction.h"
 #include "SourcePlaylistInterface.h"
+
+#include <QAction>
 
 using namespace Tomahawk;
 
@@ -80,7 +81,7 @@ LatchManager::playlistChanged( Tomahawk::playlistinterface_ptr )
         DatabaseCommand_SocialAction* cmd = new DatabaseCommand_SocialAction();
         cmd->setSource( SourceList::instance()->getLocal() );
         cmd->setAction( "latchOn");
-        cmd->setComment( m_latchedOnTo->userName() );
+        cmd->setComment( m_latchedOnTo->nodeId() );
         cmd->setTimestamp( QDateTime::currentDateTime().toTime_t() );
         Database::instance()->enqueue( QSharedPointer< DatabaseCommand >( cmd ) );
 
@@ -95,12 +96,12 @@ LatchManager::playlistChanged( Tomahawk::playlistinterface_ptr )
     // We're current latched, and the user changed playlist, so stop
     SourcePlaylistInterface* origsourcepi = dynamic_cast< SourcePlaylistInterface* >( m_latchedInterface.data() );
     Q_ASSERT( origsourcepi );
-    const source_ptr source = origsourcepi->source();
+    const source_ptr source = SourceList::instance()->get( origsourcepi->source()->id() );
 
     DatabaseCommand_SocialAction* cmd = new DatabaseCommand_SocialAction();
     cmd->setSource( SourceList::instance()->getLocal() );
     cmd->setAction( "latchOff");
-    cmd->setComment( source->userName() );
+    cmd->setComment( source->nodeId() );
     cmd->setTimestamp( QDateTime::currentDateTime().toTime_t() );
     Database::instance()->enqueue( QSharedPointer< DatabaseCommand >( cmd ) );
 

@@ -2,6 +2,7 @@
  *
  *   Copyright 2010-2012, Christian Muehlhaeuser <muesli@tomahawk-player.org>
  *   Copyright 2010-2012, Jeff Mitchell <jeff@tomahawk-player.org>
+ *   Copyright 2013,      Teo Mrnjavac <teo@kde.org>
  *
  *   Tomahawk is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -33,6 +34,7 @@
 #include <QtCore/QObject>
 #include <QtCore/QTimer>
 #include <QtCore/QQueue>
+#include <QTemporaryFile>
 
 
 class DLLEXPORT AudioEngine : public QObject
@@ -125,7 +127,8 @@ signals:
     void error( AudioEngine::AudioErrorCode errorCode );
 
 private slots:
-    bool loadTrack( const Tomahawk::result_ptr& result, const bool doCrossfading );
+    void loadTrack( const Tomahawk::result_ptr& result, const bool doCrossfading ); //async!
+    void performLoadTrack( const Tomahawk::result_ptr& result, QSharedPointer< QIODevice >& io, const bool doCrossfading ); //only call from loadTrack kthxbi
     void loadPreviousTrack();
     void loadNextTrack( const bool doCrossfading);
 
@@ -150,9 +153,6 @@ private:
 
     void setState( AudioState state );
 
-    bool isHttpResult( const QString& ) const;
-    bool isLocalResult( const QString& ) const;
-
     QSharedPointer<QIODevice> m_input;
 
     Tomahawk::query_ptr m_stopAfterTrack;
@@ -172,6 +172,11 @@ private:
     AudioState m_state;
     QQueue< AudioState > m_stateQueue;
     QTimer m_stateQueueTimer;
+
+    uint_fast8_t m_underrunCount;
+    bool m_underrunNotified;
+
+    QTemporaryFile* m_coverTempFile;
 };
 
 #endif // AUDIOENGINE_H

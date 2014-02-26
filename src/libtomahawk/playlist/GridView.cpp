@@ -19,11 +19,6 @@
 
 #include "GridView.h"
 
-#include <QKeyEvent>
-#include <QPainter>
-#include <QScrollBar>
-#include <qmath.h>
-
 #include "audio/AudioEngine.h"
 #include "context/ContextWidget.h"
 #include "TomahawkSettings.h"
@@ -39,7 +34,15 @@
 #include "MetaPlaylistInterface.h"
 #include "utils/Logger.h"
 #include "utils/AnimatedSpinner.h"
+#include "utils/PixmapDelegateFader.h"
 #include "utils/TomahawkUtilsGui.h"
+
+#include <QHeaderView>
+#include <QKeyEvent>
+#include <QPainter>
+#include <QScrollBar>
+#include <QDrag>
+#include <qmath.h>
 
 #define SCROLL_TIMEOUT 280
 
@@ -104,8 +107,8 @@ GridView::setProxyModel( PlayableProxyModel* model )
     connect( m_proxyModel, SIGNAL( filterChanged( QString ) ), SLOT( onFilterChanged( QString ) ) );
     connect( m_proxyModel, SIGNAL( rowsInserted( QModelIndex, int, int ) ), SLOT( verifySize() ) );
     connect( m_proxyModel, SIGNAL( rowsRemoved( QModelIndex, int, int ) ), SLOT( verifySize() ) );
-    connect( proxyModel(), SIGNAL( modelReset() ), SLOT( layoutItems() ) );
-    
+    connect( proxyModel(), SIGNAL( modelReset() ), SLOT( layoutItems() ), Qt::QueuedConnection );
+
     if ( m_delegate )
         delete m_delegate;
 
@@ -230,12 +233,10 @@ GridView::verifySize()
     if ( !autoResize() || !m_model )
         return;
 
-#ifdef Q_WS_X11
-//    int scrollbar = verticalScrollBar()->isVisible() ? verticalScrollBar()->width() + 16 : 0;
-    int scrollbar = 0; verticalScrollBar()->rect().width();
-#else
     int scrollbar = verticalScrollBar()->rect().width();
-#endif
+
+    if ( rect().width() - contentsRect().width() > scrollbar ) //HACK: if the contentsRect includes the scrollbar
+        scrollbar = 0; //don't count it any more
 
     const int rectWidth = contentsRect().width() - scrollbar - 3;
     const int itemWidth = 160;
@@ -272,12 +273,10 @@ GridView::layoutItems()
 {
     if ( autoFitItems() && m_model )
     {
-#ifdef Q_WS_X11
-//        int scrollbar = verticalScrollBar()->isVisible() ? verticalScrollBar()->width() + 16 : 0;
-        int scrollbar = 0; verticalScrollBar()->rect().width();
-#else
         int scrollbar = verticalScrollBar()->rect().width();
-#endif
+
+        if ( rect().width() - contentsRect().width() >= scrollbar ) //HACK: if the contentsRect includes the scrollbar
+            scrollbar = 0; //don't count it any more
 
         const int rectWidth = contentsRect().width() - scrollbar - 3;
         const int itemWidth = 160;

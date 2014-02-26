@@ -33,8 +33,8 @@
 #include "TomahawkSettings.h"
 #include "accounts/DelegateConfigWrapper.h"
 #include "Pipeline.h"
-#include "Resolver.h"
-#include "ExternalResolverGui.h"
+#include "resolvers/Resolver.h"
+#include "resolvers/ExternalResolverGui.h"
 #include "utils/TomahawkUtilsGui.h"
 #include "utils/GuiHelpers.h"
 #include "accounts/AccountDelegate.h"
@@ -51,6 +51,9 @@
 #include "accounts/spotify/SpotifyAccount.h"
 #include "thirdparty/Qocoa/qtoolbartabdialog.h"
 #include "thirdparty/Qocoa/qbutton.h"
+#include "jobview/JobStatusView.h"
+#include "jobview/JobStatusModel.h"
+#include "jobview/ErrorStatusMessage.h"
 
 #include <QDesktopServices>
 #include <QFileDialog>
@@ -425,7 +428,7 @@ SettingsDialog::openAccountFactoryConfig( AccountFactory* factory )
 
 #ifndef Q_OS_MAC
     AccountFactoryWrapper dialog( factory, 0 );
-    QWeakPointer< AccountFactoryWrapper > watcher( &dialog );
+    QPointer< AccountFactoryWrapper > watcher( &dialog );
 
     dialog.exec();
 #else
@@ -453,7 +456,12 @@ SettingsDialog::openAccountConfig( Account* account, bool showDelete )
 void
 SettingsDialog::installFromFile()
 {
-    const QString resolver = QFileDialog::getOpenFileName( 0, tr( "Install resolver from file" ), TomahawkSettings::instance()->scriptDefaultPath() );
+    const QString resolver = QFileDialog::getOpenFileName( 0, tr( "Install resolver from file" ),
+                                                           TomahawkSettings::instance()->scriptDefaultPath(),
+                                                           tr( "Tomahawk Resolvers (*.axe *.js);;"
+                                                           "All files (*)" ),
+                                                           0,
+                                                           QFileDialog::ReadOnly );
 
     if( !resolver.isEmpty() )
     {
@@ -462,7 +470,7 @@ SettingsDialog::installFromFile()
 
         if ( resolverAbsoluteFilePath.baseName() == "spotify_tomahawkresolver" )
         {
-            // HACK if this is a spotify resolver, we treat is specially.
+            // HACK if this is a spotify resolver, we treat it specially.
             // usually we expect the user to just download the spotify resolver from attica,
             // however developers, those who build their own tomahawk, can't do that, or linux
             // users can't do that. However, we have an already-existing SpotifyAccount that we
@@ -487,6 +495,18 @@ SettingsDialog::installFromFile()
         }
 
         Account* acct = AccountManager::instance()->accountFromPath( resolver );
+
+        if ( !acct )
+        {
+            QFileInfo fi( resolver );
+
+            JobStatusView::instance()->model()->addJob( new ErrorStatusMessage(
+                                    tr( "Resolver installation from file %1 failed." )
+                                    .arg( fi.fileName() ) ) );
+
+            tDebug() << "Resolver was not installed:" << resolver;
+            return;
+        }
 
         AccountManager::instance()->addAccount( acct );
         TomahawkSettings::instance()->addAccount( acct->accountId() );

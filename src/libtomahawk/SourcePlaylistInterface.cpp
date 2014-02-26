@@ -46,7 +46,7 @@ SourcePlaylistInterface::SourcePlaylistInterface( Tomahawk::Source* source, Toma
 
 SourcePlaylistInterface::~SourcePlaylistInterface()
 {
-    m_source.clear();
+    m_source = 0;
 }
 
 
@@ -146,7 +146,7 @@ SourcePlaylistInterface::tracks() const
 }
 
 
-QWeakPointer< Tomahawk::Source >
+QPointer< Tomahawk::Source >
 SourcePlaylistInterface::source() const
 {
     return m_source;
@@ -166,7 +166,7 @@ SourcePlaylistInterface::reset()
 void
 SourcePlaylistInterface::onSourcePlaybackStarted( const Tomahawk::query_ptr& query )
 {
-    tDebug( LOGEXTRA ) << Q_FUNC_INFO;
+    tDebug( LOGVERBOSE ) << Q_FUNC_INFO;
     connect( query.data(), SIGNAL( resolvingFinished( bool ) ), SLOT( resolvingFinished( bool ) ) );
     Pipeline::instance()->resolve( query );
     m_gotNextItem = false;
@@ -176,7 +176,7 @@ SourcePlaylistInterface::onSourcePlaybackStarted( const Tomahawk::query_ptr& que
 void
 SourcePlaylistInterface::resolvingFinished( bool hasResults )
 {
-    tDebug( LOGEXTRA ) << Q_FUNC_INFO << "Has results?" << ( hasResults ? "true" : "false" );
+    tDebug( LOGVERBOSE ) << Q_FUNC_INFO << "Has results?" << ( hasResults ? "true" : "false" );
     if ( hasResults )
     {
         m_gotNextItem = true;

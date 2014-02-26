@@ -19,19 +19,17 @@
 
 #include "BasicHeader.h"
 
-#include <QtGui/QLabel>
-#include <QtGui/QPixmap>
-#include <QtGui/QPaintEvent>
-#include <QtGui/QPainter>
-#include <QtGui/QBoxLayout>
-#include <QGraphicsDropShadowEffect>
-
 #include "utils/TomahawkUtilsGui.h"
 #include "ElidedLabel.h"
 
-using namespace Tomahawk;
+#include <QLabel>
+#include <QPixmap>
+#include <QPaintEvent>
+#include <QPainter>
+#include <QBoxLayout>
+#include <QGraphicsDropShadowEffect>
 
-QPixmap* BasicHeader::s_tiledHeader = 0;
+using namespace Tomahawk;
 
 
 BasicHeader::BasicHeader( QWidget* parent )
@@ -55,6 +53,7 @@ BasicHeader::BasicHeader( QWidget* parent )
     m_verticalLayout->addStretch();
 
     m_mainLayout->addSpacing( 16 );
+    m_mainLayout->setStretchFactor( m_verticalLayout, 2 );
 
     QPalette pal = palette();
     pal.setColor( QPalette::Foreground, Qt::white );

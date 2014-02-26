@@ -36,7 +36,7 @@ namespace Tomahawk
 {
 class Resolver;
 class ExternalResolver;
-typedef boost::function<Tomahawk::ExternalResolver*(QString)> ResolverFactoryFunc;
+typedef boost::function<Tomahawk::ExternalResolver*( QString, QStringList )> ResolverFactoryFunc;
 
 class DLLEXPORT Pipeline : public QObject
 {
@@ -58,24 +58,17 @@ public:
     void reportArtists( QID qid, const QList< artist_ptr >& artists );
 
     void addExternalResolverFactory( ResolverFactoryFunc resolverFactory );
-    Tomahawk::ExternalResolver* addScriptResolver( const QString& scriptPath );
+    Tomahawk::ExternalResolver* addScriptResolver( const QString& scriptPath, const QStringList& additionalScriptPaths = QStringList() );
     void stopScriptResolver( const QString& scriptPath );
     void removeScriptResolver( const QString& scriptPath );
-    QList< QWeakPointer< ExternalResolver > > scriptResolvers() const { return m_scriptResolvers; }
+    QList< QPointer< ExternalResolver > > scriptResolvers() const { return m_scriptResolvers; }
     Tomahawk::ExternalResolver* resolverForPath( const QString& scriptPath );
 
     void addResolver( Resolver* r );
     void removeResolver( Resolver* r );
 
-    query_ptr query( const QID& qid ) const
-    {
-        return m_qids.value( qid );
-    }
-
-    result_ptr result( const RID& rid ) const
-    {
-        return m_rids.value( rid );
-    }
+    query_ptr query( const QID& qid ) const;
+    result_ptr result( const RID& rid ) const;
 
     bool isResolving( const query_ptr& q ) const;
 
@@ -110,7 +103,7 @@ private:
     int decQIDState( const Tomahawk::query_ptr& query );
 
     QList< Resolver* > m_resolvers;
-    QList< QWeakPointer<Tomahawk::ExternalResolver> > m_scriptResolvers;
+    QList< QPointer<Tomahawk::ExternalResolver> > m_scriptResolvers;
     QList< ResolverFactoryFunc > m_resolverFactories;
     QMap< QID, bool > m_qidsTimeout;
     QMap< QID, unsigned int > m_qidsState;
