@@ -41,6 +41,7 @@ public:
 
     virtual void exec( DatabaseImpl *lib );
 
+    Tomahawk::result_ptr convertResult(DatabaseImpl* lib, TomahawkSqlQuery& files_query);
 signals:
     void results( Tomahawk::QID qid, QList<Tomahawk::result_ptr> results );
     void albums( Tomahawk::QID qid, QList<Tomahawk::album_ptr> albums );
