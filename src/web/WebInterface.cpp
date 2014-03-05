@@ -65,19 +65,20 @@ WebInterface::index( QxtWebRequestEvent* event )
     // TODO possible save the title or the guid of the playlist in the interface
     const Tomahawk::playlistinterface_ptr currentPlInterface = MainAudioEngine::instance()->playlist();
 
-    // TODO itterate over all collections
-    const QList<Tomahawk::playlist_ptr> pls = SourceList::instance()->getLocal()->collections().first()->playlists();
-    foreach (const Tomahawk::playlist_ptr& pl, pls)
+    foreach (const Tomahawk::collection_ptr& collection, SourceList::instance()->getLocal()->collections())
     {
-        Tomahawk::playlistinterface_ptr interface = ViewManager::instance()->pageForPlaylist( pl )->playlistInterface();
-
-        if (interface == currentPlInterface)
+        const QList<Tomahawk::playlist_ptr> pls = collection->playlists();
+        foreach (const Tomahawk::playlist_ptr& pl, pls)
         {
-            bodyArgs["playlist"] = pl->title();
-            break;
+            Tomahawk::playlistinterface_ptr interface = ViewManager::instance()->pageForPlaylist( pl )->playlistInterface();
+
+            if (interface == currentPlInterface)
+            {
+                bodyArgs["playlist"] = pl->title();
+                break;
+            }
         }
     }
-
 
     const Tomahawk::result_ptr currentTrack = MainAudioEngine::instance()->currentTrack();
     if (currentTrack)
@@ -184,16 +185,17 @@ WebInterface::sendMessagePage( QxtWebRequestEvent* event, const QString message 
 void
 WebInterface::playlists( QxtWebRequestEvent* event )
 {
-    // TODO itterate over all collections
-    const QList<Tomahawk::playlist_ptr> pls = SourceList::instance()->getLocal()->collections().first()->playlists();
-
     QList< QStringMap > entries;
-    foreach (const Tomahawk::playlist_ptr& pl, pls)
+    foreach (const Tomahawk::collection_ptr& collection, SourceList::instance()->getLocal()->collections())
     {
-        QStringMap entry;
-        entry["playlist"] = pl->title();
-        entry["guid"] = pl->guid();
-        entries << entry;
+        const QList<Tomahawk::playlist_ptr> pls = collection->playlists();
+        foreach (const Tomahawk::playlist_ptr& pl, pls)
+        {
+            QStringMap entry;
+            entry["playlist"] = pl->title();
+            entry["guid"] = pl->guid();
+            entries << entry;
+        }
     }
 
     QStringMap bodyArgs;
