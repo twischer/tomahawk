@@ -1,7 +1,7 @@
 #include "MediaQueue.h"
 
 
-MediaQueue::MediaQueue()
+MediaQueue::MediaQueue(const bool enableCrossfading)
     : QObject()
 {
     m_currentMediaObject = 0;
@@ -17,15 +17,22 @@ MediaQueue::MediaQueue()
         connect( mediaOutput, SIGNAL( aboutToFinish() ), SLOT( onAboutToFinish() ) );
         connect( mediaOutput, SIGNAL( volumeChanged( qreal ) ), SLOT( onVolumeChanged( qreal ) ) );
 
+        m_mediaOutputs[i] = mediaOutput;
+
         // only need next source earlier if the fading is available and so a crossfading is possible
         // if fading not available do not make a crossfading
-        if ( mediaOutput->isFadingAvailable() )
+        if ( enableCrossfading && mediaOutput->isFadingAvailable() )
         {
             mediaOutput->setPrefinishMark( CROSSFADING_TIME_IN_MS );
             connect( mediaOutput, SIGNAL( prefinishMarkReached( qint32 ) ), SLOT( onPrefinishMarkReached( qint32 ) ) );
         }
-
-        m_mediaOutputs[i] = mediaOutput;
+        else
+        {
+            // crossfading is not enabled or it is not available
+            // so do not initialize a second audio sink
+            m_mediaOutputs[1] = NULL;
+            break;
+        }
     }
 
     // 0 is first media output which will be used so disable other one
@@ -166,8 +173,11 @@ MediaQueue::volume()
 void
 MediaQueue::setVolume( qreal newVolume )
 {
-    for (int i=0; i<MEDIA_OBJECT_COUNT; i++)
-        m_mediaOutputs[i]->setVolume( newVolume );
+    m_mediaOutputs[0]->setVolume( newVolume );
+
+    // only set valume for the second instance, if it was initilized
+    if (m_mediaOutputs[1] != NULL)
+        m_mediaOutputs[1]->setVolume( newVolume );
 }
 
 Phonon::State

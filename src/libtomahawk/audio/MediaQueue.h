@@ -17,7 +17,7 @@ class DLLEXPORT MediaQueue : public QObject
     Q_OBJECT
 
 public:
-    MediaQueue();
+    MediaQueue(const bool enableCrossfading);
 
     qint64 currentTime() const;
     qint64 totalTime() const;

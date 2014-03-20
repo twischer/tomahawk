@@ -1415,6 +1415,20 @@ TomahawkSettings::setPreviewPlayerEnabled( const bool enable )
 }
 
 
+const bool
+TomahawkSettings::crossfadingEnabled() const
+{
+    return value( "crossfading", true ).toBool();
+}
+
+
+void
+TomahawkSettings::setCrossfadingEnabled( const bool enable )
+{
+    setValue( "crossfading", enable );
+}
+
+
 void
 TomahawkSettings::updateIndex()
 {

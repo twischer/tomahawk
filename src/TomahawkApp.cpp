@@ -193,7 +193,7 @@ TomahawkApp::init()
     // Cause the creation of the nam, but don't need to address it directly, so prevent warning
     Q_UNUSED( TomahawkUtils::nam() );
 
-    m_audioEngine = QPointer<MainAudioEngine>( new MainAudioEngine );
+    m_audioEngine = QPointer<MainAudioEngine>( new MainAudioEngine(s->crossfadingEnabled()) );
 
     if ( TomahawkSettings::instance()->previewPlayerEnabled() )
         m_previewEngine = QPointer<PreviewAudioEngine>( new PreviewAudioEngine );

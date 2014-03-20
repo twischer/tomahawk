@@ -46,7 +46,7 @@ public:
     enum AudioErrorCode { StreamReadError, AudioDeviceError, DecodeError, UnknownError, NoError };
     enum AudioState { Stopped = 0, Playing = 1, Paused = 2, Error = 3, Loading = 4 };
 
-    explicit AudioEngine();
+    explicit AudioEngine(const bool enableCrossfading);
     ~AudioEngine();
 
     QStringList supportedMimeTypes() const;
