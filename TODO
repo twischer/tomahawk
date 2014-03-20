@@ -1,6 +1,7 @@
-- Headless option für android ermöglichen
-- vielleicht dafür mit last stable mergen
+- Playlists wiederherstellen (vor dem 20.3. irgendwann gelöscht)
 
+
+- Crossfading dekativieren können (auf nem smartphone oft zu aufwendig)
 
 
 - Altes suchergebnisse wieder anzeigen wenn lied gewünscht
@@ -8,6 +9,8 @@
 - aber wikrlich umsetzten!?
 
 - playlisten mit gleichem namen automatisch im lokalen netz synchronisieren
+- haken für automatischer sync (aber immer nur die eigenen Playlist anpassen)
+- konfiguerbar mit welchen lokalen playern gesingt werden soll (name speichern oder so)
 - ungünstig da raspberry nicht im gleichen netz und pc bei eltern auch nicht
 - lieber möglicherweise last.fm resolver erweitern
 - vielleicht auch sync mit xpsf dateien verbessern (änderungen aus tomahawk auch automatisch speichern)

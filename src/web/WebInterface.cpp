@@ -12,6 +12,24 @@ WebInterface::WebInterface(QxtAbstractWebSessionManager* sm)
       m_htmlSearch( getFileContent("body_search.html") ),
       m_htmlResult( getFileContent("entry_result.html") )
 {
+    // execute load revision if a new playlist was loaded or created
+    connect( SourceList::instance()->getLocal()->dbCollection().data(), SIGNAL( playlistsAdded( QList<Tomahawk::playlist_ptr> ) ),
+             SLOT( onPlaylistsAdded( QList<Tomahawk::playlist_ptr> ) ) );
+
+    // load all playlists from the database
+    SourceList::instance()->getLocal()->dbCollection()->playlists();
+}
+
+
+void
+WebInterface::onPlaylistsAdded( const QList<Tomahawk::playlist_ptr>& playlists )
+{
+    foreach (const Tomahawk::playlist_ptr& pl, playlists)
+    {
+        // load and resolve the tracks of the playlist
+        pl->loadRevision();
+        pl->resolve();
+    }
 }
 
 
@@ -85,9 +103,8 @@ WebInterface::index( QxtWebRequestEvent* event )
         bodyArgs.unite( currentTrack->toHashMap() );
 
 
-    const QList<Tomahawk::query_ptr> queries = ViewManager::instance()->queue()->model()->queries();
-
     QList< QStringMap > entries;
+    const QList<Tomahawk::query_ptr> queries = ViewManager::instance()->queue()->model()->queries();
     foreach( const Tomahawk::query_ptr& query, queries )
     {
         const QStringMap entry = query->toHashMap();
@@ -138,6 +155,13 @@ WebInterface::addResultsToMap(const QList<Tomahawk::result_ptr> results, QList<Q
 void
 WebInterface::onSearchFinished( const QString query, const QList<Tomahawk::result_ptr> results, const QxtWebRequestEvent* event )
 {
+    // Cache for the results to make it possible to resolve the results by url
+    static QHash< const QHostAddress, QList<Tomahawk::result_ptr> > resultCache;
+    const QHostAddress remoteAddress = event->remoteAddress;
+    // clean the result list if already exists one (so the result hash will be cleaned automatically, too)
+    resultCache.remove(remoteAddress);
+    resultCache.insert(remoteAddress, results);
+
     QList< QStringMap > entries;
     addResultsToMap(results, entries);
 
@@ -161,7 +185,10 @@ WebInterface::add( QxtWebRequestEvent* event )
         // add track to the queue
         const Tomahawk::result_ptr result = Tomahawk::Result::get(trackID);
         const Tomahawk::query_ptr query = result->toQuery();
+
         ViewManager::instance()->queue()->model()->appendQuery(query);
+// TODO use this one on heeadless to mind to initilize the view manager
+//        MainAudioEngine::instance()->queue()->tracks().append(query);
 
         // TODO PlaylistModel::playlistToFull abfangen und
         // nachricht an benutzer weiter geben

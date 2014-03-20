@@ -64,6 +64,11 @@
 #include "accounts/spotify/SpotifyPlaylistUpdater.h"
 #include "utils/TomahawkCache.h"
 
+// TODO only needed for headless with http server (remove it if changed)
+#include "ViewManager.h"
+#include "playlist/PlaylistView.h"
+
+
 #ifndef ENABLE_HEADLESS
     #include "resolvers/QtScriptResolver.h"
     #include "resolvers/ScriptResolver.h"
@@ -258,7 +263,17 @@ TomahawkApp::init()
 #ifndef ENABLE_HEADLESS
     EchonestGenerator::setupCatalogs();
 
-    if ( !m_headless )
+    if ( m_headless )
+    {
+        // start tomahawk without a GUI
+        // the view manager is needed by the http server anyway
+        QueueView* queueView = new QueueView( NULL );
+        MainAudioEngine::instance()->setQueue( queueView->queue()->proxyModel()->playlistInterface() );
+
+        ViewManager* vm = new ViewManager();
+        vm->setQueue( queueView );
+    }
+    else
     {
         tDebug() << "Init MainWindow.";
         m_mainwindow = new TomahawkWindow();

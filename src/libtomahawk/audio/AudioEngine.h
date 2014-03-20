@@ -21,6 +21,7 @@
 #ifndef AUDIOENGINE_H
 #define AUDIOENGINE_H
 
+#include <stdint.h>
 #include "infosystem/InfoSystem.h"
 #include "Typedefs.h"
 #include "Result.h"
