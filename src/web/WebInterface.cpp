@@ -12,24 +12,6 @@ WebInterface::WebInterface(QxtAbstractWebSessionManager* sm)
       m_htmlSearch( getFileContent("body_search.html") ),
       m_htmlResult( getFileContent("entry_result.html") )
 {
-    // execute load revision if a new playlist was loaded or created
-    connect( SourceList::instance()->getLocal()->dbCollection().data(), SIGNAL( playlistsAdded( QList<Tomahawk::playlist_ptr> ) ),
-             SLOT( onPlaylistsAdded( QList<Tomahawk::playlist_ptr> ) ) );
-
-    // load all playlists from the database
-    SourceList::instance()->getLocal()->dbCollection()->playlists();
-}
-
-
-void
-WebInterface::onPlaylistsAdded( const QList<Tomahawk::playlist_ptr>& playlists )
-{
-    foreach (const Tomahawk::playlist_ptr& pl, playlists)
-    {
-        // load and resolve the tracks of the playlist
-        pl->loadRevision();
-        pl->resolve();
-    }
 }
 
 

@@ -27,7 +27,6 @@ public slots:
     void playlist( QxtWebRequestEvent* event, QString guid );
 
 private slots:
-    void onPlaylistsAdded( const QList<Tomahawk::playlist_ptr>& playlists );
     void onSearchFinished( const QString query, const QList<Tomahawk::result_ptr> results, const QxtWebRequestEvent* event );
 
 private:

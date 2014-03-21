@@ -263,17 +263,7 @@ TomahawkApp::init()
 #ifndef ENABLE_HEADLESS
     EchonestGenerator::setupCatalogs();
 
-    if ( m_headless )
-    {
-        // start tomahawk without a GUI
-        // the view manager is needed by the http server anyway
-        QueueView* queueView = new QueueView( NULL );
-        MainAudioEngine::instance()->setQueue( queueView->queue()->proxyModel()->playlistInterface() );
-
-        ViewManager* vm = new ViewManager();
-        vm->setQueue( queueView );
-    }
-    else
+    if ( !m_headless )
     {
         tDebug() << "Init MainWindow.";
         m_mainwindow = new TomahawkWindow();
@@ -298,6 +288,25 @@ TomahawkApp::init()
 
     if ( arguments().contains( "--http" ) || TomahawkSettings::instance()->value( "network/http", true ).toBool() )
     {
+        if ( m_headless )
+        {
+            // start tomahawk without a GUI
+            // the view manager is needed by the http server anyway
+            QueueView* queueView = new QueueView( NULL );
+            MainAudioEngine::instance()->setQueue( queueView->queue()->proxyModel()->playlistInterface() );
+
+            ViewManager* vm = new ViewManager();
+            vm->setQueue( queueView );
+
+
+            // execute load revision if a new playlist was loaded or created
+            connect( SourceList::instance()->getLocal()->dbCollection().data(), SIGNAL( playlistsAdded( QList<Tomahawk::playlist_ptr> ) ),
+                     SLOT( onPlaylistsAdded( QList<Tomahawk::playlist_ptr> ) ) );
+
+            // load all playlists from the database
+            SourceList::instance()->getLocal()->dbCollection()->playlists();
+        }
+
         initHTTP();
     }
     connect( TomahawkSettings::instance(), SIGNAL( changed() ), SLOT( initHTTP() ) );
@@ -542,6 +551,18 @@ TomahawkApp::initDatabase()
     tDebug( LOGEXTRA ) << "Using database:" << dbpath;
     m_database = QPointer<Database>( new Database( dbpath, this ) );
     Pipeline::instance()->databaseReady();
+}
+
+
+void
+TomahawkApp::onPlaylistsAdded( const QList<Tomahawk::playlist_ptr>& playlists )
+{
+    foreach (const Tomahawk::playlist_ptr& pl, playlists)
+    {
+        // load and resolve the tracks of the playlist
+        pl->loadRevision();
+        pl->resolve();
+    }
 }
 
 

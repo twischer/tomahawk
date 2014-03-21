@@ -111,6 +111,7 @@ public slots:
 private slots:
     void initServent();
     void initSIP();
+    void onPlaylistsAdded( const QList<Tomahawk::playlist_ptr>& playlists );
     void initHTTP();
 
     void spotifyApiCheckFinished();
