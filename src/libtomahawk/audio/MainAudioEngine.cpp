@@ -9,8 +9,8 @@ MainAudioEngine::instance()
     return s_instance;
 }
 
-MainAudioEngine::MainAudioEngine()
-    : AudioEngine()
+MainAudioEngine::MainAudioEngine(const bool enableCrossfading)
+    : AudioEngine(enableCrossfading)
 {
     s_instance = this;
     tDebug() << "Init MainAudioEngine";

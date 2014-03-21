@@ -17,7 +17,7 @@ Q_OBJECT
 
 public:
     static MainAudioEngine* instance();
-    explicit MainAudioEngine();
+    explicit MainAudioEngine(const bool enableCrossfading);
 
 private:
     static MainAudioEngine* s_instance;

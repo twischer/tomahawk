@@ -55,7 +55,7 @@ static const uint_fast8_t UNDERRUNTHRESHOLD = 2;
 static QString s_aeInfoIdentifier = QString( "AUDIOENGINE" );
 
 
-AudioEngine::AudioEngine()
+AudioEngine::AudioEngine(const bool enableCrossfading)
     : QObject()
     , m_queue( 0 )
     , m_timeElapsed( 0 )
@@ -69,7 +69,7 @@ AudioEngine::AudioEngine()
     qRegisterMetaType< AudioErrorCode >("AudioErrorCode");
     qRegisterMetaType< AudioState >("AudioState");
 
-    m_mediaQueue = new MediaQueue();
+    m_mediaQueue = new MediaQueue(enableCrossfading);
 
     connect( m_mediaQueue, SIGNAL( stateChanged( Phonon::State, Phonon::State ) ), SLOT( onStateChanged( Phonon::State, Phonon::State ) ) );
     connect( m_mediaQueue, SIGNAL( tick( qint64 ) ), SLOT( timerTriggered( qint64 ) ) );

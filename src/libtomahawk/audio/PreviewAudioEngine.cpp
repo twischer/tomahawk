@@ -12,7 +12,7 @@ PreviewAudioEngine::instance()
 // TODO PreviewEngine implements only the needed methods and AudioEngine inherts from PreviewEngine
 
 PreviewAudioEngine::PreviewAudioEngine()
-    : AudioEngine()
+    : AudioEngine(false)
 {
     s_instance = this;
     tDebug() << "Init PreviewEngine";

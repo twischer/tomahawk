@@ -92,6 +92,7 @@ SettingsDialog::SettingsDialog(QObject *parent )
     TomahawkSettings* s = TomahawkSettings::instance();
 
     m_advancedWidgetUi->checkBoxReporter->setChecked( s->crashReporterEnabled() );
+    m_advancedWidgetUi->checkBoxCrossfading->setChecked( s->crossfadingEnabled() );
     m_advancedWidgetUi->checkBoxPreview->setChecked( s->previewPlayerEnabled() );
     m_advancedWidgetUi->checkBoxHttp->setChecked( s->httpEnabled() );
     m_advancedWidgetUi->checkBoxSongChangeNotifications->setChecked( s->songChangeNotificationEnabled() );
@@ -264,6 +265,7 @@ SettingsDialog::saveSettings()
     TomahawkSettings* s = TomahawkSettings::instance();
 
     s->setCrashReporterEnabled( m_advancedWidgetUi->checkBoxReporter->checkState() == Qt::Checked );
+    s->setCrossfadingEnabled( m_advancedWidgetUi->checkBoxCrossfading->checkState() == Qt::Checked );
     s->setPreviewPlayerEnabled( m_advancedWidgetUi->checkBoxPreview->checkState() == Qt::Checked );
     s->setHttpEnabled( m_advancedWidgetUi->checkBoxHttp->checkState() == Qt::Checked );
     s->setSongChangeNotificationEnabled( m_advancedWidgetUi->checkBoxSongChangeNotifications->checkState() == Qt::Checked );

@@ -216,6 +216,9 @@ public:
     const QString partyModePassword() const;
     void setPartyModePassword( const QString partyModePassword );
 
+    const bool crossfadingEnabled() const;
+    void setCrossfadingEnabled( const bool enable );
+
     const bool previewPlayerEnabled() const;
     void setPreviewPlayerEnabled( const bool enable );
 

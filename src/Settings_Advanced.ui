@@ -196,6 +196,19 @@
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
+       <widget class="QCheckBox" name="checkBoxCrossfading">
+        <property name="layoutDirection">
+         <enum>Qt::LeftToRight</enum>
+        </property>
+        <property name="text">
+         <string>Use crossfading between tracks (Requiers: phonon-backend-gstreamer)</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QCheckBox" name="checkBoxPreview">
         <property name="layoutDirection">
          <enum>Qt::LeftToRight</enum>
