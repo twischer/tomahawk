@@ -162,20 +162,30 @@ WebInterface::add( QxtWebRequestEvent* event )
     if ( url.hasQueryItem("trackid") )
     {
         const QString base64TrackID = getDecodedURLAttribute(url, "trackid");
-        const QString trackID = QByteArray::fromBase64( base64TrackID.toAscii() );
+        const QString trackURL = QByteArray::fromBase64( base64TrackID.toAscii() );
 
-        // add track to the queue
-        const Tomahawk::result_ptr result = Tomahawk::Result::get(trackID);
-        const Tomahawk::query_ptr query = result->toQuery();
+        // Check if the track is cached and could be found by url
+        if ( !Tomahawk::Result::isCached(trackURL) )
+        {
+            // Should only happen, if tomahawk was restarted and
+            // an old web search result is used.
+            message = "<font color=red>Track is not in cache! Please search again.</font>";
+        }
+        else
+        {
+            // add track to the queue
+            const Tomahawk::result_ptr result = Tomahawk::Result::get(trackURL);
+            const Tomahawk::query_ptr query = result->toQuery();
 
-        ViewManager::instance()->queue()->model()->appendQuery(query);
-// TODO use this one on heeadless to mind to initilize the view manager
-//        MainAudioEngine::instance()->queue()->tracks().append(query);
+            ViewManager::instance()->queue()->model()->appendQuery(query);
+            // TODO use this one on heeadless to mind to initilize the view manager
+            //        MainAudioEngine::instance()->queue()->tracks().append(query);
 
-        // TODO PlaylistModel::playlistToFull abfangen und
-        // nachricht an benutzer weiter geben
+            // TODO PlaylistModel::playlistToFull abfangen und
+            // nachricht an benutzer weiter geben
 
-        message = QString("Track %1 successfully added to queue.").arg(trackID);
+            message = QString("Track %1 successfully added to queue.").arg(trackURL);
+        }
     }
 
     sendMessagePage( event, message );
