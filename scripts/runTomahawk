@@ -4,7 +4,7 @@ cd /opt/tomahawk
 
 while true
 do
-	./tomahawk
+	./tomahawk >> ~/tomahawk.log
 
 	# restart tomahawk if it exits not normal
 	if [ $? == 0 ]

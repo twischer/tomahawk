@@ -78,7 +78,7 @@ Install dependencies for building & running on Raspbian 7.0
 -----------------------------------------
 
 	$ sudo apt-get install build-essential cmake libphonon-dev phonon-backend-gstreamer gstreamer0.10-fluendo-mp3
-	$ sudo apt-get install libqjson-dev libtag1-dev libboost-dev libqca2-dev
+	$ sudo apt-get install libqjson-dev libtag1-dev libboost-dev libqca2-dev zlib1g-dev
 	$ libqca2-plugin-ossl ???
 
 The following packages have to be installed manually, because the versions of the package managment are too old:

@@ -1,4 +1,8 @@
-- Playlists wiederherstellen (vor dem 20.3. irgendwann gelöscht)
+- Remote Playlisten auch im web interface anzeigen
+- somit wird sync überflüssig da thinkpad immer aktuellsten halten könnte
+
+- überprüfen ob remote playlisten auch im headless verfügbar sind und aktualisiert werden
+
 
 - Altes suchergebnisse wieder anzeigen wenn lied gewünscht
 - laternativ control in eigenem frame und nur das aktualisieren
