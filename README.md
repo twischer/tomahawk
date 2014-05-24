@@ -146,3 +146,44 @@ Third party libraries that we ship with our source:
 * kdSingleApplicationGuard - http://www.kdab.com/
 
 Enjoy!
+
+
+
+
+Troubleshooting
+---------------
+
+GStreamer audio output is scattering:
+Try tu run
+	
+	$ speaker-test
+	
+and
+
+	$ gst-launch playbin uri=file:///.../test.mp3 audio-sink="osssink device=/dev/snd/dsp"
+	
+If there is no problem, use the oss playback device from alsa with gstreamer.
+
+	$ export PHONON_GST_AUDIOSINK="osssink"
+	$ export AUDIODEV="/dev/snd/dsp"
+
+This device could be set to default by the following command.
+But this parameters will not used by playbin and phonon.
+	
+	$ gconftool-2 --set /system/gstreamer/0.10/default/musicaudiosink --type string "osssink device=/dev/snd/dsp"
+	$ gconftool-2 --set /system/gstreamer/0.10/default/audiosink --type string "osssink device=/dev/snd/dsp"
+	
+
+
+
+
+Tomahawk crashes, because of an video device which will be used by GStreamer:
+
+The shown warning could be something like this
+"libv4lconvert: warning more framesizes then I can handle!".
+
+The video device is not needed by tomahawk,
+so it can be removed or the rights for accessing it can be removed.
+	
+	$ sudo chmod o-rwx /dev/video0
+	

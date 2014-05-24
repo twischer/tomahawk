@@ -36,3 +36,14 @@ if (event->method.compare("POST") == 0)
 	QString requestContent = QUrl::fromPercentEncoding( content->readAll() );
 	const QHash<QString,QString> postValues = QxtWebContent::parseUrlEncodedQuery(requestContent);
 }
+
+
+HOWTO START TOMAHAWK WITH PHONON DEBUG OUTPUT
+
+$ export PHONON_DEBUG=5
+$ export PHONON_BACKEND_DEBUG=5
+$ export PHONON_SUBSYSTEM_DEBUG=2
+$ export PHONON_PULSEAUDIO_DEBUG=5
+$ export PHONON_VLC_DEBUG=5
+$ export PHONON_GST_DEBUG=5
+ 

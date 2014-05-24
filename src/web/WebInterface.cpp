@@ -205,15 +205,20 @@ void
 WebInterface::playlists( QxtWebRequestEvent* event )
 {
     QList< QStringMap > entries;
-    foreach (const Tomahawk::collection_ptr& collection, SourceList::instance()->getLocal()->collections())
+
+    foreach (const Tomahawk::source_ptr& source, SourceList::instance()->sources())
     {
-        const QList<Tomahawk::playlist_ptr> pls = collection->playlists();
-        foreach (const Tomahawk::playlist_ptr& pl, pls)
+        // TODO add sub areas to the web interface to identify where the playlist is from
+        foreach (const Tomahawk::collection_ptr& collection, source->collections())
         {
-            QStringMap entry;
-            entry["playlist"] = pl->title();
-            entry["guid"] = pl->guid();
-            entries << entry;
+            const QList<Tomahawk::playlist_ptr> pls = collection->playlists();
+            foreach (const Tomahawk::playlist_ptr& pl, pls)
+            {
+                QStringMap entry;
+                entry["playlist"] = pl->title();
+                entry["guid"] = pl->guid();
+                entries << entry;
+            }
         }
     }
 
