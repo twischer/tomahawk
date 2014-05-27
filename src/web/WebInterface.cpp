@@ -253,6 +253,8 @@ WebInterface::playlist( QxtWebRequestEvent* event, QString guid )
 
 
             Tomahawk::playlistinterface_ptr interface = ViewManager::instance()->pageForPlaylist( pls )->playlistInterface();
+            // Always shuffle the playlist, if it was activated by the web interface
+            interface->setShuffled(true);
 
             // start playback with first song of the selected playlist if not playing
             // otherwise only change the playlist (the next track will be used from the new playlist)
