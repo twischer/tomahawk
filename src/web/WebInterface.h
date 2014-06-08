@@ -1,7 +1,11 @@
 #ifndef WEBINTERFACE_H
 #define WEBINTERFACE_H
 
-#include "web/Api_v1.h"
+#include <QxtWeb/QxtHttpServerConnector>
+#include <QxtWeb/QxtHttpSessionManager>
+#include <QxtWeb/QxtWebContent>
+#include <QxtWeb/QxtWebSlotService>
+#include <QxtWeb/QxtWebPageEvent>
 #include "Pipeline.h"
 #include "Artist.h"
 #include "WebSearchQuery.h"
@@ -9,7 +13,7 @@
 typedef QHash<QString, QString> QStringMap;
 
 
-class WebInterface : public Api_v1
+class WebInterface : public QxtWebSlotService
 {
 Q_OBJECT
 
@@ -30,6 +34,7 @@ private slots:
     void onSearchFinished( const QString query, const QList<Tomahawk::result_ptr> results, const QxtWebRequestEvent* event );
 
 private:
+    void send404( QxtWebRequestEvent* event );
     const QString getFileContent(const QString& filename) const;
     void sendMessagePage( QxtWebRequestEvent *event, const QString message );
     const bool checkAuthorization(const QxtWebRequestEvent* event);

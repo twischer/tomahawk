@@ -6,7 +6,7 @@
 #include "SourceList.h"
 
 WebInterface::WebInterface(QxtAbstractWebSessionManager* sm)
-    : Api_v1(sm),
+    : QxtWebSlotService(sm, NULL),
       m_htmlHeader( getFileContent("header.html") ),
       m_htmlQueue( getFileContent("entry_queue.html") ),
       m_htmlSearch( getFileContent("body_search.html") ),
@@ -373,6 +373,17 @@ WebInterface::sendMultiFilePage(const QxtWebRequestEvent* event, const QString& 
 
 
     sendPage(event, page);
+}
+
+
+void
+WebInterface::send404( QxtWebRequestEvent* event )
+{
+    tDebug() << "404" << event->url.toString();
+    QxtWebPageEvent* wpe = new QxtWebPageEvent( event->sessionID, event->requestID, "<h1>Not Found</h1>" );
+    wpe->status = 404;
+    wpe->statusMessage = "no event found";
+    postEvent( wpe );
 }
 
 
