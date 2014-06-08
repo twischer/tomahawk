@@ -1,21 +1,16 @@
-- Playlist namen auch von remote playlisten im web interface anzeigen
+- Aktuelle Laustärke im Webinterface anzeigen
+- villeicht auch drop down um lautstärke zu ändern
 
-- überprüfen ob remote playlisten auch im headless verfügbar sind und aktualisiert werden
 
 
 - Altes suchergebnisse wieder anzeigen wenn lied gewünscht
 - laternativ control in eigenem frame und nur das aktualisieren
 - aber wikrlich umsetzten!?
 
-- playlisten mit gleichem namen automatisch im lokalen netz synchronisieren
-- haken für automatischer sync (aber immer nur die eigenen Playlist anpassen)
-- konfiguerbar mit welchen lokalen playern gesingt werden soll (name speichern oder so)
-- ungünstig da raspberry nicht im gleichen netz und pc bei eltern auch nicht
-- lieber möglicherweise last.fm resolver erweitern
-- vielleicht auch sync mit xpsf dateien verbessern (änderungen aus tomahawk auch automatisch speichern)
 
 
-
+- Tomahawk vernümpfig im Headless beenden können
+- zB Ctrl-C abfangen oder bei kill vernümpfig herunterfahren
 
 
 - Datei-Upload ermöglichen um lieder vom eigenen Smarthphone sich wünschen zu können
@@ -29,9 +24,3 @@
 
 
 - Beim verlassen des Party modes player maximieren und nicht minimieren
-
-
-- mit vlc lautstärkeregelung ausprobieren
-- vielleicht identifikation über klassen name und somit vielleicht mediaoutput für preview player umbennenen
-
-

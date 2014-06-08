@@ -65,17 +65,21 @@ WebInterface::index( QxtWebRequestEvent* event )
     // TODO possible save the title or the guid of the playlist in the interface
     const Tomahawk::playlistinterface_ptr currentPlInterface = MainAudioEngine::instance()->playlist();
 
-    foreach (const Tomahawk::collection_ptr& collection, SourceList::instance()->getLocal()->collections())
+    foreach (const Tomahawk::source_ptr& source, SourceList::instance()->sources())
     {
-        const QList<Tomahawk::playlist_ptr> pls = collection->playlists();
-        foreach (const Tomahawk::playlist_ptr& pl, pls)
+        // TODO add sub areas to the web interface to identify where the playlist is from
+        foreach (const Tomahawk::collection_ptr& collection, source->collections())
         {
-            Tomahawk::playlistinterface_ptr interface = ViewManager::instance()->pageForPlaylist( pl )->playlistInterface();
-
-            if (interface == currentPlInterface)
+            const QList<Tomahawk::playlist_ptr> pls = collection->playlists();
+            foreach (const Tomahawk::playlist_ptr& pl, pls)
             {
-                bodyArgs["playlist"] = pl->title();
-                break;
+                Tomahawk::playlistinterface_ptr interface = ViewManager::instance()->pageForPlaylist( pl )->playlistInterface();
+
+                if (interface == currentPlInterface)
+                {
+                    bodyArgs["playlist"] = pl->title();
+                    break;
+                }
             }
         }
     }

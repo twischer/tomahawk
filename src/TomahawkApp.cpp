@@ -299,12 +299,17 @@ TomahawkApp::init()
             vm->setQueue( queueView );
 
 
-            // execute load revision if a new playlist was loaded or created
-            connect( SourceList::instance()->getLocal()->dbCollection().data(), SIGNAL( playlistsAdded( QList<Tomahawk::playlist_ptr> ) ),
-                     SLOT( onPlaylistsAdded( QList<Tomahawk::playlist_ptr> ) ) );
+            // TODO überprüfen, ob jetzt auch die remote playlisten geladen werden
+            // alternativ gucken ob SourceItem überhaupt für remote playlisten verwendet wird
+            foreach (const Tomahawk::source_ptr& source, SourceList::instance()->sources())
+            {
+                // execute load revision if a new playlist was loaded or created
+                connect( source->dbCollection().data(), SIGNAL( playlistsAdded( QList<Tomahawk::playlist_ptr> ) ),
+                         SLOT( onPlaylistsAdded( QList<Tomahawk::playlist_ptr> ) ) );
 
-            // load all playlists from the database
-            SourceList::instance()->getLocal()->dbCollection()->playlists();
+                // load all playlists from the database
+                source->dbCollection()->playlists();
+            }
         }
 
         initHTTP();
