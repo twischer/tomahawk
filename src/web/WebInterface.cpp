@@ -316,6 +316,10 @@ WebInterface::getPageWithBody(const QString& bodyFile, const QStringMap& bodyArg
 {
     QString page = m_htmlHeader;
 
+    const int volume = MainAudioEngine::instance()->volume();
+    const QString volumeString = QString("%1%").arg(volume);
+    page.replace("<%VOLUME%>", volumeString);
+
     const QString invertedPartyModeState = TomahawkSettings::instance()->partyModeEnabled() ? tr("Unlock") : tr("Lock");
     page.replace("<%PARTYMODE%>", invertedPartyModeState);
 
