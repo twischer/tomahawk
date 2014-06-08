@@ -1,0 +1,12 @@
+#! /system/bin/sh
+
+sleep 5
+
+# only start the mediaserver if linux deplay is not running
+# (check if the root directory of linux deploy is mounted)
+mount | grep "/data/local/linux"
+if [ $? -ne 0 ]
+then
+	/system/bin/mediaserver.bin
+fi
+

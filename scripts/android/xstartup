@@ -1,0 +1,42 @@
+#!/bin/sh
+# This script is can be used to start tomahawk on an vnc server without any desktop enviornment
+# For example on an android device with the help of linux deplay
+# The default location of this file is ~/.vnc/xstartup
+
+xrdb $HOME/.Xresources
+xsetroot -solid grey
+
+
+# only needed if tomahawk exits with "libv4lconvert: warning more framesizes then I can handle!"
+sudo chmod o-rwx /dev/video0
+
+# only needed if the default alsa output is broken
+export PHONON_GST_AUDIOSINK="osssink"
+export AUDIODEV="/dev/snd/dsp"
+
+
+# only needed if the mediaserver of android is blocking the audio device
+# (If the mediaserver will be automatically restarted by the android system,
+# the mediaserver could be replaced with a bash script which starts the
+# mediaserver with a delay so that tomahawk can open the audio device)
+sudo killall -r mediaserver
+
+
+# if you want to access the web interface on port 80 instead of port 8080
+# than use this command line
+sudo iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8080
+
+
+cd /home/android/tomahawk/
+while true
+do
+	./tomahawk --headless > /home/android/tomahawk.log 2>&1
+
+	# restart tomahawk if it exits not normal
+	if [ $? == 0 ]
+	then
+		break
+	else
+		sleep 5
+	fi
+done
