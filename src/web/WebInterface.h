@@ -25,6 +25,8 @@ public:
     void addResultsToMap(const QList<Tomahawk::result_ptr> results, QList< QStringMap >& entries);
 public slots:
     void index( QxtWebRequestEvent* event );
+    void control( QxtWebRequestEvent* event );
+    void home( QxtWebRequestEvent* event );
     void search( QxtWebRequestEvent* event );
     void add( QxtWebRequestEvent* event );
     void playlists( QxtWebRequestEvent* event );
@@ -34,6 +36,7 @@ private slots:
     void onSearchFinished( const QString query, const QList<Tomahawk::result_ptr> results, const QxtWebRequestEvent* event );
 
 private:
+    void sendFile(const QString filename, QxtWebRequestEvent* event);
     void send404( QxtWebRequestEvent* event );
     const QString getFileContent(const QString& filename) const;
     void sendMessagePage( QxtWebRequestEvent *event, const QString message );

@@ -22,7 +22,12 @@ Start the application on OS X:
 To compile for debugging:
 
 	$ cmake -DCMAKE_BUILD_TYPE=Debug ..
-    
+	
+	
+To compile without GUI:
+
+	$ cmake -DBUILD_GUI=OFF ..
+
     
 Cross-Compile:
 
@@ -152,6 +157,19 @@ Enjoy!
 
 Troubleshooting
 ---------------
+
+Armel Tomahawk does not run on armhf system
+Error message like:
+	-bash: ./tomahawk: No such file or directory
+
+
+Fix it with
+
+	$ sudo ln -s /lib/ld-linux-armhf.so.3 /lib/ld-linux.so.3
+	
+
+
+
 
 GStreamer audio output is scattering:
 Try tu run

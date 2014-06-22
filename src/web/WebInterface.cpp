@@ -30,9 +30,15 @@ WebInterface::getFileContent(const QString& filename) const
     return data;
 }
 
-
 void
 WebInterface::index( QxtWebRequestEvent* event )
+{
+    sendFile("index.html", event);
+}
+
+
+void
+WebInterface::control( QxtWebRequestEvent* event )
 {
     if ( event->url.hasQueryItem("action") )
     {
@@ -56,7 +62,16 @@ WebInterface::index( QxtWebRequestEvent* event )
             TomahawkSettings::instance()->setPartyModeEnabled( !TomahawkSettings::instance()->partyModeEnabled() );
     }
 
+    QStringMap bodyArgs;
+    bodyArgs["query"] = QString();
+    const QString page = getPageWithBody("body_control.html", bodyArgs);
+    sendPage(event, page);
+}
 
+
+void
+WebInterface::home( QxtWebRequestEvent* event )
+{
     QStringMap bodyArgs;
     bodyArgs["query"] = QString();
     bodyArgs["playlist"] = "Noname";
@@ -316,15 +331,15 @@ WebInterface::getPageWithBody(const QString& bodyFile, const QStringMap& bodyArg
 {
     QString page = m_htmlHeader;
 
+    const QString body = getFileContent(bodyFile);
+    page.replace("<%BODY%>", body);
+
     const int volume = MainAudioEngine::instance()->volume();
     const QString volumeString = QString("%1%").arg(volume);
     page.replace("<%VOLUME%>", volumeString);
 
     const QString invertedPartyModeState = TomahawkSettings::instance()->partyModeEnabled() ? tr("Unlock") : tr("Lock");
     page.replace("<%PARTYMODE%>", invertedPartyModeState);
-
-    const QString body = getFileContent(bodyFile);
-    page.replace("<%BODY%>", body);
 
     foreach( const QString& param, bodyArgs.keys() )
     {
@@ -392,6 +407,16 @@ WebInterface::sendPage(const QxtWebRequestEvent* event, const QString& page)
 {
     QxtWebPageEvent* wpe = new QxtWebPageEvent( event->sessionID, event->requestID, page.toAscii() );
     postEvent( wpe );
+}
+
+
+void
+WebInterface::sendFile(const QString filename, QxtWebRequestEvent* event)
+{
+    // TODO should be changed to QByteArray for binary contant
+    const QString data = getFileContent(filename);
+
+    sendPage(event, data);
 }
 
 

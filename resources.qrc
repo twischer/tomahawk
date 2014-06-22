@@ -159,5 +159,7 @@
         <file>data/www/entry_playlist.html</file>
         <file>data/www/entry_queue.html</file>
         <file>data/www/entry_result.html</file>
+        <file>data/www/index.html</file>
+        <file>data/www/body_control.html</file>
     </qresource>
 </RCC>
