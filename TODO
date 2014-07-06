@@ -1,3 +1,13 @@
+- Bei Next in Web interface noch mal mit java script fragen ob wirklich skippen
+
+- Tomahawk Lied autoamtisch überspringen falls lokal nicht vorhanden
+
+
+- Headless compile ohne gui abhängigkeiten
+- gucken ob neuere versionen da besser sind ansonsten
+- mit präprzessor auskomentieren
+
+
 - Tomahawk vernümpfig im Headless beenden können
 - zB Ctrl-C abfangen oder bei kill vernümpfig herunterfahren
 
@@ -5,6 +15,9 @@
 - Datei-Upload ermöglichen um lieder vom eigenen Smarthphone sich wünschen zu können
 
 - Lieder die von Resolvern gespielt wurden lokal speichern um Bandbreite zu verringern
+vllt MediaOutput::setCurrentSource(const Phonon::MediaSource& source) gibt es bei source ein save oder so
+ansonsten parallel das io device von AudioEngine::performLoadTrack( const Tomahawk::result_ptr& result, QSharedPointer< QIODevice >& io, const bool doCrossfading ) lesen
+wenn externer resolver und nicht im lokalen netzwerk
 
 
 

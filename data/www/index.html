@@ -2,10 +2,21 @@
 
 <head>
 <title>Tomahawk-Player Webfrontend</title>
+
+<script language="javascript" type="text/javascript">
+<!--
+function resizeFrame(obj) {
+	var newHeight = obj.contentWindow.document.body.scrollHeight;
+	
+	var frset = top.document.getElementsByTagName("frameset")[0];
+	frset.rows = newHeight.toString() + "px, *";
+}
+-->
+</script>
 </head>
 
-<frameset rows="15%, 85%" border="0">
-<frame src="/control" name="control">
+<frameset rows="70px, *" border="0">
+<frame src="/control" name="control" scrolling="no" onload='javascript:resizeFrame(this);'>
 <frame src="/home" name="main">
 </frameset>
 
