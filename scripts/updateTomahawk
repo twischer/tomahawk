@@ -1,0 +1,2 @@
+#! /bin/bash
+scp libtomahawk*.so* tomahawk android@192.168.0.105:/home/android/tomahawk

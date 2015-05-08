@@ -1,12 +1,50 @@
+
+
+
+- Tomahawk Lied autoamtisch überspringen falls lokal nicht vorhanden
+france gall - ella, ella la 
+
+
+- bei control über webinterface, redirect nacha usführung ohne argumente
+- damit vermeiden, das ein reload der seite den player pausiert
+
+
+- Lieder die per drag and drop in der queue verschoben werden werden gelöscht
+- Verschieben im Party mode ganz verhindern und im normal wieder fuktionsfähig machen
+
+
+SongCaching
+- Lieder die von Resolvern gespielt wurden lokal speichern um Bandbreite zu verringern
+vllt MediaOutput::setCurrentSource(const Phonon::MediaSource& source) gibt es bei source ein save oder so
+ansonsten parallel das io device von AudioEngine::performLoadTrack( const Tomahawk::result_ptr& result, QSharedPointer< QIODevice >& io, const bool doCrossfading ) lesen
+wenn externer resolver und nicht im lokalen netzwerk
+- von IODevice erben und bei jeden read vom audio backend, daten auch in Datei schrieben
+- In Datei tomahawk url speichern
+- vor öffnen der online quelle überprüfen, ob datei mit entsprechendem tomahawk url schon vorhanden und dann diese anstelle der onlinequelle für read verwenden
+
+Servent::registerIODeviceFactory( const QString &proto,
+                                  IODeviceFactoryFunc fac )
+registriert neue resolver die die io devices erstellen
+
+
+
+QtScriptResolverHelper::returnStreamUrl( const QString& streamUrl, boost::function< void( QSharedPointer< QIODevice >& ) > callback )
+erzeugt wohl die io devices für javascript resolver
+
+
+- Minimales timeout zwischen gespielten liedern
+- hauptsächlich bei übergang von queue mode in shuffel (wird manchmal gleihes lied gewählt)
+- also eigentlich min timeout nur bei shuffel bzw shuffel erweitern, dass nur jedes lied einmal und dann ganz von vorn beginnen
+- und in shuffel auch die queue gesüpielten lieder markieren
+
+
 - Db aktualisierin aus web interface ermöglichen
 - status des aktuallisieren auf der home seite anzeigen
 - home seite autoamtisch neu laden
-
+- Nützlich für Tablet, wenn im betrieb usb-sticks gewechselt werden
 
 
 - Bei Next in Web interface noch mal mit java script fragen ob wirklich skippen
-
-- Tomahawk Lied autoamtisch überspringen falls lokal nicht vorhanden
 
 
 - Headless compile ohne gui abhängigkeiten
@@ -20,10 +58,8 @@
 
 - Datei-Upload ermöglichen um lieder vom eigenen Smarthphone sich wünschen zu können
 
-- Lieder die von Resolvern gespielt wurden lokal speichern um Bandbreite zu verringern
-vllt MediaOutput::setCurrentSource(const Phonon::MediaSource& source) gibt es bei source ein save oder so
-ansonsten parallel das io device von AudioEngine::performLoadTrack( const Tomahawk::result_ptr& result, QSharedPointer< QIODevice >& io, const bool doCrossfading ) lesen
-wenn externer resolver und nicht im lokalen netzwerk
+- Analysieren, welche Methode am meisten Zeit beansprucht
+- Diese versuchen zu optimieren
 
 
 

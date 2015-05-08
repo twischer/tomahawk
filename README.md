@@ -40,13 +40,13 @@ Cross-Compile:
 Install dependencies for running on Debian 8.0
 -----------------------------------------
 
-	$ sudo apt-get install phonon phonon-backend-gstreamer gstreamer0.10-packagekit libqjson0 libtag1c2a libqca2 libquazip0 libqt4-dbus libqt4-network libqt4-script libqt4-sql libqt4-sql-sqlite libqt4-svg libqt4-test libqt4-xml libqt4-xmlpatterns libqtcore4 libqtgui4 libqtwebkit4 libechonest2.1 libattica0.4 liblastfm1 libclucene-core1
+	$ sudo apt-get install phonon phonon-backend-gstreamer gstreamer1.0-fluendo-mp3 libqjson0 libtag1c2a libqca2 libquazip1 libqt4-dbus libqt4-network libqt4-script libqt4-sql libqt4-sql-sqlite libqt4-svg libqt4-test libqt4-xml libqt4-xmlpatterns libqtcore4 libqtgui4 libqtwebkit4 libechonest2.1 libattica0.4 liblastfm1 libclucene-core1
 
 
 Install dependencies for building & running on Debian 8.0
 -----------------------------------------
 
-	$ sudo apt-get install build-essential cmake pkg-config libphonon-dev phonon-backend-gstreamer gstreamer0.10-packagekit libqjson-dev libtag1-dev libboost-dev libqca2-dev libechonest-dev libattica-dev liblastfm-dev libquazip-dev libclucene-dev
+	$ sudo apt-get install build-essential cmake pkg-config libphonon-dev phonon-backend-gstreamer gstreamer1.0-fluendo-mp3 libqjson-dev libtag1-dev libboost-dev libqca2-dev libechonest-dev libattica-dev liblastfm-dev libquazip-dev libclucene-dev
 
 
 Install dependencies for cross compiling on Debian 8.0
