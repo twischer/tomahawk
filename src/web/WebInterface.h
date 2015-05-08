@@ -51,6 +51,11 @@ private:
     const QString m_htmlQueue;
     const QString m_htmlSearch;
     const QString m_htmlResult;
+
+	QMutex m_mutex;
+	/** Cache for the results to make it possible to resolve the results by url */
+	QHash< const QHostAddress, QList<Tomahawk::result_ptr> > m_resultCache;
+
 };
 
 #endif // WEBINTERFACE_H

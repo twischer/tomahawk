@@ -42,6 +42,9 @@ WebInterface::control( QxtWebRequestEvent* event )
 {
     if ( event->url.hasQueryItem("action") )
     {
+		// TODO not sure, if it is already thread save
+		const QMutexLocker locker(&m_mutex);
+
         if ( TomahawkSettings::instance()->partyModeEnabled() )
         {
             if ( !checkAuthorization(event) )
@@ -76,6 +79,8 @@ WebInterface::home( QxtWebRequestEvent* event )
     bodyArgs["query"] = QString();
     bodyArgs["playlist"] = "Noname";
 
+	// TODO not sure, if it is already thread save
+	const QMutexLocker locker(&m_mutex);
 
     // TODO possible save the title or the guid of the playlist in the interface
     const Tomahawk::playlistinterface_ptr currentPlInterface = MainAudioEngine::instance()->playlist();
@@ -156,12 +161,13 @@ WebInterface::addResultsToMap(const QList<Tomahawk::result_ptr> results, QList<Q
 void
 WebInterface::onSearchFinished( const QString query, const QList<Tomahawk::result_ptr> results, const QxtWebRequestEvent* event )
 {
-    // Cache for the results to make it possible to resolve the results by url
-    static QHash< const QHostAddress, QList<Tomahawk::result_ptr> > resultCache;
-    const QHostAddress remoteAddress = event->remoteAddress;
-    // clean the result list if already exists one (so the result hash will be cleaned automatically, too)
-    resultCache.remove(remoteAddress);
-    resultCache.insert(remoteAddress, results);
+	const QHostAddress remoteAddress = event->remoteAddress;
+
+	const QMutexLocker locker(&m_mutex);
+
+	/* clean the result list if already exists one (so the result hash will be cleaned automatically, too) */
+	m_resultCache.remove(remoteAddress);
+	m_resultCache.insert(remoteAddress, results);
 
     QList< QStringMap > entries;
     addResultsToMap(results, entries);
@@ -181,7 +187,7 @@ WebInterface::add( QxtWebRequestEvent* event )
     if ( url.hasQueryItem("trackid") )
     {
         const QString base64TrackID = getDecodedURLAttribute(url, "trackid");
-        const QString trackURL = QByteArray::fromBase64( base64TrackID.toAscii() );
+		const QString trackURL = QByteArray::fromBase64( base64TrackID.toAscii() );
 
         // Check if the track is cached and could be found by url
         if ( !Tomahawk::Result::isCached(trackURL) )
@@ -192,16 +198,20 @@ WebInterface::add( QxtWebRequestEvent* event )
         }
         else
         {
+			// TODO not sure, if it is already thread save
+			const QMutexLocker locker(&m_mutex);
+
             // add track to the queue
             const Tomahawk::result_ptr result = Tomahawk::Result::get(trackURL);
             const Tomahawk::query_ptr query = result->toQuery();
 
-            ViewManager::instance()->queue()->model()->appendQuery(query);
-            // TODO use this one on heeadless to mind to initilize the view manager
-            //        MainAudioEngine::instance()->queue()->tracks().append(query);
+			/* no mutex in call herachie found, so mutex possibly really needed */
+			ViewManager::instance()->queue()->model()->appendQuery(query);
+			// TODO use this one on heeadless to mind to initilize the view manager
+			//        MainAudioEngine::instance()->queue()->tracks().append(query);
 
-            // TODO PlaylistModel::playlistToFull abfangen und
-            // nachricht an benutzer weiter geben
+			// TODO PlaylistModel::playlistToFull abfangen und
+			// nachricht an benutzer weiter geben
 
             message = QString("Track %1 successfully added to queue.").arg(trackURL);
         }
@@ -224,6 +234,9 @@ void
 WebInterface::playlists( QxtWebRequestEvent* event )
 {
     QList< QStringMap > entries;
+
+	// TODO not sure, if it is already thread save
+	const QMutexLocker locker(&m_mutex);
 
     foreach (const Tomahawk::source_ptr& source, SourceList::instance()->sources())
     {
@@ -250,6 +263,9 @@ WebInterface::playlists( QxtWebRequestEvent* event )
 void
 WebInterface::playlist( QxtWebRequestEvent* event, QString guid )
 {
+	// TODO not sure, if it is already thread save
+	const QMutexLocker locker(&m_mutex);
+
     const Tomahawk::playlist_ptr pls = Tomahawk::Playlist::load(guid);
     if ( pls.isNull() )
     {
