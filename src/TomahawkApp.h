@@ -111,6 +111,7 @@ public slots:
 private slots:
     void initServent();
     void initSIP();
+	void onSourceAdded(const Tomahawk::source_ptr& source);
     void onPlaylistsAdded( const QList<Tomahawk::playlist_ptr>& playlists );
     void initHTTP();
 

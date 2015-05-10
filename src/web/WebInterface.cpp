@@ -243,6 +243,12 @@ WebInterface::playlists( QxtWebRequestEvent* event )
         // TODO add sub areas to the web interface to identify where the playlist is from
         foreach (const Tomahawk::collection_ptr& collection, source->collections())
         {
+//			TODO add borders for different playlist sources
+//			QStringMap header;
+//			header["playlist"] = collection->name().toUpper();
+//			header["guid"] = "NONE";
+//			entries << header;
+
             const QList<Tomahawk::playlist_ptr> pls = collection->playlists();
             foreach (const Tomahawk::playlist_ptr& pl, pls)
             {
@@ -318,7 +324,7 @@ WebInterface::playlist( QxtWebRequestEvent* event, QString guid )
 const bool
 WebInterface::checkAuthorization(const QxtWebRequestEvent* event)
 {
-    const QString authString = event->headers.value("Authorization");
+	const QString authString = event->headers.value("Authorization");
     const QStringList authValues = authString.split(" ");
     if (!authString.isEmpty() && authValues.count() == 2)
     {
