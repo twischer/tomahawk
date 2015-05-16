@@ -1,0 +1,7 @@
+#!/bin/sh
+# This script changes the symlink for the asound.conf
+# so that audioflinger can access the audio device
+MOUNTPOINT=/mnt/system
+sudo mount -o remount,rw ${MOUNTPOINT}
+sudo ln -s -f ./asound.conf.orig ${MOUNTPOINT}/etc/asound.conf
+sudo mount -o remount,ro ${MOUNTPOINT}

@@ -1,16 +1,26 @@
 #! /bin/bash
 
+# change directory for core files
+#echo '~/core_%e.%p' | sudo tee /proc/sys/kernel/core_pattern
+
+# enable core dump
+ulimit -c unlimited
+
+
 cd /opt/tomahawk
 
 while true
 do
-	./tomahawk >> ~/tomahawk.log
+	./tomahawk >> /home/public/tomahawk.log 2>&1
 
 	# restart tomahawk if it exits not normal
 	if [ $? == 0 ]
 	then
 		break
 	else
+		TIME=`date +%Y-%m-%d-%H-%M`
+		echo "Crashed on $TIME" >> /home/public/tomahawk.log
+		mv ./core /home/public/core_tomahawk.$TIME
 		sleep 5
 	fi
 done

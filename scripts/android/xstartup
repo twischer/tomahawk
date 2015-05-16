@@ -6,12 +6,15 @@
 xrdb $HOME/.Xresources
 xsetroot -solid grey
 
+LOG_FILE=/home/android/tomahawk.log
+
 
 # only needed if tomahawk exits with "libv4lconvert: warning more framesizes then I can handle!"
 #sudo chmod o-rwx /dev/video0
 
 # only needed if the default alsa output is broken
-#export PHONON_GST_AUDIOSINK="osssink"
+export PHONON_GST_AUDIOSINK=""
+#"osssink"
 #export AUDIODEV="/dev/snd/dsp"
 
 
@@ -19,7 +22,7 @@ xsetroot -solid grey
 # (If the mediaserver will be automatically restarted by the android system,
 # the mediaserver could be replaced with a bash script which starts the
 # mediaserver with a delay so that tomahawk can open the audio device)
-#sudo killall -r mediaserver.bin
+#sudo killall -r mediaserver
 
 
 # if you want to access the web interface on port 80 instead of port 8080
@@ -27,16 +30,25 @@ xsetroot -solid grey
 sudo iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8080
 
 
-cd /home/user/tomahawk/
+# change directory for core files
+echo '~/core_%e.%p' | sudo tee /proc/sys/kernel/core_pattern
+
+# enable core dump
+ulimit -c unlimited
+
+
+cd /home/android/tomahawk/
 while true
 do
-	./tomahawk --headless >> /home/user/tomahawk.log 2>&1
+	./tomahawk --headless >> ${LOG_FILE} 2>&1
 
 	# restart tomahawk if it exits not normal
 	if [ $? == 0 ]
 	then
 		break
 	else
+		TIME=`date +%Y-%m-%d-%H-%M`
+		echo "Crashed on $TIME" >> ${LOG_FILE}
 		sleep 5
 	fi
 done
