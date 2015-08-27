@@ -158,6 +158,10 @@ Enjoy!
 Troubleshooting
 ---------------
 
+Sync geht nur mit internet
+aber in privat modus
+
+
 Armel Tomahawk does not run on armhf system
 Error message like:
 	-bash: ./tomahawk: No such file or directory

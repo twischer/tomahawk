@@ -1,3 +1,5 @@
+- Lieblingslieder mit als playlist anbieten
+
 - Headless: playlists automatisch nach start laden
 	zur zeit muss home link gedrückt werden
 
@@ -31,6 +33,13 @@ registriert neue resolver die die io devices erstellen
 
 QtScriptResolverHelper::returnStreamUrl( const QString& streamUrl, boost::function< void( QSharedPointer< QIODevice >& ) > callback )
 erzeugt wohl die io devices für javascript resolver
+
+
+
+- Playlisten auch ohne premium mit spotify synchroniseren
+- mit hilfe von web api https://developer.spotify.com/web-api/add-tracks-to-playlist/
+
+
 
 
 - Minimales timeout zwischen gespielten liedern
