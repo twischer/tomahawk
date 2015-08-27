@@ -1,8 +1,12 @@
-# copy this file to /usr/share/applications
+# copy this file to 
+# /usr/share/applications
+# or
+# ~/.local/share/applications
+#
 # For auto start open GNOME-Tweak-Tool and
 # add this desktop entry
 [Desktop Entry]
-Exec=/opt/tomahawk/tomahawk
+Exec=/opt/tomahawk/runTomahawk
 Name=Tomahawk-Player
 Path=/opt/tomahawk
 Terminal=true

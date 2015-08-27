@@ -1,10 +1,13 @@
 #! /bin/bash
 
 # change directory for core files
-#echo '~/core_%e.%p' | sudo tee /proc/sys/kernel/core_pattern
+#echo '/home/public/core_%e.%p' | sudo tee /proc/sys/kernel/core_pattern
 
 # enable core dump
 ulimit -c unlimited
+
+# for testing the creation of a core dump use
+# $ kill -SIGSEGV [pid]
 
 
 cd /opt/tomahawk
