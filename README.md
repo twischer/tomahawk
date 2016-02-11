@@ -8,7 +8,7 @@ Compile:
 
     $ mkdir build && cd build
     $ cmake ..
-    $ make
+    $ make -j4
 
 Start the application on Linux:
 
@@ -31,9 +31,9 @@ To compile without GUI:
     
 Cross-Compile:
 
-	$ mkdir build-armhf && cd build-armhf
-	$ cmake -DCMAKE_TOOLCHAIN_FILE=../Toolchain-armhf.cmake ..
-    $ make
+	$ mkdir build-armel && cd build-armel
+	$ cmake -DCMAKE_TOOLCHAIN_FILE=../Toolchain-armel.cmake ..
+    $ make -j4
 
 
 

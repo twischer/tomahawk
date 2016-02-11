@@ -1,3 +1,38 @@
+Killed
+- wird möglicherweise durch zu große Arbeitsspeicherasulastung unter ANdroid ausgelöst
+- syslog gucken warum tomahawk Killed
+
+Starting new song: "file:///mnt/sdcard/Music/Rock/Sportfreunde Stiller - Ein Kompliment.mp3" 
+"No data" 
+void Tomahawk::InfoSystem::LastFmInfoPlugin::coverArtReturned() Null byte array for cover of "Sportfreunde Stiller" "" 
+Killed
+Crashed on 2015-09-26-12-53
+
+Starting new song: "file:///mnt/sdcard/Music/Rock/Sportfreunde Stiller - Ein Kompliment.mp3" 
+"No data" 
+void Tomahawk::InfoSystem::LastFmInfoPlugin::coverArtReturned() Null byte array for cover of "Sportfreunde Stiller" "" 
+Killed
+Crashed on 2015-09-26-18-19
+
+tomahawk: Fatal IO error: client killed untersuchen
+- vielleicht ausgelöst durch lautstärke verkleinern aus web interface
+	- während dessen covers gesucht werden, aber nicht gefunden (-> kein internet)
+	- und noch kein song gestarted wurde
+
+
+
+libqt4-dbg für armel installieren und 
+file:///home/timo/Entwicklung/C++/tomahawkCoreFiles/debian7armel/2015-09/core_DatabaseWorkerT.6625
+noch mal untersuchen
+
+
+- Überprüfen, ob web interface mit LAN noch geht
+
+- enable Q_ASSERT by unsetting QT_NO_DEBUG
+
+
+
+
 - Lieblingslieder mit als playlist anbieten
 
 - Headless: playlists automatisch nach start laden
